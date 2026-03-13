@@ -1,0 +1,43 @@
+import Link from "next/link";
+import { MapPin } from "lucide-react";
+import type { PostSummary } from "@/types/app";
+import { Avatar } from "@/components/ui/avatar";
+import { MediaView } from "@/components/post/media-view";
+import { formatVisitDate } from "@/lib/utils";
+
+export function PostCard({ post, compact = false }: { post: PostSummary; compact?: boolean }) {
+  return (
+    <article className="overflow-hidden rounded-[1.75rem] border bg-white/80 shadow-sm">
+      <div className={compact ? "aspect-[4/3]" : "aspect-[16/10]"}>
+        <MediaView mediaType={post.mediaType} mediaUrl={post.mediaUrl} thumbnailUrl={post.thumbnailUrl} />
+      </div>
+      <div className="space-y-4 p-4">
+        <div className="flex items-center gap-3">
+          <Avatar name={post.user.name} src={post.user.avatarUrl} className="h-9 w-9" />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold">{post.user.name}</p>
+            <p className="truncate text-xs text-[var(--foreground)]/55">@{post.user.username}</p>
+          </div>
+        </div>
+        <div>
+          <div className="flex items-start gap-2 text-sm text-[var(--foreground)]/68">
+            <MapPin className="mt-0.5 h-4 w-4 text-[var(--accent)]" />
+            <div>
+              <p className="font-medium text-[var(--foreground)]">{post.placeName}</p>
+              <p>
+                {post.city}, {post.country}
+              </p>
+            </div>
+          </div>
+          <p className="mt-3 line-clamp-2 text-sm leading-6 text-[var(--foreground)]/72">{post.caption}</p>
+          <p className="mt-3 text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">
+            Visited {formatVisitDate(post.visitedAt)}
+          </p>
+        </div>
+        <Link href={`/posts/${post.id}`} className="text-sm font-medium text-[var(--accent)]">
+          Open post
+        </Link>
+      </div>
+    </article>
+  );
+}
