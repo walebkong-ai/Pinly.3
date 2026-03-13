@@ -39,3 +39,4 @@
 - The demo seed flow needed an explicit production/non-local safety guard to avoid destructive mistakes during real deployment
 - Marker avatar/name HTML in Leaflet `divIcon` needed escaping to avoid malformed markup or script injection from user-provided names/URLs
 - Upload route needed multipart parse failure handling so bad/oversized payloads return clear API errors instead of opaque server failures
+- Google auth can be added without introducing a separate auth adapter by upserting OAuth users into the existing Prisma `User` model during NextAuth sign-in callbacks

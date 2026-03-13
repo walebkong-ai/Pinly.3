@@ -22,6 +22,11 @@ This file is the constitutional source for project rules, schemas, and architect
       "password": "string",
       "avatarUrl": "string | null"
     },
+    "googleOAuth": {
+      "email": "string",
+      "name": "string | null",
+      "avatarUrl": "string | null"
+    },
     "signIn": {
       "email": "string",
       "password": "string"
@@ -145,3 +150,4 @@ This file is the constitutional source for project rules, schemas, and architect
 - 2026-03-13: Approved Pinly MVP schemas and architectural direction
 - 2026-03-13: Rebuilt the map contract around explicit stages, layer filters, time filters, city context, and place search
 - 2026-03-13: Added deployment guardrails for Vercel + Neon, including migrations, safer storage config, and destructive seed protection
+- 2026-03-13: Added optional Google OAuth sign-in/sign-up while preserving Prisma-backed user identity for map/friend visibility

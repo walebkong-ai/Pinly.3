@@ -6,7 +6,7 @@ Pinly is a private, map-based social travel app centered on intentional place po
 ## Stack Choices
 - Frontend: Next.js App Router with TypeScript for a single deployable codebase and fast iteration
 - Styling: Tailwind CSS with small local UI primitives to keep the MVP cohesive and easy to evolve
-- Auth: NextAuth credentials strategy with JWT sessions for simple email/password login without extra auth tables
+- Auth: NextAuth credentials strategy with JWT sessions, plus optional Google OAuth routed through Prisma user upserts
 - Database: Neon PostgreSQL with Prisma for relational modeling of users, friendships, and place-based posts
 - Storage: Vercel Blob for production uploads with local filesystem fallback for development
 - Map: Leaflet with light raster tiles and stage-aware server-side aggregation for token-free interactive map exploration

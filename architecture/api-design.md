@@ -6,6 +6,7 @@
 - `GET|POST /api/auth/[...nextauth]`
   - NextAuth session endpoints
   - Runs on the Node.js runtime for Prisma compatibility on Vercel
+  - Supports credentials auth and optional Google OAuth (Google users are upserted into Prisma `User`)
 
 ## Friends
 - `GET /api/friends/search?q=...`

@@ -19,6 +19,12 @@ Pinly is ready to deploy on Vercel with Neon Postgres and Prisma. This document 
 ## Recommended Vercel Environment Variables
 - `NEXTAUTH_URL`
   - Set this to the production app URL (same value as `AUTH_URL`)
+- `GOOGLE_CLIENT_ID`
+  - Optional, required only if enabling Google auth
+- `GOOGLE_CLIENT_SECRET`
+  - Optional, required only if enabling Google auth
+- `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED`
+  - Set to `true` only when Google auth is fully configured
 - `MAX_UPLOAD_SIZE_MB`
   - Keep this at `4` for server uploads on Vercel
 - `BLOB_UPLOAD_PREFIX`
@@ -57,6 +63,10 @@ This repo now includes a checked-in baseline migration under `prisma/migrations/
 5. Set the build command to the default project build or leave it blank so Vercel uses `npm run build`.
 6. Run `npm run prisma:migrate:deploy` against the production database before first launch.
 7. Deploy.
+
+If enabling Google auth, configure OAuth redirect URIs in Google Cloud:
+- Local: `http://localhost:3000/api/auth/callback/google`
+- Production: `https://<your-domain>/api/auth/callback/google`
 
 ## Production Caveats
 - Vercel server uploads are small-request friendly. Keep uploads short and keep `MAX_UPLOAD_SIZE_MB` at `4` unless you move to client-side uploads.

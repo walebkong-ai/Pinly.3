@@ -18,6 +18,7 @@ Pinly is a private, friends-only social travel MVP built with Next.js, Prisma, P
 
 ## Features included
 - Email/password sign up and sign in
+- Optional Google sign up/sign in via NextAuth OAuth
 - JWT-backed session persistence
 - Username search and friend requests
 - Accept/decline friend requests
@@ -92,6 +93,9 @@ After seeding, sign in with any of these and password `password123`:
 - `AUTH_SECRET`: long random secret for NextAuth JWT signing
 - `NEXTAUTH_URL`: local or deployed app URL
 - `AUTH_URL`: set this to the same value as `NEXTAUTH_URL`
+- `GOOGLE_CLIENT_ID`: required if enabling Google auth
+- `GOOGLE_CLIENT_SECRET`: required if enabling Google auth
+- `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED`: set to `true` to show Google auth buttons in UI
 - `STORAGE_DRIVER`: `local` for dev or `vercel-blob` for Vercel
 - `BLOB_READ_WRITE_TOKEN`: required when `STORAGE_DRIVER=vercel-blob`
 - `BLOB_UPLOAD_PREFIX`: optional blob folder prefix
@@ -132,6 +136,7 @@ python3 tools/check_env.py
 - Exact deployment steps and the launch checklist live in [DEPLOYMENT.md](/Users/kalebwong/Library/CloudStorage/OneDrive-WilfridLaurierUniversity/TravelMediaFolder/DEPLOYMENT.md)
 - Final go-live runbook and manual QA flows live in [GO_LIVE.md](/Users/kalebwong/Library/CloudStorage/OneDrive-WilfridLaurierUniversity/TravelMediaFolder/GO_LIVE.md)
 - First live deployment command order and failure-mode playbook live in [FIRST_DEPLOY_EXECUTION_PLAN.md](/Users/kalebwong/Library/CloudStorage/OneDrive-WilfridLaurierUniversity/TravelMediaFolder/FIRST_DEPLOY_EXECUTION_PLAN.md)
+- Google OAuth callback URL: `/api/auth/callback/google` (set both local and production origins in Google Cloud)
 
 ## Future improvements
 - Add a client-side upload path for larger videos

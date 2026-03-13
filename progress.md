@@ -20,3 +20,5 @@
 - Added go-live documentation with pre-deploy, deploy, post-deploy, rollback, and manual QA checklists
 - Added first-deploy execution runbook with exact Vercel/Neon command order, failure-mode fixes, and manual production QA script
 - Hardened runtime behavior by catching upload multipart parse failures and escaping dynamic HTML in map profile bubbles
+- Added optional Google OAuth sign-up/sign-in integrated into existing NextAuth + Prisma user model
+- Added auth helper and register route tests to improve confidence in account creation and credentials sign-in behavior
