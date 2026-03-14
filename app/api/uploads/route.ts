@@ -6,7 +6,16 @@ import type { NextRequest } from "next/server";
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
-  const token = await getToken({ req: request, secret: process.env.AUTH_SECRET || "" });
+  const useSecureCookies = process.env.NODE_ENV === "production" || request.url.startsWith("https://");
+  const cookieName = useSecureCookies ? "__Secure-authjs.session-token" : "authjs.session-token";
+
+  const token = await getToken({ 
+    req: request, 
+    secret: process.env.AUTH_SECRET || "",
+    cookieName,
+    salt: cookieName,
+    secureCookie: useSecureCookies
+  });
 
   if (!token?.id) {
     return apiError("Unauthorized", 401);
