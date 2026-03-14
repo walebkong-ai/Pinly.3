@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { MapCategory } from "@/types/app";
 
-const usernameRegex = /^[a-z0-9_-]{3,20}$/;
+export const usernameRegex = /^[a-z0-9_-]{3,20}$/;
 const mapCategoryValues = ["photo", "video", "food", "nature", "landmark", "neighborhood"] as const satisfies readonly MapCategory[];
 
 const csvArray = <T extends z.ZodTypeAny>(itemSchema: T) =>

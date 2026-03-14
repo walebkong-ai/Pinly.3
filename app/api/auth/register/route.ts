@@ -36,7 +36,10 @@ export async function POST(request: Request) {
   }
 
   if (existing) {
-    return apiError("An account with that email or username already exists.", 409);
+    if (existing.username === username) {
+      return apiError("Username is already taken", 409);
+    }
+    return apiError("Email is already registered", 409);
   }
 
   let user;

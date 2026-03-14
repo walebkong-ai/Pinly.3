@@ -2,13 +2,12 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { apiError, apiValidationError } from "@/lib/api";
 import { z } from "zod";
+import { usernameRegex } from "@/lib/validation";
 
 const updateProfileSchema = z.object({
   username: z
     .string()
-    .min(3, "Username must be at least 3 characters")
-    .max(20, "Username must be at most 20 characters")
-    .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores")
+    .regex(usernameRegex, "Use 3-20 lowercase letters, numbers, underscores, or hyphens")
     .optional(),
   avatarUrl: z.string().url("Invalid avatar URL").optional().or(z.literal(""))
 });

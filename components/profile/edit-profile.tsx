@@ -27,6 +27,8 @@ export function EditProfile({
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+
   async function uploadFile(file: File) {
     const formData = new FormData();
     formData.set("file", file);
@@ -51,8 +53,16 @@ export function EditProfile({
   }
 
   async function handleSave() {
-    if (!username.trim()) {
-      toast.error("Username is required.");
+    setUsernameError(null);
+    const cleanedUsername = username.trim();
+
+    if (!cleanedUsername) {
+      setUsernameError("Username is required.");
+      return;
+    }
+
+    if (!/^[a-z0-9_-]{3,20}$/.test(cleanedUsername)) {
+      setUsernameError("Use 3-20 lowercase letters, numbers, underscores, or hyphens");
       return;
     }
 
@@ -62,7 +72,7 @@ export function EditProfile({
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        username: username.trim(),
+        username: cleanedUsername,
         avatarUrl: avatarUrl || ""
       })
     });
@@ -71,6 +81,10 @@ export function EditProfile({
 
     if (!response.ok) {
       const data = await response.json();
+      if (data?.error === "Username has been taken") {
+        setUsernameError("Username is already taken");
+        return;
+      }
       toast.error(data.error ?? "Failed to save profile.");
       return;
     }
@@ -132,11 +146,13 @@ export function EditProfile({
           <label className="text-xs uppercase tracking-widest text-[var(--foreground)]/50">Username</label>
           <Input 
             value={username} 
-            onChange={e => setUsername(e.target.value.toLowerCase())} 
+            onChange={e => {
+              setUsername(e.target.value.toLowerCase());
+              if (usernameError) setUsernameError(null);
+            }} 
             disabled={saving}
-            pattern="[a-z0-9_-]{3,20}"
-            title="Use 3-20 lowercase letters, numbers, underscores, or hyphens"
           />
+          {usernameError && <p className="mt-1 text-xs text-red-500">{usernameError}</p>}
         </div>
         <div className="flex gap-2">
           <Button onClick={handleSave} disabled={saving || uploading} className="gap-2 px-3 py-1 h-8 text-xs">
@@ -147,6 +163,7 @@ export function EditProfile({
             setIsEditing(false);
             setUsername(initialUsername);
             setAvatarUrl(initialAvatarUrl);
+            setUsernameError(null);
           }} disabled={saving}>
             <X className="h-4 w-4 mr-1" />
             Cancel

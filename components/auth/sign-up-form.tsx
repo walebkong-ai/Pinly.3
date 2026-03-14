@@ -4,9 +4,15 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getProviders, signIn } from "next-auth/react";
 import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { signUpSchema } from "@/lib/validation";
+import type { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { GoogleAuthButton } from "@/components/auth/google-auth-button";
+
+type SignUpValues = z.infer<typeof signUpSchema>;
 
 function extractErrorMessage(data: any) {
   const fieldError = data?.issues?.fieldErrors
@@ -21,6 +27,22 @@ export function SignUpForm() {
   const [loading, setLoading] = useState(false);
   const googleUiEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true";
   const [googleEnabled, setGoogleEnabled] = useState(googleUiEnabled);
+
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors }
+  } = useForm<SignUpValues>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: {
+      name: "",
+      username: "",
+      email: "",
+      password: "",
+      avatarUrl: ""
+    }
+  });
 
   useEffect(() => {
     let ignore = false;
@@ -44,18 +66,10 @@ export function SignUpForm() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [googleUiEnabled]);
 
-  async function onSubmit(formData: FormData) {
+  async function onSubmit(payload: SignUpValues) {
     setLoading(true);
-
-    const payload = {
-      name: String(formData.get("name") ?? ""),
-      username: String(formData.get("username") ?? "").toLowerCase(),
-      email: String(formData.get("email") ?? "").toLowerCase(),
-      password: String(formData.get("password") ?? ""),
-      avatarUrl: String(formData.get("avatarUrl") ?? "")
-    };
 
     let response: Response;
 
@@ -82,6 +96,11 @@ export function SignUpForm() {
         data = null;
       }
 
+      if (data?.error === "Username has been taken") {
+        setError("username", { type: "server", message: "Username is already taken" });
+        return;
+      }
+
       toast.error(extractErrorMessage(data) ?? "Sign up failed.");
       return;
     }
@@ -99,28 +118,38 @@ export function SignUpForm() {
 
   return (
     <div className="space-y-4">
-      <form action={onSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input name="name" placeholder="Full name" required />
-          <Input 
-            name="username" 
-            placeholder="username" 
-            required 
-            pattern="[a-z0-9_-]{3,20}" 
-            title="Use 3-20 lowercase letters, numbers, underscores, or hyphens"
-            onChange={(e) => { e.target.value = e.target.value.toLowerCase(); }}
-          />
+          <div>
+            <Input {...register("name")} placeholder="Full name" />
+            {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>}
+          </div>
+          <div>
+            <Input 
+              {...register("username", {
+                onChange: (e) => { e.target.value = e.target.value.toLowerCase(); }
+              })}
+              placeholder="username" 
+            />
+            {errors.username && <p className="mt-1 text-xs text-red-500">{errors.username.message}</p>}
+          </div>
         </div>
-        <Input name="email" type="email" placeholder="Email" required />
-        <Input
-          name="password"
-          type="password"
-          placeholder="Password (8+ characters)"
-          minLength={8}
-          title="Password must be at least 8 characters."
-          required
-        />
-        <Input name="avatarUrl" type="url" placeholder="Avatar URL (optional)" />
+        <div>
+          <Input {...register("email")} type="email" placeholder="Email" />
+          {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
+        </div>
+        <div>
+          <Input
+            {...register("password")}
+            type="password"
+            placeholder="Password (8+ characters)"
+          />
+          {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
+        </div>
+        <div>
+          <Input {...register("avatarUrl")} type="url" placeholder="Avatar URL (optional)" />
+          {errors.avatarUrl && <p className="mt-1 text-xs text-red-500">{errors.avatarUrl.message}</p>}
+        </div>
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Creating account..." : "Create account"}
         </Button>
