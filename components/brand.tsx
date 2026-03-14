@@ -1,8 +1,10 @@
+import Image from "next/image";
+
 export function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--foreground)] text-white shadow-lg shadow-black/10">
-        <span className="font-[var(--font-serif)] text-lg">P</span>
+      <div className="flex h-12 w-12 items-center justify-center overflow-hidden drop-shadow-sm">
+        <Image src="/logo.png" alt="Pinly Logo" width={48} height={48} className="object-cover" />
       </div>
       {!compact && (
         <div>

@@ -132,8 +132,10 @@ export function EditProfile({
           <label className="text-xs uppercase tracking-widest text-[var(--foreground)]/50">Username</label>
           <Input 
             value={username} 
-            onChange={e => setUsername(e.target.value)} 
+            onChange={e => setUsername(e.target.value.toLowerCase())} 
             disabled={saving}
+            pattern="[a-z0-9_-]{3,20}"
+            title="Use 3-20 lowercase letters, numbers, underscores, or hyphens"
           />
         </div>
         <div className="flex gap-2">

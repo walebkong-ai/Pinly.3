@@ -102,7 +102,14 @@ export function SignUpForm() {
       <form action={onSubmit} className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <Input name="name" placeholder="Full name" required />
-          <Input name="username" placeholder="username" required pattern="[a-z0-9_-]{3,20}" />
+          <Input 
+            name="username" 
+            placeholder="username" 
+            required 
+            pattern="[a-z0-9_-]{3,20}" 
+            title="Use 3-20 lowercase letters, numbers, underscores, or hyphens"
+            onChange={(e) => { e.target.value = e.target.value.toLowerCase(); }}
+          />
         </div>
         <Input name="email" type="email" placeholder="Email" required />
         <Input
