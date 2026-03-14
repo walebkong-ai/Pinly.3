@@ -46,12 +46,14 @@ export function AppShell({ children, user }: AppShellProps) {
                 key={href}
                 href={href}
                 className={cn(
-                  "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
-                  pathname === href ? "bg-[var(--foreground)] text-white" : "bg-white/65 text-[var(--foreground)]/72 hover:bg-white/85"
+                  "relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
+                  pathname === href 
+                    ? "bg-[var(--foreground)]/90 text-white z-10 shadow-sm" 
+                    : "bg-white/65 text-[var(--foreground)]/72 hover:bg-white/85"
                 )}
               >
-                <Icon className="h-4 w-4" />
-                {label}
+                <Icon className="relative z-20 h-4 w-4" />
+                <span className="relative z-20">{label}</span>
               </Link>
             ))}
           </nav>
@@ -65,14 +67,14 @@ export function AppShell({ children, user }: AppShellProps) {
                 key={href}
                 href={resolvedHref}
                 className={cn(
-                  "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
+                  "relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
                   pathname === resolvedHref
-                    ? "bg-white text-[var(--foreground)]"
+                    ? "bg-white text-[var(--foreground)] z-10 shadow-sm"
                     : "text-[var(--foreground)]/70 hover:bg-white/60"
                 )}
               >
-                <Icon className="h-4 w-4" />
-                {label}
+                <Icon className="relative z-20 h-4 w-4" />
+                <span className="relative z-20">{label}</span>
               </Link>
             );
           })}

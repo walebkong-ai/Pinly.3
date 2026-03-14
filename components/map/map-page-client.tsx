@@ -229,12 +229,6 @@ export function MapPageClient() {
             )}
           </div>
 
-          {loading && (
-            <div className="pointer-events-auto ml-auto inline-flex items-center gap-2 rounded-full bg-white/92 px-3 py-2 text-xs font-medium shadow-sm">
-              <LoaderCircle className="h-3.5 w-3.5 animate-spin text-[var(--accent)]" />
-              Refreshing map
-            </div>
-          )}
         </div>
 
         {showControls && (
