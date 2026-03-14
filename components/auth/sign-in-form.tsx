@@ -11,16 +11,23 @@ import { GoogleAuthButton } from "@/components/auth/google-auth-button";
 export function SignInForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [googleEnabled, setGoogleEnabled] = useState(false);
+  const googleUiEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true";
+  const [googleEnabled, setGoogleEnabled] = useState(googleUiEnabled);
 
   useEffect(() => {
     let ignore = false;
 
     async function loadProviders() {
-      const providers = await getProviders();
+      try {
+        const providers = await getProviders();
 
-      if (!ignore) {
-        setGoogleEnabled(Boolean(providers?.google));
+        if (!ignore) {
+          setGoogleEnabled(googleUiEnabled || Boolean(providers?.google));
+        }
+      } catch {
+        if (!ignore) {
+          setGoogleEnabled(googleUiEnabled);
+        }
       }
     }
 
@@ -34,11 +41,19 @@ export function SignInForm() {
   async function onSubmit(formData: FormData) {
     setLoading(true);
 
-    const result = await signIn("credentials", {
-      email: String(formData.get("email") ?? ""),
-      password: String(formData.get("password") ?? ""),
-      redirect: false
-    });
+    let result: Awaited<ReturnType<typeof signIn>>;
+
+    try {
+      result = await signIn("credentials", {
+        email: String(formData.get("email") ?? ""),
+        password: String(formData.get("password") ?? ""),
+        redirect: false
+      });
+    } catch {
+      setLoading(false);
+      toast.error("Could not reach the server. Please try again.");
+      return;
+    }
 
     setLoading(false);
 
@@ -55,7 +70,14 @@ export function SignInForm() {
     <div className="space-y-4">
       <form action={onSubmit} className="space-y-4">
         <Input name="email" type="email" placeholder="Email" required />
-        <Input name="password" type="password" placeholder="Password" required />
+        <Input
+          name="password"
+          type="password"
+          placeholder="Password"
+          minLength={8}
+          title="Password must be at least 8 characters."
+          required
+        />
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Signing in..." : "Sign in"}
         </Button>

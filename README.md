@@ -95,6 +95,7 @@ After seeding, sign in with any of these and password `password123`:
 - `AUTH_URL`: set this to the same value as `NEXTAUTH_URL`
 - `GOOGLE_CLIENT_ID`: required if enabling Google auth
 - `GOOGLE_CLIENT_SECRET`: required if enabling Google auth
+- `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED`: optional fallback to show Google button in UI (`true`/`false`)
 - `STORAGE_DRIVER`: `local` for dev or `vercel-blob` for Vercel
 - `BLOB_READ_WRITE_TOKEN`: required when `STORAGE_DRIVER=vercel-blob`
 - `BLOB_UPLOAD_PREFIX`: optional blob folder prefix

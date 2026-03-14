@@ -42,6 +42,7 @@ Recommended:
 - `MAX_UPLOAD_SIZE_MB` = `4`
 - `ALLOW_DESTRUCTIVE_SEED` = unset in production
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (only if enabling Google auth)
+- `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true` (optional fallback for Google button visibility)
 
 ## 4. Prisma Command Order (Generate / Migrate / Seed)
 Production first deploy:

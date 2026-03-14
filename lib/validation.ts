@@ -27,13 +27,13 @@ export const signUpSchema = z.object({
   name: z.string().min(2).max(50),
   username: z.string().regex(usernameRegex, "Use 3-20 lowercase letters, numbers, underscores, or hyphens"),
   email: z.string().email(),
-  password: z.string().min(8).max(100),
+  password: z.string().min(8, "Password must be at least 8 characters.").max(100),
   avatarUrl: z.string().url().optional().or(z.literal(""))
 });
 
 export const signInSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8).max(100)
+  password: z.string().min(8, "Password must be at least 8 characters.").max(100)
 });
 
 export const friendRequestSchema = z.object({

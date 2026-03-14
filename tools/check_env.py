@@ -64,11 +64,15 @@ def main() -> None:
 
     google_client_id_set = bool(os.environ.get("GOOGLE_CLIENT_ID"))
     google_client_secret_set = bool(os.environ.get("GOOGLE_CLIENT_SECRET"))
+    google_ui_enabled = os.environ.get("NEXT_PUBLIC_GOOGLE_AUTH_ENABLED", "false").lower() == "true"
+    print(f"NEXT_PUBLIC_GOOGLE_AUTH_ENABLED: {'true' if google_ui_enabled else 'false'}")
     if google_client_id_set or google_client_secret_set:
         google_id = "set" if os.environ.get("GOOGLE_CLIENT_ID") else "missing"
         google_secret = "set" if os.environ.get("GOOGLE_CLIENT_SECRET") else "missing"
         print(f"GOOGLE_CLIENT_ID: {google_id}")
         print(f"GOOGLE_CLIENT_SECRET: {google_secret}")
+    if google_ui_enabled and not (google_client_id_set and google_client_secret_set):
+        print("GOOGLE_AUTH warning: UI is enabled but Google client credentials are incomplete")
 
     print(f"DATABASE socket: {check_database_socket()}")
 

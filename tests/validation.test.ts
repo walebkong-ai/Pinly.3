@@ -31,6 +31,22 @@ describe("schema validation", () => {
     ).toBe(true);
   });
 
+  test("sign up password message uses password wording", () => {
+    const result = signUpSchema.safeParse({
+      name: "Avery Chen",
+      username: "avery",
+      email: "avery@example.com",
+      password: "short",
+      avatarUrl: ""
+    });
+
+    expect(result.success).toBe(false);
+
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe("Password must be at least 8 characters.");
+    }
+  });
+
   test("map query parses defaults correctly", () => {
     const result = mapQuerySchema.safeParse({
       north: "49",
