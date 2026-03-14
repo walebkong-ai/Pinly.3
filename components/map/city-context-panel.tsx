@@ -1,18 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { MapPin, ChevronDown } from "lucide-react";
 import type { CityContext } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
 import { formatVisitDate } from "@/lib/utils";
 
-export function CityContextPanel({ cityContext, isZoomedIn = false }: { cityContext: CityContext | null; isZoomedIn?: boolean }) {
-  const [collapsed, setCollapsed] = useState(false);
-
-  useEffect(() => {
-    setCollapsed(isZoomedIn);
-  }, [isZoomedIn]);
+export function CityContextPanel({ cityContext }: { cityContext: CityContext | null }) {
+  const [collapsed, setCollapsed] = useState(true);
   if (!cityContext) {
     return null;
   }

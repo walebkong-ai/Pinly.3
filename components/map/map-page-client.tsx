@@ -202,22 +202,30 @@ export function MapPageClient() {
             </div>
 
             {showControls && (
-              <div className="pointer-events-auto flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="pointer-events-auto flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <div className="relative min-w-[280px]">
                     <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--foreground)]/40" />
                     <Input
                       value={query}
                       onChange={(event) => setQuery(event.target.value)}
                       placeholder="Search cities, places, captions"
-                      className="bg-white/88 pl-11"
+                      className="bg-white/88 pl-11 shadow-sm"
                     />
                   </div>
-                  <Button variant="secondary" className="gap-2" onClick={() => setFilterOpen(true)}>
-                    <Filter className="h-4 w-4" />
-                    Filters{activeFilterCount ? ` (${activeFilterCount})` : ""}
-                  </Button>
-                  <LayerToggle value={layer} onChange={setLayer} />
+                  <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => setFilterOpen(true)}
+                      className="flex items-center gap-1.5 md:gap-2 rounded-full px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-medium text-[var(--foreground)]/70 hover:bg-[var(--foreground)]/5 transition"
+                    >
+                      <Filter className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                      <span className="hidden sm:inline">Filters</span>
+                      {activeFilterCount > 0 && <span>({activeFilterCount})</span>}
+                    </button>
+                    <div className="mx-1 h-4 w-[1px] bg-[var(--foreground)]/10" />
+                    <LayerToggle value={layer} onChange={setLayer} />
+                  </div>
                 </div>
                 <Link href="/create" className="pointer-events-auto">
                   <Button className="gap-2">
@@ -235,11 +243,11 @@ export function MapPageClient() {
           <div className="pointer-events-none absolute inset-x-4 bottom-20 grid gap-4 md:bottom-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-end xl:px-1">
             <div className="pointer-events-none flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
               <div className="pointer-events-auto max-w-md">
-                <CityContextPanel cityContext={mapData.cityContext} isZoomedIn={viewport.zoom >= 7.5} />
+                <CityContextPanel cityContext={mapData.cityContext} />
               </div>
             </div>
             <div className="pointer-events-auto justify-self-end">
-              <FriendActivityPanel items={mapData.friendActivity} layer={layer} isZoomedIn={viewport.zoom >= 7.5} />
+              <FriendActivityPanel items={mapData.friendActivity} layer={layer} />
             </div>
           </div>
         )}

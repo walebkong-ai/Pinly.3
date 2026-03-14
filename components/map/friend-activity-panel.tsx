@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import type { FriendActivityItem, LayerMode } from "@/types/app";
@@ -9,18 +9,12 @@ import { formatVisitDate } from "@/lib/utils";
 
 export function FriendActivityPanel({
   items,
-  layer,
-  isZoomedIn = false
+  layer
 }: {
   items: FriendActivityItem[];
   layer: LayerMode;
-  isZoomedIn?: boolean;
 }) {
-  const [collapsed, setCollapsed] = useState(false);
-
-  useEffect(() => {
-    setCollapsed(isZoomedIn);
-  }, [isZoomedIn]);
+  const [collapsed, setCollapsed] = useState(true);
   return (
     <div 
       className={`glass-panel w-full max-w-sm transition-all ${

@@ -17,15 +17,15 @@ export function LayerToggle({
   onChange: (value: LayerMode) => void;
 }) {
   return (
-    <div className="glass-panel inline-flex rounded-full p-1">
+    <div className="flex items-center">
       {options.map((option) => (
         <button
           key={option.value}
           type="button"
           onClick={() => onChange(option.value)}
           className={cn(
-            "rounded-full px-4 py-2 text-sm font-medium transition",
-            value === option.value ? "bg-[var(--foreground)] text-white" : "text-[var(--foreground)]/62 hover:bg-white/60"
+            "rounded-full px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-medium transition",
+            value === option.value ? "bg-[var(--foreground)] text-white shadow-sm" : "text-[var(--foreground)]/70 hover:bg-[var(--foreground)]/5"
           )}
         >
           {option.label}
