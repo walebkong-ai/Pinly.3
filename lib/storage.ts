@@ -1,12 +1,9 @@
 import { put } from "@vercel/blob";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import crypto from "node:crypto";
 
-const DEFAULT_UPLOAD_DIR = "public/uploads";
 const DEFAULT_VERCEL_UPLOAD_LIMIT_MB = 4;
 
-export type StorageDriver = "local" | "vercel-blob";
+export type StorageDriver = "vercel-blob";
 
 export class StorageConfigError extends Error {
   constructor(message: string) {
@@ -21,15 +18,11 @@ function normalizeUploadExtension(file: File) {
 }
 
 export function getStorageDriver(): StorageDriver {
-  if (process.env.STORAGE_DRIVER === "local" || process.env.STORAGE_DRIVER === "vercel-blob") {
-    return process.env.STORAGE_DRIVER;
-  }
-
-  return process.env.VERCEL ? "vercel-blob" : "local";
+  return "vercel-blob";
 }
 
 export function getMaxUploadSizeBytes() {
-  const fallback = getStorageDriver() === "vercel-blob" ? DEFAULT_VERCEL_UPLOAD_LIMIT_MB : 25;
+  const fallback = DEFAULT_VERCEL_UPLOAD_LIMIT_MB;
   const megabytes = Number(process.env.MAX_UPLOAD_SIZE_MB ?? String(fallback));
 
   if (!Number.isFinite(megabytes) || megabytes <= 0) {
@@ -40,36 +33,9 @@ export function getMaxUploadSizeBytes() {
 }
 
 export function assertStorageConfiguration() {
-  const driver = getStorageDriver();
-
-  if (driver === "vercel-blob" && !process.env.BLOB_READ_WRITE_TOKEN) {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
     throw new StorageConfigError("STORAGE_DRIVER=vercel-blob requires BLOB_READ_WRITE_TOKEN.");
   }
-
-  if (driver === "local" && process.env.VERCEL) {
-    throw new StorageConfigError("STORAGE_DRIVER=local is not supported on Vercel. Use STORAGE_DRIVER=vercel-blob.");
-  }
-
-  const uploadDir = process.env.UPLOAD_DIR ?? DEFAULT_UPLOAD_DIR;
-
-  if (driver === "local" && !uploadDir.startsWith("public/")) {
-    throw new StorageConfigError("UPLOAD_DIR must stay inside public/ when using local uploads.");
-  }
-}
-
-export async function saveFileLocally(file: File) {
-  assertStorageConfiguration();
-  const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
-  const extension = normalizeUploadExtension(file);
-  const filename = `${crypto.randomUUID()}.${extension}`;
-  const uploadDir = process.env.UPLOAD_DIR ?? DEFAULT_UPLOAD_DIR;
-  const absoluteDir = path.join(process.cwd(), uploadDir);
-
-  await mkdir(absoluteDir, { recursive: true });
-  await writeFile(path.join(absoluteDir, filename), buffer);
-
-  return `/${uploadDir.replace(/^public\//, "")}/${filename}`;
 }
 
 export async function saveFileToVercelBlob(file: File) {
@@ -91,12 +57,7 @@ export async function saveFileToVercelBlob(file: File) {
 
 export async function saveUploadedFile(file: File) {
   assertStorageConfiguration();
-
-  if (getStorageDriver() === "vercel-blob") {
-    return saveFileToVercelBlob(file);
-  }
-
-  return saveFileLocally(file);
+  return saveFileToVercelBlob(file);
 }
 
 export function inferMediaType(file: File) {
