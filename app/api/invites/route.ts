@@ -1,11 +1,10 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { apiError } from "@/lib/api";
-import crypto from "node:crypto";
 
 export const runtime = "nodejs";
 
-export async function POST() {
+export async function POST(request: Request) {
   const session = await auth();
 
   if (!session?.user?.id) {

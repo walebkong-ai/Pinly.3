@@ -1,6 +1,7 @@
 import type { PostSummary } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
 import { PostCard } from "@/components/post/post-card";
+import { EditProfile } from "@/components/profile/edit-profile";
 
 export function ProfileView({
   profile,
@@ -23,16 +24,29 @@ export function ProfileView({
     <div className="grid gap-4">
       <section className="glass-panel rounded-[2rem] p-5">
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-4">
-            <Avatar name={profile.user.name} src={profile.user.avatarUrl} className="h-16 w-16" />
-            <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">
-                {isOwnProfile ? "Your profile" : "Friend profile"}
+          {isOwnProfile ? (
+            <div className="flex-1">
+              <p className="mb-2 text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">
+                Your profile
               </p>
-              <h1 className="mt-1 font-[var(--font-serif)] text-4xl">{profile.user.name}</h1>
-              <p className="text-sm text-[var(--foreground)]/62">@{profile.user.username}</p>
+              <EditProfile
+                initialName={profile.user.name}
+                initialUsername={profile.user.username}
+                initialAvatarUrl={profile.user.avatarUrl}
+              />
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center gap-4">
+              <Avatar name={profile.user.name} src={profile.user.avatarUrl} className="h-16 w-16" />
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">
+                  Friend profile
+                </p>
+                <h1 className="mt-1 font-[var(--font-serif)] text-4xl">{profile.user.name}</h1>
+                <p className="text-sm text-[var(--foreground)]/62">@{profile.user.username}</p>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3 text-center sm:grid-cols-3">
             <div className="rounded-3xl border bg-white/72 px-4 py-3">
               <p className="text-2xl font-semibold">{profile.posts.length}</p>

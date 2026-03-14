@@ -1,55 +1,16 @@
 "use client";
 
-import { useEffect } from "react";
-import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
+import { useEffect, useRef, useState } from "react";
+import Map, { Marker, MapRef, ViewStateChangeEvent } from "react-map-gl/maplibre";
+import "maplibre-gl/dist/maplibre-gl.css";
 
-const defaultCenter: [number, number] = [20, 10];
-
-const pickerIcon = L.divIcon({
-  className: "",
-  html: `<div style="display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:9999px;background:#0f766e;border:4px solid white;box-shadow:0 10px 20px rgba(15,118,110,0.28)"></div>`,
-  iconSize: [20, 20],
-  iconAnchor: [10, 10]
-});
-
-function MapClickListener({
-  onSelect
-}: {
-  onSelect: (coordinates: { latitude: number; longitude: number }) => void;
-}) {
-  useMapEvents({
-    click(event) {
-      onSelect({
-        latitude: event.latlng.lat,
-        longitude: event.latlng.lng
-      });
-    }
-  });
-
-  return null;
-}
-
-function MapFocus({
-  position
-}: {
-  position: { latitude: number; longitude: number } | null;
-}) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!position) {
-      return;
-    }
-
-    map.setView([position.latitude, position.longitude], Math.max(map.getZoom(), 12), {
-      animate: true
-    });
-  }, [map, position]);
-
-  return null;
-}
+const initialViewState = {
+  longitude: 10,
+  latitude: 20,
+  zoom: 1.5,
+  pitch: 45,
+  bearing: 0
+};
 
 export function LocationPicker({
   position,
@@ -58,15 +19,50 @@ export function LocationPicker({
   position: { latitude: number; longitude: number } | null;
   onSelect: (coordinates: { latitude: number; longitude: number }) => void;
 }) {
+  const mapRef = useRef<MapRef | null>(null);
+  const [viewState, setViewState] = useState(initialViewState);
+
+  useEffect(() => {
+    if (position && mapRef.current) {
+      const currentZoom = mapRef.current.getZoom();
+      mapRef.current.flyTo({
+        center: [position.longitude, position.latitude],
+        zoom: Math.max(currentZoom, 12),
+        essential: true,
+      });
+    }
+  }, [position]);
+
+  function handleMapClick(event: any) {
+    onSelect({
+      latitude: event.lngLat.lat,
+      longitude: event.lngLat.lng
+    });
+  }
+
   return (
-    <MapContainer center={defaultCenter} zoom={2} scrollWheelZoom className="h-[320px] w-full rounded-[1.75rem]">
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; CARTO'
-        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-      />
-      <MapClickListener onSelect={onSelect} />
-      <MapFocus position={position} />
-      {position && <Marker position={[position.latitude, position.longitude]} icon={pickerIcon} />}
-    </MapContainer>
+    <div className="h-[320px] w-full overflow-hidden rounded-[1.75rem]">
+      <Map
+        ref={mapRef}
+        {...viewState}
+        onMove={(e: ViewStateChangeEvent) => setViewState(e.viewState)}
+        onClick={handleMapClick}
+        mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+        interactiveLayerIds={[]}
+      >
+        {position && (
+          <Marker
+            longitude={position.longitude}
+            latitude={position.latitude}
+            draggable
+            onDragEnd={(e) => {
+              onSelect({ latitude: e.lngLat.lat, longitude: e.lngLat.lng });
+            }}
+          >
+            <div className="flex items-center justify-center w-5 h-5 rounded-full bg-[#0f766e] border-4 border-white shadow-[0_10px_20px_rgba(15,118,110,0.28)]" />
+          </Marker>
+        )}
+      </Map>
+    </div>
   );
 }

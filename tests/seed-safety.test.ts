@@ -5,12 +5,14 @@ describe("seed safety", () => {
   test("blocks production seeding", () => {
     const previousNodeEnv = process.env.NODE_ENV;
 
+    // @ts-expect-error
     process.env.NODE_ENV = "production";
 
     expect(() => assertSafeSeedEnvironment("postgresql://postgres:postgres@localhost:5432/pinly?schema=public")).toThrow(
       "Refusing to run the demo seed while NODE_ENV=production."
     );
 
+    // @ts-expect-error
     process.env.NODE_ENV = previousNodeEnv;
   });
 
