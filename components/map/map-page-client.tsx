@@ -235,11 +235,11 @@ export function MapPageClient() {
           <div className="pointer-events-none absolute inset-x-4 bottom-20 grid gap-4 md:bottom-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-end xl:px-1">
             <div className="pointer-events-none flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
               <div className="pointer-events-auto max-w-md">
-                <CityContextPanel cityContext={mapData.cityContext} />
+                <CityContextPanel cityContext={mapData.cityContext} isZoomedIn={viewport.zoom >= 7.5} />
               </div>
             </div>
             <div className="pointer-events-auto justify-self-end">
-              <FriendActivityPanel items={mapData.friendActivity} layer={layer} />
+              <FriendActivityPanel items={mapData.friendActivity} layer={layer} isZoomedIn={viewport.zoom >= 7.5} />
             </div>
           </div>
         )}

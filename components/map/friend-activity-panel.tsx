@@ -1,20 +1,43 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ChevronDown } from "lucide-react";
 import type { FriendActivityItem, LayerMode } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
 import { formatVisitDate } from "@/lib/utils";
 
 export function FriendActivityPanel({
   items,
-  layer
+  layer,
+  isZoomedIn = false
 }: {
   items: FriendActivityItem[];
   layer: LayerMode;
+  isZoomedIn?: boolean;
 }) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    setCollapsed(isZoomedIn);
+  }, [isZoomedIn]);
   return (
-    <div className="glass-panel w-full max-w-sm rounded-3xl md:rounded-[2rem] p-3 md:p-4">
-      <p className="text-[10px] md:text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Friend activity</p>
-      <h2 className="mt-1 md:mt-2 font-[var(--font-serif)] text-xl md:text-3xl">Recent nearby memories</h2>
-      <div className="mt-2 md:mt-4 max-h-[35vh] md:max-h-none overflow-y-auto md:overflow-visible space-y-2 md:space-y-3 pr-1 md:pr-0">
+    <div className="glass-panel w-full max-w-sm rounded-3xl md:rounded-[2rem] p-3 md:p-4 transition-all">
+      <button 
+        onClick={() => setCollapsed(!collapsed)} 
+        className="flex w-full items-start justify-between text-left"
+        type="button"
+      >
+        <div>
+          <p className="text-[10px] md:text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Friend activity</p>
+          <h2 className="mt-1 md:mt-2 font-[var(--font-serif)] text-xl md:text-3xl">Recent nearby memories</h2>
+        </div>
+        <div className="flex shrink-0 items-center justify-center p-2 md:hidden">
+          <ChevronDown className={`h-5 w-5 text-[var(--foreground)]/60 transition-transform ${collapsed ? "rotate-180" : ""}`} />
+        </div>
+      </button>
+
+      <div className={`mt-2 md:mt-4 max-h-[35vh] md:max-h-none overflow-y-auto md:overflow-visible space-y-2 md:space-y-3 pr-1 md:pr-0 ${collapsed ? "hidden md:block" : "block"}`}>
         {layer === "you" && (
           <div className="rounded-2xl md:rounded-3xl border bg-white/60 p-3 md:p-4 text-xs md:text-sm text-[var(--foreground)]/62">
             Switch the layer to <span className="font-medium text-[var(--foreground)]">Friends</span> or{" "}

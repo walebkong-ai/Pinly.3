@@ -1,23 +1,42 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { MapPin } from "lucide-react";
+import { MapPin, ChevronDown } from "lucide-react";
 import type { CityContext } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
 import { formatVisitDate } from "@/lib/utils";
 
-export function CityContextPanel({ cityContext }: { cityContext: CityContext | null }) {
+export function CityContextPanel({ cityContext, isZoomedIn = false }: { cityContext: CityContext | null; isZoomedIn?: boolean }) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    setCollapsed(isZoomedIn);
+  }, [isZoomedIn]);
   if (!cityContext) {
     return null;
   }
 
   return (
-    <div className="glass-panel w-full max-w-md rounded-[2rem] p-4">
-      <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">City context</p>
-      <h2 className="mt-2 font-[var(--font-serif)] text-3xl">
-        {cityContext.city}, {cityContext.country}
-      </h2>
-      <p className="mt-2 text-sm text-[var(--foreground)]/62">{cityContext.friendCount} friends visited here</p>
+    <div className="glass-panel w-full max-w-md rounded-3xl md:rounded-[2rem] p-3 md:p-4 transition-all">
+      <button 
+        onClick={() => setCollapsed(!collapsed)} 
+        className="flex w-full items-start justify-between text-left"
+        type="button"
+      >
+        <div>
+          <p className="text-[10px] md:text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">City context</p>
+          <h2 className="mt-1 md:mt-2 font-[var(--font-serif)] text-xl md:text-3xl">
+            {cityContext.city}, {cityContext.country}
+          </h2>
+          <p className="mt-1 md:mt-2 text-xs md:text-sm text-[var(--foreground)]/62">{cityContext.friendCount} friends visited here</p>
+        </div>
+        <div className="flex shrink-0 items-center justify-center p-2 md:hidden">
+          <ChevronDown className={`h-5 w-5 text-[var(--foreground)]/60 transition-transform ${collapsed ? "rotate-180" : ""}`} />
+        </div>
+      </button>
 
-      <div className="mt-5">
+      <div className={`mt-4 md:mt-5 ${collapsed ? "hidden md:block" : "block"}`}>
         <p className="text-sm font-semibold">Who visited</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {cityContext.visitors.map((visitor) => (
