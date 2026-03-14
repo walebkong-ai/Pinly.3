@@ -81,6 +81,14 @@ export function MapCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [markers]);
 
+  useEffect(() => {
+    // If a post is expanded externally (via a click from feed/profile, or clicking "Expand" inside the popup)
+    // we want to ensure the map popup itself disappears cleanly so it doesn't linger underneath or conflict.
+    if (selectedPostId) {
+      setPopupInfo(null);
+    }
+  }, [selectedPostId]);
+
   function reportViewport(mapInstance: MapRef | null) {
     if (!mapInstance) return;
     const bounds = mapInstance.getMap().getBounds();
@@ -128,7 +136,8 @@ export function MapCanvas({
       >
         {markers.map((marker) => {
           const isSelected =
-            (marker.type === "pin" || marker.type === "profileBubble") && marker.post.id === selectedPostId;
+            (marker.type === "pin" || marker.type === "profileBubble") &&
+            (marker.post.id === selectedPostId || marker.id === popupInfo?.id);
           const html =
             marker.type === "cityCluster"
               ? cityClusterHTML(marker.postCount)
@@ -167,9 +176,6 @@ export function MapCanvas({
                 }
 
                 setPopupInfo(marker);
-                if (marker.type === "pin" || marker.type === "profileBubble") {
-                  onExpandPost(marker.post);
-                }
               }}
             >
               <div dangerouslySetInnerHTML={{ __html: html }} className="cursor-pointer" />
