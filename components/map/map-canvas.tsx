@@ -30,11 +30,15 @@ function sanitizeImageUrl(value?: string | null) {
   return null;
 }
 
-const cityClusterHTML = (count: number) =>
-  `<div style="display:flex;min-width:56px;align-items:center;justify-content:center;padding:0 14px;height:44px;border-radius:9999px;background:rgba(29,43,38,0.92);color:white;border:4px solid rgba(255,255,255,0.92);font-size:12px;font-weight:700;box-shadow:0 18px 30px rgba(29,43,38,0.18)">${count}</div>`;
+const cityClusterHTML = (count: number) => {
+  const size = Math.min(64, Math.max(44, 40 + count * 2));
+  return `<div style="display:flex;min-width:${size + 12}px;align-items:center;justify-content:center;padding:0 14px;height:${size}px;border-radius:9999px;background:rgba(29,43,38,0.92);color:white;border:4px solid rgba(255,255,255,0.92);font-size:${size > 50 ? 14 : 12}px;font-weight:700;box-shadow:0 18px 30px rgba(29,43,38,0.18)">${count}</div>`;
+};
 
-const placeClusterHTML = (count: number) =>
-  `<div style="display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:9999px;background:rgba(15,118,110,0.94);color:white;border:4px solid rgba(255,255,255,0.95);font-size:12px;font-weight:700;box-shadow:0 12px 24px rgba(15,118,110,0.2)">${count}</div>`;
+const placeClusterHTML = (count: number) => {
+  const size = Math.min(56, Math.max(38, 34 + count * 2));
+  return `<div style="display:flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:9999px;background:rgba(15,118,110,0.94);color:white;border:4px solid rgba(255,255,255,0.95);font-size:${size > 44 ? 14 : 12}px;font-weight:700;box-shadow:0 12px 24px rgba(15,118,110,0.2)">${count}</div>`;
+};
 
 const pinHTML = (selected = false) =>
   `<div style="display:flex;align-items:center;justify-content:center;width:${selected ? 22 : 18}px;height:${selected ? 22 : 18}px;border-radius:9999px;background:${selected ? "#cf8b43" : "#0f766e"};border:3px solid white;box-shadow:0 10px 20px rgba(15,118,110,0.28)"></div>`;
@@ -97,12 +101,13 @@ export function MapCanvas({
 
   function zoomToMarker(marker: MapMarker) {
     if (!mapRef.current) return;
+    const currentZoom = mapRef.current.getZoom();
     if (marker.type === "cityCluster") {
-      mapRef.current.flyTo({ center: [marker.longitude, marker.latitude], zoom: 6 });
+      mapRef.current.easeTo({ center: [marker.longitude, marker.latitude], zoom: Math.max(currentZoom + 2, 7), duration: 800 });
       return;
     }
     if (marker.type === "placeCluster") {
-      mapRef.current.flyTo({ center: [marker.longitude, marker.latitude], zoom: 12 });
+      mapRef.current.easeTo({ center: [marker.longitude, marker.latitude], zoom: Math.max(currentZoom + 2, 13), duration: 800 });
     }
     setPopupInfo(null);
   }
@@ -145,6 +150,22 @@ export function MapCanvas({
               anchor="center"
               onClick={(e) => {
                 e.originalEvent.stopPropagation();
+                
+                if (mapRef.current) {
+                  const currentZoom = mapRef.current.getZoom();
+                  let targetZoom = currentZoom;
+                  
+                  if (marker.type === "cityCluster") targetZoom = Math.max(currentZoom + 2, 6);
+                  else if (marker.type === "placeCluster") targetZoom = Math.max(currentZoom + 2, 12);
+                  else targetZoom = Math.max(currentZoom + 1, 14);
+                  
+                  mapRef.current.easeTo({ 
+                    center: [marker.longitude, marker.latitude], 
+                    zoom: targetZoom, 
+                    duration: 800 
+                  });
+                }
+
                 setPopupInfo(marker);
                 if (marker.type === "pin" || marker.type === "profileBubble") {
                   onExpandPost(marker.post);

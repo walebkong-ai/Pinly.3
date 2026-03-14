@@ -5,6 +5,7 @@ import { getVisiblePostById } from "@/lib/data";
 import { Avatar } from "@/components/ui/avatar";
 import { MediaView } from "@/components/post/media-view";
 import { formatVisitDate } from "@/lib/utils";
+import { DeletePostButton } from "@/components/post/delete-post-button";
 
 type Props = {
   params: Promise<{ postId: string }>;
@@ -32,12 +33,17 @@ export default async function PostDetailPage({ params }: Props) {
         </div>
       </section>
       <section className="glass-panel rounded-[2rem] p-5">
-        <div className="flex items-center gap-3">
-          <Avatar name={post.user.name} src={post.user.avatarUrl} />
-          <div>
-            <p className="font-medium">{post.user.name}</p>
-            <p className="text-sm text-[var(--foreground)]/58">@{post.user.username}</p>
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <Avatar name={post.user.name} src={post.user.avatarUrl} />
+            <div>
+              <p className="font-medium">{post.user.name}</p>
+              <p className="text-sm text-[var(--foreground)]/58">@{post.user.username}</p>
+            </div>
           </div>
+          {session.user.id === post.userId && (
+            <DeletePostButton postId={post.id} redirectToMap />
+          )}
         </div>
         <h1 className="mt-6 font-[var(--font-serif)] text-4xl">{post.placeName}</h1>
         <div className="mt-4 flex items-start gap-2 text-[var(--foreground)]/68">
