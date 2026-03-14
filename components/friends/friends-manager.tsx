@@ -122,29 +122,31 @@ export function FriendsManager() {
         <div className="mt-5 space-y-3">
           {searchResults.map((user) => (
             <div key={user.id} className="flex items-center justify-between rounded-3xl border bg-white/72 p-3">
-              <div className="flex items-center gap-3">
-                <Avatar name={user.name} src={user.avatarUrl} />
-                <div>
-                  <p className="font-medium">{user.name}</p>
-                  <p className="text-sm text-[var(--foreground)]/58">@{user.username}</p>
+              <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
+                <Avatar name={user.name} src={user.avatarUrl} className="shrink-0" />
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{user.name}</p>
+                  <p className="text-sm text-[var(--foreground)]/58 truncate">@{user.username}</p>
                 </div>
               </div>
-              {user.requestStatus === "none" && (
-                <Button className="gap-2" onClick={() => sendRequest(user.username)}>
-                  <UserPlus className="h-4 w-4" />
-                  Add
-                </Button>
-              )}
-              {user.requestStatus === "friends" && <span className="text-sm font-medium text-[var(--accent)]">Friends</span>}
-              {user.requestStatus === "pending_sent" && (
-                <span className="inline-flex items-center gap-2 text-sm text-[var(--foreground)]/60">
-                  <Clock3 className="h-4 w-4" />
-                  Pending
-                </span>
-              )}
-              {user.requestStatus === "pending_received" && (
-                <span className="text-sm font-medium text-[var(--highlight)]">Respond below</span>
-              )}
+              <div className="shrink-0">
+                {user.requestStatus === "none" && (
+                  <Button className="gap-2" onClick={() => sendRequest(user.username)}>
+                    <UserPlus className="h-4 w-4" />
+                    Add
+                  </Button>
+                )}
+                {user.requestStatus === "friends" && <span className="text-sm font-medium text-[var(--accent)]">Friends</span>}
+                {user.requestStatus === "pending_sent" && (
+                  <span className="inline-flex items-center gap-2 text-sm text-[var(--foreground)]/60">
+                    <Clock3 className="h-4 w-4" />
+                    Pending
+                  </span>
+                )}
+                {user.requestStatus === "pending_received" && (
+                  <span className="text-sm font-medium text-[var(--highlight)] flex-shrink-0">Respond below</span>
+                )}
+              </div>
             </div>
           ))}
           {!searchResults.length && query.length >= 2 && (
@@ -181,14 +183,14 @@ export function FriendsManager() {
           <div className="mt-4 space-y-3">
             {state.incomingRequests.map((request) => (
               <div key={request.id} className="flex items-center justify-between rounded-3xl border bg-white/72 p-3">
-                <div className="flex items-center gap-3">
-                  <Avatar name={request.fromUser.name} src={request.fromUser.avatarUrl} />
-                  <div>
-                    <p className="font-medium">{request.fromUser.name}</p>
-                    <p className="text-sm text-[var(--foreground)]/58">@{request.fromUser.username}</p>
+                <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
+                  <Avatar name={request.fromUser.name} src={request.fromUser.avatarUrl} className="shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{request.fromUser.name}</p>
+                    <p className="text-sm text-[var(--foreground)]/58 truncate">@{request.fromUser.username}</p>
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex shrink-0 gap-2">
                   <Button variant="secondary" onClick={() => respond(request.id, "decline")}>
                     <X className="h-4 w-4" />
                   </Button>
@@ -211,11 +213,11 @@ export function FriendsManager() {
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {state.friends.map((friend) => (
               <div key={friend.id} className="rounded-3xl border bg-white/72 p-3">
-                <div className="flex items-center gap-3">
-                  <Avatar name={friend.name} src={friend.avatarUrl} />
-                  <div>
-                    <p className="font-medium">{friend.name}</p>
-                    <p className="text-sm text-[var(--foreground)]/58">@{friend.username}</p>
+                <div className="flex items-center gap-3 min-w-0">
+                  <Avatar name={friend.name} src={friend.avatarUrl} className="shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium truncate">{friend.name}</p>
+                    <p className="text-sm text-[var(--foreground)]/58 truncate">@{friend.username}</p>
                   </div>
                 </div>
               </div>

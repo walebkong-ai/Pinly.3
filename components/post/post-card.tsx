@@ -13,18 +13,18 @@ export function PostCard({ post, compact = false }: { post: PostSummary; compact
       </div>
       <div className="space-y-4 p-4">
         <div className="flex items-center gap-3">
-          <Avatar name={post.user.name} src={post.user.avatarUrl} className="h-9 w-9" />
-          <div className="min-w-0">
+          <Avatar name={post.user.name} src={post.user.avatarUrl} className="h-9 w-9 shrink-0" />
+          <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{post.user.name}</p>
             <p className="truncate text-xs text-[var(--foreground)]/55">@{post.user.username}</p>
           </div>
         </div>
         <div>
-          <div className="flex items-start gap-2 text-sm text-[var(--foreground)]/68">
-            <MapPin className="mt-0.5 h-4 w-4 text-[var(--accent)]" />
-            <div>
-              <p className="font-medium text-[var(--foreground)]">{post.placeName}</p>
-              <p>
+          <div className="flex items-start gap-2 text-sm text-[var(--foreground)]/68 min-w-0">
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent)]" />
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-[var(--foreground)] truncate">{post.placeName}</p>
+              <p className="truncate">
                 {post.city}, {post.country}
               </p>
             </div>

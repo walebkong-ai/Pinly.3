@@ -71,13 +71,13 @@ export function CityBrowser() {
       {result && (
         <section className="glass-panel rounded-[2rem] p-5">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div>
+            <div className="min-w-0">
               <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Results</p>
-              <h2 className="mt-2 font-[var(--font-serif)] text-4xl">
+              <h2 className="mt-2 font-[var(--font-serif)] text-3xl md:text-4xl truncate">
                 {result.city}, {result.country}
               </h2>
             </div>
-            <div className="flex gap-3 text-sm text-[var(--foreground)]/66">
+            <div className="flex shrink-0 gap-3 text-sm text-[var(--foreground)]/66">
               <span>{result.postCount} posts</span>
               <span>{result.friendCount} friends</span>
             </div>
@@ -87,8 +87,9 @@ export function CityBrowser() {
               <p className="text-sm font-semibold">Who visited</p>
               <div className="mt-3 space-y-2">
                 {result.visitors.map((visitor) => (
-                  <div key={visitor.id} className="text-sm text-[var(--foreground)]/68">
-                    {visitor.name} <span className="text-[var(--foreground)]/45">@{visitor.username}</span>
+                  <div key={visitor.id} className="text-sm text-[var(--foreground)]/68 flex items-center gap-1 min-w-0">
+                    <span className="truncate">{visitor.name}</span>
+                    <span className="text-[var(--foreground)]/45 shrink-0 truncate max-w-[50%]">@{visitor.username}</span>
                   </div>
                 ))}
               </div>

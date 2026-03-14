@@ -196,7 +196,7 @@ export function MapPageClient() {
       <div className="pointer-events-none absolute inset-0 z-[700]">
         <div className="pointer-events-none flex h-full flex-col justify-between p-4 md:p-5">
           <div className="space-y-4">
-            <div className="pointer-events-auto inline-flex max-w-xl items-center gap-4 rounded-full border bg-white/86 px-4 py-3 shadow-sm">
+            <div className="pointer-events-auto hidden md:inline-flex max-w-xl items-center gap-4 rounded-full border bg-white/86 px-4 py-3 shadow-sm">
               <Brand compact />
               <p className="text-sm text-[var(--foreground)]/62">{minimalCopy}</p>
             </div>
@@ -232,7 +232,7 @@ export function MapPageClient() {
         </div>
 
         {showControls && (
-          <div className="pointer-events-none absolute inset-x-4 bottom-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-end xl:px-1">
+          <div className="pointer-events-none absolute inset-x-4 bottom-20 grid gap-4 md:bottom-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-end xl:px-1">
             <div className="pointer-events-none flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
               <div className="pointer-events-auto max-w-md">
                 <CityContextPanel cityContext={mapData.cityContext} />

@@ -109,7 +109,7 @@ export function AppShell({ children, user }: AppShellProps) {
               key={href}
               href={resolvedHref}
               className={cn(
-                "flex flex-col items-center gap-1 rounded-full px-3 py-2 text-[11px] font-medium",
+                "flex flex-col items-center gap-1 rounded-full px-2 py-2 text-[10px] sm:px-3 sm:text-[11px] font-medium",
                 pathname === resolvedHref ? "text-[var(--accent)]" : "text-[var(--foreground)]/58"
               )}
             >

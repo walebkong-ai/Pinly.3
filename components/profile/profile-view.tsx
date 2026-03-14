@@ -36,14 +36,14 @@ export function ProfileView({
               />
             </div>
           ) : (
-            <div className="flex items-center gap-4">
-              <Avatar name={profile.user.name} src={profile.user.avatarUrl} className="h-16 w-16" />
-              <div>
+            <div className="flex items-center gap-4 min-w-0">
+              <Avatar name={profile.user.name} src={profile.user.avatarUrl} className="h-16 w-16 shrink-0" />
+              <div className="min-w-0 flex-1">
                 <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">
                   Friend profile
                 </p>
-                <h1 className="mt-1 font-[var(--font-serif)] text-4xl">{profile.user.name}</h1>
-                <p className="text-sm text-[var(--foreground)]/62">@{profile.user.username}</p>
+                <h1 className="mt-1 font-[var(--font-serif)] text-3xl md:text-4xl truncate">{profile.user.name}</h1>
+                <p className="text-sm text-[var(--foreground)]/62 truncate">@{profile.user.username}</p>
               </div>
             </div>
           )}

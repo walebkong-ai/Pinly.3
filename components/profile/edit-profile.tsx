@@ -98,24 +98,24 @@ export function EditProfile({
 
   if (!isEditing) {
     return (
-      <div className="flex items-center gap-4">
-        <Avatar name={initialName} src={initialAvatarUrl} className="h-16 w-16" />
-        <div>
+      <div className="flex items-center gap-4 min-w-0">
+        <Avatar name={initialName} src={initialAvatarUrl} className="h-16 w-16 shrink-0" />
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="font-[var(--font-serif)] text-4xl">{initialName}</h1>
-            <Button variant="secondary" className="h-8 w-8 rounded-full p-0 flex items-center justify-center" onClick={() => setIsEditing(true)}>
+            <h1 className="font-[var(--font-serif)] text-3xl md:text-4xl truncate">{initialName}</h1>
+            <Button variant="secondary" className="h-8 w-8 shrink-0 rounded-full p-0 flex items-center justify-center" onClick={() => setIsEditing(true)}>
               <Edit2 className="h-4 w-4" />
             </Button>
           </div>
-          <p className="text-sm text-[var(--foreground)]/62">@{initialUsername}</p>
+          <p className="text-sm text-[var(--foreground)]/62 truncate">@{initialUsername}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex items-start gap-5">
-      <div className="relative group">
+    <div className="flex items-start gap-4 sm:gap-5 min-w-0">
+      <div className="relative group shrink-0">
         <Avatar name={initialName} src={avatarUrl} className="h-16 w-16 transition-opacity group-hover:opacity-60" />
         <button
           type="button"
