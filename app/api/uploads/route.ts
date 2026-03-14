@@ -1,4 +1,4 @@
-import { getToken } from "next-auth/jwt";
+import { auth } from "@/lib/auth";
 import { StorageConfigError, assertStorageConfiguration, getMaxUploadSizeBytes, inferMediaType, saveUploadedFile } from "@/lib/storage";
 import { apiError } from "@/lib/api";
 import type { NextRequest } from "next/server";
@@ -6,16 +6,8 @@ import type { NextRequest } from "next/server";
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
-  const useSecureCookies = process.env.NODE_ENV === "production" || request.url.startsWith("https://");
-  const cookieName = useSecureCookies ? "__Secure-authjs.session-token" : "authjs.session-token";
-
-  const token = await getToken({ 
-    req: request, 
-    secret: process.env.AUTH_SECRET || "",
-    cookieName,
-    salt: cookieName,
-    secureCookie: useSecureCookies
-  });
+  const session = await auth();
+  const token = session?.user;
 
   if (!token?.id) {
     return apiError("Unauthorized", 401);
