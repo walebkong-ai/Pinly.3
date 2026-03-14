@@ -44,10 +44,3 @@ a {
   border: 1px solid var(--line);
   box-shadow: 0 18px 48px rgba(29, 43, 38, 0.08);
 }
-
-.leaflet-container {
-  height: 100%;
-  width: 100%;
-  border-radius: 1.5rem;
-  overflow: hidden;
-}
