@@ -1,13 +1,14 @@
-import { auth } from "@/lib/auth";
+import { getToken } from "next-auth/jwt";
 import { StorageConfigError, assertStorageConfiguration, getMaxUploadSizeBytes, inferMediaType, saveUploadedFile } from "@/lib/storage";
 import { apiError } from "@/lib/api";
+import type { NextRequest } from "next/server";
 
 export const runtime = "nodejs";
 
-export async function POST(request: Request) {
-  const session = await auth();
+export async function POST(request: NextRequest) {
+  const token = await getToken({ req: request, secret: process.env.AUTH_SECRET || "" });
 
-  if (!session?.user?.id) {
+  if (!token?.id) {
     return apiError("Unauthorized", 401);
   }
 
