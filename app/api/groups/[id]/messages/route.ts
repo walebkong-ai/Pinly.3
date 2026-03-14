@@ -34,6 +34,11 @@ export async function GET(request: Request, props: { params: Promise<{ id: strin
     return apiError("Forbidden", 403);
   }
 
+  await prisma.groupMember.update({
+    where: { groupId_userId: { groupId, userId } },
+    data: { lastReadAt: new Date() }
+  });
+
   const messages = await prisma.groupMessage.findMany({
     where: { groupId },
     include: {

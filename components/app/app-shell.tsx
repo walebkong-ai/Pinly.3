@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Map, Newspaper, Plus, Search, UserRound, UsersRound, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
@@ -34,6 +35,27 @@ const secondaryNavItems = [
 
 export function AppShell({ children, user }: AppShellProps) {
   const pathname = usePathname();
+  const [unreadGroupsCount, setUnreadGroupsCount] = useState(0);
+
+  useEffect(() => {
+    let ignore = false;
+    async function loadUnread() {
+      try {
+        const response = await fetch("/api/groups/unread");
+        if (response.ok) {
+          const data = await response.json();
+          if (!ignore) {
+            setUnreadGroupsCount(data.unreadCount || 0);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+    void loadUnread();
+
+    return () => { ignore = true; };
+  }, [pathname]);
 
   return (
     <div className="min-h-screen px-4 py-4 md:px-6">
@@ -73,7 +95,14 @@ export function AppShell({ children, user }: AppShellProps) {
                     : "text-[var(--foreground)]/70 hover:bg-white/60"
                 )}
               >
-                <Icon className="relative z-20 h-4 w-4" />
+                <div className="relative">
+                  <Icon className="relative z-20 h-4 w-4" />
+                  {href === "/groups" && unreadGroupsCount > 0 && (
+                    <div className="absolute -right-1.5 -top-1.5 z-30 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm ring-1 ring-white/50">
+                      {unreadGroupsCount > 99 ? "99+" : unreadGroupsCount}
+                    </div>
+                  )}
+                </div>
                 <span className="relative z-20">{label}</span>
               </Link>
             );
@@ -113,7 +142,14 @@ export function AppShell({ children, user }: AppShellProps) {
                 pathname === resolvedHref ? "text-[var(--accent)]" : "text-[var(--foreground)]/58"
               )}
             >
-              <Icon className="h-4 w-4" />
+              <div className="relative">
+                <Icon className="h-4 w-4" />
+                {href === "/groups" && unreadGroupsCount > 0 && (
+                  <div className="absolute -right-1.5 -top-1 z-30 flex h-[14px] min-w-[14px] items-center justify-center rounded-full bg-red-500 px-0.5 text-[8px] font-bold text-white ring-1 ring-white/30">
+                    {unreadGroupsCount > 99 ? "99+" : unreadGroupsCount}
+                  </div>
+                )}
+              </div>
               {label}
             </Link>
           );

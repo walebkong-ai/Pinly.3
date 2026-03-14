@@ -59,6 +59,21 @@ export async function POST(request: Request) {
         email: true
       }
     });
+
+    if (parsed.data.inviteToken) {
+      const invite = await prisma.inviteLink.findUnique({
+        where: { token: parsed.data.inviteToken }
+      });
+
+      if (invite && (!invite.expiresAt || invite.expiresAt > new Date())) {
+        await prisma.friendship.create({
+          data: {
+            userAId: user.id,
+            userBId: invite.createdByUserId
+          }
+        });
+      }
+    }
   } catch (error) {
     console.error("Database error creating user:", error);
     return apiError("Database connection failed. Please try again later.", 500);

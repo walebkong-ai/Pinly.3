@@ -110,6 +110,7 @@ model GroupMember {
   userId   String
   role     GroupRole @default(MEMBER)
   joinedAt DateTime  @default(now())
+  lastReadAt DateTime @default(now())
   group    Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 

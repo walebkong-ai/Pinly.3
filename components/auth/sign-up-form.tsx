@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getProviders, signIn } from "next-auth/react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
@@ -24,6 +24,9 @@ function extractErrorMessage(data: any) {
 
 export function SignUpForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get("invite");
+
   const [loading, setLoading] = useState(false);
   const googleUiEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true";
   const [googleEnabled, setGoogleEnabled] = useState(googleUiEnabled);
@@ -40,7 +43,8 @@ export function SignUpForm() {
       username: "",
       email: "",
       password: "",
-      avatarUrl: ""
+      avatarUrl: "",
+      inviteToken: inviteToken || undefined
     }
   });
 
