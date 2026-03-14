@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Clock3, Search, UserPlus, X } from "lucide-react";
+import { Check, Clock3, Search, UserPlus, X, Link as LinkIcon, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -115,7 +115,7 @@ export function FriendsManager() {
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search by username"
+            placeholder="Search by name or username"
             className="pl-11"
           />
         </div>
@@ -156,6 +156,26 @@ export function FriendsManager() {
       </section>
 
       <div className="grid gap-4">
+        <section className="glass-panel flex items-center justify-between rounded-[2rem] p-5">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-[var(--foreground)]/45">Invite Friends</h2>
+            <p className="mt-1 text-sm text-[var(--foreground)]/80">Can't find them? Send a link.</p>
+          </div>
+          <Button variant="secondary" onClick={async () => {
+            const res = await fetch("/api/invites", { method: "POST" });
+            if (res.ok) {
+              const data = await res.json();
+              await navigator.clipboard.writeText(window.location.origin + data.link);
+              toast.success("Invite link copied!");
+            } else {
+              toast.error("Failed to generate link.");
+            }
+          }}>
+            <LinkIcon className="h-4 w-4 mr-2" />
+            Copy Link
+          </Button>
+        </section>
+
         <section className="glass-panel rounded-[2rem] p-5">
           <h2 className="text-xl font-semibold">Incoming requests</h2>
           <div className="mt-4 space-y-3">

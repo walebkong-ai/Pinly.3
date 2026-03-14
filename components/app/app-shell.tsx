@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Map, Newspaper, Plus, Search, UserRound, UsersRound } from "lucide-react";
+import { Map, Newspaper, Plus, Search, UserRound, UsersRound, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { Avatar } from "@/components/ui/avatar";
 import { Brand } from "@/components/brand";
@@ -26,6 +26,7 @@ const primaryNavItems = [
 
 const secondaryNavItems = [
   { href: "/friends", label: "Friends", icon: UsersRound },
+  { href: "/groups", label: "Groups", icon: Users },
   { href: "/create", label: "Create", icon: Plus },
   { href: "/cities", label: "Cities", icon: Search },
   { href: "/profile/me", label: "Profile", icon: UserRound }

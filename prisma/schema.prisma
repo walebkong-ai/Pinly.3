@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
@@ -20,19 +20,22 @@ enum MediaType {
 }
 
 model User {
-  id           String          @id @default(cuid())
-  name         String
-  username     String          @unique
-  email        String          @unique
-  passwordHash String
-  avatarUrl    String?
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  posts        Post[]
-  sentRequests FriendRequest[] @relation("SentFriendRequests")
+  id               String          @id @default(cuid())
+  name             String
+  username         String          @unique
+  email            String          @unique
+  passwordHash     String
+  avatarUrl        String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  posts            Post[]
+  sentRequests     FriendRequest[] @relation("SentFriendRequests")
   receivedRequests FriendRequest[] @relation("ReceivedFriendRequests")
-  friendshipsA Friendship[]    @relation("FriendshipA")
-  friendshipsB Friendship[]    @relation("FriendshipB")
+  friendshipsA     Friendship[]    @relation("FriendshipA")
+  friendshipsB     Friendship[]    @relation("FriendshipB")
+  groupMembers     GroupMember[]
+  groupMessages    GroupMessage[]
+  inviteLinks      InviteLink[]
 }
 
 model FriendRequest {
@@ -85,4 +88,54 @@ model Post {
   @@index([city, country])
   @@index([city, country, visitedAt])
   @@index([latitude, longitude])
+}
+
+enum GroupRole {
+  OWNER
+  MEMBER
+}
+
+model Group {
+  id        String         @id @default(cuid())
+  name      String
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  members   GroupMember[]
+  messages  GroupMessage[]
+}
+
+model GroupMember {
+  id       String    @id @default(cuid())
+  groupId  String
+  userId   String
+  role     GroupRole @default(MEMBER)
+  joinedAt DateTime  @default(now())
+  group    Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([userId])
+}
+
+model GroupMessage {
+  id        String   @id @default(cuid())
+  groupId   String
+  userId    String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, createdAt])
+}
+
+model InviteLink {
+  id              String    @id @default(cuid())
+  token           String    @unique
+  createdByUserId String
+  createdAt       DateTime  @default(now())
+  expiresAt       DateTime?
+  createdByUser   User      @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+
+  @@index([token])
 }
