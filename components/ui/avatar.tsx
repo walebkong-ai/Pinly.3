@@ -15,7 +15,13 @@ export function Avatar({
   if (proxyUrl) {
     return (
       <div className={cn("relative h-10 w-10 overflow-hidden rounded-full border bg-white", className)}>
-        <Image src={proxyUrl} alt={name} fill className="object-cover" />
+        <Image 
+          src={proxyUrl} 
+          alt={name} 
+          fill 
+          className="object-cover" 
+          unoptimized={proxyUrl.startsWith("/api/media")}
+        />
       </div>
     );
   }

@@ -30,7 +30,13 @@ export function MediaView({
 
   return (
     <div className={cn("relative h-full w-full overflow-hidden rounded-[1.5rem]", className)}>
-      <Image src={proxyUrl} alt="" fill className="object-cover" />
+      <Image 
+        src={proxyUrl} 
+        alt="" 
+        fill 
+        className="object-cover" 
+        unoptimized={proxyUrl.startsWith("/api/media")}
+      />
     </div>
   );
 }
