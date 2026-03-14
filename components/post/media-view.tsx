@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { cn } from "@/lib/utils";
+import { cn, getMediaProxyUrl } from "@/lib/utils";
 
 export function MediaView({
   mediaType,
@@ -12,22 +12,25 @@ export function MediaView({
   thumbnailUrl?: string | null;
   className?: string;
 }) {
+  const proxyUrl = getMediaProxyUrl(mediaUrl);
+  const proxyThumb = getMediaProxyUrl(thumbnailUrl);
+
   if (mediaType === "VIDEO") {
     return (
       <video
         className={cn("h-full w-full rounded-[1.5rem] object-cover", className)}
         controls
-        poster={thumbnailUrl ?? undefined}
+        poster={proxyThumb || undefined}
         preload="metadata"
       >
-        <source src={mediaUrl} />
+        <source src={proxyUrl} />
       </video>
     );
   }
 
   return (
     <div className={cn("relative h-full w-full overflow-hidden rounded-[1.5rem]", className)}>
-      <Image src={mediaUrl} alt="" fill className="object-cover" />
+      <Image src={proxyUrl} alt="" fill className="object-cover" />
     </div>
   );
 }

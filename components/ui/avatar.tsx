@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { cn } from "@/lib/utils";
+import { cn, getMediaProxyUrl } from "@/lib/utils";
 
 export function Avatar({
   name,
@@ -10,10 +10,12 @@ export function Avatar({
   src?: string | null;
   className?: string;
 }) {
-  if (src) {
+  const proxyUrl = getMediaProxyUrl(src);
+
+  if (proxyUrl) {
     return (
       <div className={cn("relative h-10 w-10 overflow-hidden rounded-full border bg-white", className)}>
-        <Image src={src} alt={name} fill className="object-cover" />
+        <Image src={proxyUrl} alt={name} fill className="object-cover" />
       </div>
     );
   }

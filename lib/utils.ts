@@ -24,3 +24,12 @@ export function parseCitySlug(slug: string) {
     .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1))
     .join(" ");
 }
+
+export function getMediaProxyUrl(url: string | null | undefined): string {
+  if (!url) return "";
+  if (url.startsWith("/")) return url;
+  if (url.includes(".blob.vercel-storage.com")) {
+    return `/api/media?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+}
