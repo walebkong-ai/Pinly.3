@@ -9,7 +9,8 @@ const createMessageSchema = z.object({
   content: z.string().min(1).max(2000),
 });
 
-export async function GET(request: Request, context: { params: { id: string } }) {
+export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -17,7 +18,7 @@ export async function GET(request: Request, context: { params: { id: string } })
   }
 
   const userId = session.user.id;
-  const groupId = context.params.id;
+  const groupId = params.id;
 
   // Check membership
   const member = await prisma.groupMember.findUnique({
@@ -51,7 +52,8 @@ export async function GET(request: Request, context: { params: { id: string } })
   return Response.json({ messages });
 }
 
-export async function POST(request: Request, context: { params: { id: string } }) {
+export async function POST(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -59,7 +61,7 @@ export async function POST(request: Request, context: { params: { id: string } }
   }
 
   const userId = session.user.id;
-  const groupId = context.params.id;
+  const groupId = params.id;
 
   // Check membership
   const member = await prisma.groupMember.findUnique({
