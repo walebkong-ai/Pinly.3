@@ -44,11 +44,14 @@ export function LocationPicker({
       <Map
         ref={mapRef}
         {...viewState}
-        style={{ width: "100%", height: "100%" }}
+        style={{ width: "100%", height: "100%", backgroundColor: "transparent" }}
         onMove={(e: ViewStateChangeEvent) => setViewState(e.viewState)}
         onClick={handleMapClick}
         mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
         interactiveLayerIds={[]}
+        minZoom={1}
+        maxPitch={85}
+        projection="globe"
       >
         {position && (
           <Marker

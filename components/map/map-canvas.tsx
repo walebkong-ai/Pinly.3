@@ -92,7 +92,7 @@ export function MapCanvas({
   }
 
   function handleMoveEnd(e: ViewStateChangeEvent) {
-    reportViewport(e.target as any);
+    reportViewport(mapRef.current);
   }
 
   function zoomToMarker(marker: MapMarker) {
@@ -108,15 +108,18 @@ export function MapCanvas({
   }
 
   return (
-    <div className="absolute inset-0 bg-slate-50">
+    <div className="absolute inset-0 bg-[var(--background)]">
       <Map
         ref={mapRef}
         {...viewState}
-        style={{ width: "100%", height: "100%" }}
+        style={{ width: "100%", height: "100%", backgroundColor: "transparent" }}
         onMove={(e) => setViewState(e.viewState)}
         onMoveEnd={handleMoveEnd}
         mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
         interactiveLayerIds={[]}
+        minZoom={1}
+        maxPitch={85}
+        projection="globe"
       >
         {markers.map((marker) => {
           const isSelected =
