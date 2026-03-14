@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { getProfileData } from "@/lib/data";
 import { ProfileView } from "@/components/profile/profile-view";
 
@@ -15,12 +16,22 @@ export default async function ProfilePage({ params }: Props) {
   }
 
   const { username } = await params;
-  const resolvedUsername = username === "me" ? session.user.username : username;
+  
+  let resolvedUsername = username;
+  if (username === "me") {
+    const dbUser = await prisma.user.findUnique({ 
+      where: { id: session.user.id }, 
+      select: { username: true } 
+    });
+    if (!dbUser) notFound();
+    resolvedUsername = dbUser.username;
+  }
+
   const profile = await getProfileData(resolvedUsername, session.user.id);
 
   if (!profile) {
     notFound();
   }
 
-  return <ProfileView profile={profile} isOwnProfile={resolvedUsername === session.user.username} />;
+  return <ProfileView profile={profile} isOwnProfile={profile.user.id === session.user.id} />;
 }

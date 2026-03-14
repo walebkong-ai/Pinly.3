@@ -38,15 +38,19 @@ export async function PATCH(request: Request) {
 
   const updateData: any = {};
 
-  if (username !== undefined && username !== session.user.username) {
-    // Check for uniqueness
-    const existing = await prisma.user.findUnique({
-      where: { username }
-    });
-    if (existing) {
-      return apiError("Username is already taken", 409);
+  if (username !== undefined) {
+    const normalizedUsername = username.toLowerCase();
+    
+    if (normalizedUsername !== session.user.username) {
+      // Check for uniqueness
+      const existing = await prisma.user.findUnique({
+        where: { username: normalizedUsername }
+      });
+      if (existing) {
+        return apiError("Username is already taken", 409);
+      }
+      updateData.username = normalizedUsername;
     }
-    updateData.username = username;
   }
 
   if (avatarUrl !== undefined) {

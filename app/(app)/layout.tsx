@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/app/app-shell";
 
 export default async function PrivateLayout({
@@ -13,5 +14,14 @@ export default async function PrivateLayout({
     redirect("/sign-in");
   }
 
-  return <AppShell user={session.user}>{children}</AppShell>;
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, name: true, username: true, email: true, avatarUrl: true }
+  });
+
+  if (!dbUser) {
+    redirect("/sign-in");
+  }
+
+  return <AppShell user={dbUser}>{children}</AppShell>;
 }
