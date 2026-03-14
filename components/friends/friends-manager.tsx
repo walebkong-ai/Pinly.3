@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Check, Clock3, Search, UserPlus, X, Link as LinkIcon, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
@@ -212,7 +213,7 @@ export function FriendsManager() {
           <h2 className="text-xl font-semibold">Your friends</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {state.friends.map((friend) => (
-              <div key={friend.id} className="rounded-3xl border bg-white/72 p-3">
+              <Link key={friend.id} href={`/profile/${friend.username}`} className="block rounded-3xl border bg-white/72 p-3 transition hover:bg-white">
                 <div className="flex items-center gap-3 min-w-0">
                   <Avatar name={friend.name} src={friend.avatarUrl} className="shrink-0" />
                   <div className="min-w-0 flex-1">
@@ -220,7 +221,7 @@ export function FriendsManager() {
                     <p className="text-sm text-[var(--foreground)]/58 truncate">@{friend.username}</p>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
             {!state.friends.length && (
               <div className="rounded-3xl border border-dashed bg-white/50 p-6 text-sm text-[var(--foreground)]/60">

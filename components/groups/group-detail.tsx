@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Send, Users } from "lucide-react";
+import { Plus, Send, Users, X, UserPlus, CheckCircle2, LoaderCircle } from "lucide-react";
+import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +41,10 @@ export function GroupDetail({ groupId }: { groupId: string }) {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [friends, setFriends] = useState<Array<{ id: string; name: string; username: string; avatarUrl: string | null }>>([]);
+  const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
+  const [addingMembers, setAddingMembers] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -68,6 +73,52 @@ export function GroupDetail({ groupId }: { groupId: string }) {
     setTimeout(() => {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);
+  };
+
+  const openAddModal = async () => {
+    setShowAddModal(true);
+    setSelectedFriendIds(new Set());
+    
+    try {
+      const response = await fetch("/api/friends/list");
+      if (response.ok) {
+        const data = await response.json();
+        const existingMemberIds = new Set(group?.members.map(m => m.user.id));
+        const availableFriends = data.friends.filter((f: any) => !existingMemberIds.has(f.id));
+        setFriends(availableFriends);
+      }
+    } catch (e) {
+      toast.error("Failed to load friends.");
+    }
+  };
+
+  const submitAddMembers = async () => {
+    if (selectedFriendIds.size === 0) return;
+    setAddingMembers(true);
+    
+    try {
+      const response = await fetch(`/api/groups/${groupId}/members`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userIds: Array.from(selectedFriendIds) })
+      });
+      
+      if (!response.ok) throw new Error("Failed to add members");
+      
+      toast.success("Members added successfully!");
+      setShowAddModal(false);
+      
+      // Opt-in naive refresh
+      const groupRes = await fetch(`/api/groups/${groupId}`);
+      if (groupRes.ok) {
+        const groupData = await groupRes.json();
+        setGroup(groupData.group);
+      }
+    } catch (e) {
+      toast.error("An error occurred adding members.");
+    } finally {
+      setAddingMembers(false);
+    }
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -108,7 +159,12 @@ export function GroupDetail({ groupId }: { groupId: string }) {
           Persistent Trip History & Messages
         </p>
 
-        <h2 className="mt-8 font-semibold uppercase tracking-widest text-xs text-[var(--foreground)]/45">Members ({group.members.length})</h2>
+        <div className="mt-8 flex items-center justify-between">
+          <h2 className="font-semibold uppercase tracking-widest text-xs text-[var(--foreground)]/45">Members ({group.members.length})</h2>
+          <Button variant="ghost" onClick={openAddModal} className="h-7 gap-1 px-2 text-xs text-[var(--accent)] hover:bg-[var(--accent)]/10">
+            <UserPlus className="h-3 w-3" /> Add
+          </Button>
+        </div>
         <div className="mt-4 flex-1 space-y-3 overflow-y-auto">
           {group.members.map((member) => (
             <div key={member.user.id} className="flex items-center gap-3 rounded-2xl bg-white/50 p-2">
@@ -178,6 +234,59 @@ export function GroupDetail({ groupId }: { groupId: string }) {
           </div>
         </form>
       </section>
+
+      {/* Add Member Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-[2rem] bg-white p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-xl">Add to Group</h3>
+              <Button variant="ghost" onClick={() => setShowAddModal(false)} className="h-8 w-8 rounded-full p-0 flex items-center justify-center">
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="max-h-[60vh] overflow-y-auto space-y-2 mb-6">
+              {friends.length === 0 ? (
+                <p className="text-sm text-[var(--foreground)]/60 py-4 text-center">No friends available to add.</p>
+              ) : (
+                friends.map((friend) => {
+                  const isSelected = selectedFriendIds.has(friend.id);
+                  return (
+                    <div 
+                      key={friend.id} 
+                      onClick={() => {
+                        const next = new Set(selectedFriendIds);
+                        if (isSelected) next.delete(friend.id);
+                        else next.add(friend.id);
+                        setSelectedFriendIds(next);
+                      }}
+                      className={`flex cursor-pointer items-center gap-3 rounded-2xl p-2 transition w-full border ${isSelected ? "border-[var(--accent)] bg-[var(--accent)]/5" : "border-transparent hover:bg-black/5"}`}
+                    >
+                      <Avatar name={friend.name} src={friend.avatarUrl} className="h-10 w-10 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{friend.name}</p>
+                        <p className="text-xs text-[var(--foreground)]/58 truncate">@{friend.username}</p>
+                      </div>
+                      <div className="shrink-0 text-[var(--accent)] px-2">
+                        {isSelected && <CheckCircle2 className="h-5 w-5" />}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <Button 
+              className="w-full h-12 rounded-2xl text-base font-semibold" 
+              disabled={selectedFriendIds.size === 0 || addingMembers}
+              onClick={submitAddMembers}
+            >
+              {addingMembers ? <LoaderCircle className="h-5 w-5 animate-spin" /> : `Add ${selectedFriendIds.size} Member${selectedFriendIds.size !== 1 ? 's' : ''}`}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

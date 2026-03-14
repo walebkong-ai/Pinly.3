@@ -206,7 +206,7 @@ export async function getRecentFeedPosts(viewerId: string, limit = 24) {
       userId: { in: visibleUserIds }
     },
     include: postSummaryInclude,
-    orderBy: { visitedAt: "desc" },
+    orderBy: { createdAt: "desc" },
     take: limit
   });
 }
