@@ -77,8 +77,11 @@ export async function saveFileToVercelBlob(file: File) {
   const extension = normalizeUploadExtension(file);
   const prefix = process.env.BLOB_UPLOAD_PREFIX ?? "posts";
   const pathname = `${prefix}/${crypto.randomUUID()}.${extension}`;
+  // Read access mode from env to support private Blob stores, defaulting to public
+  const accessMode = process.env.BLOB_ACCESS_MODE || "public";
+
   const blob = await put(pathname, file, {
-    access: "public",
+    access: accessMode as "public", // typecast to satisfy older SDK typings if needed
     addRandomSuffix: false,
     contentType: file.type || undefined
   });
