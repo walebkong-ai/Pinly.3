@@ -32,7 +32,7 @@ export function FriendActivityPanel({
         className="flex w-full items-center justify-between text-left"
         type="button"
       >
-        <div className="flex items-center gap-2 md:block">
+        <div className={collapsed ? "flex items-center gap-2 md:block" : ""}>
           <p className="text-[10px] md:text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45 select-none">Friend activity</p>
           <h2 className={`font-[var(--font-serif)] text-xl md:text-3xl md:mt-2 ${collapsed ? "hidden md:block" : "mt-1 block"}`}>
             Recent nearby memories
