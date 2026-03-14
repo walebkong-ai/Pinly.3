@@ -39,6 +39,7 @@ export function CreatePostForm() {
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationQuery, setLocationQuery] = useState("");
   const [searchingPlaces, setSearchingPlaces] = useState(false);
+  const [gettingLocation, setGettingLocation] = useState(false);
   const [placeResults, setPlaceResults] = useState<PlaceSearchResult[]>([]);
   const deferredLocationQuery = useDeferredValue(locationQuery);
 
@@ -105,6 +106,54 @@ export function CreatePostForm() {
     setLocationQuery(place.displayName);
     setPlaceResults([]);
   }
+
+  function getCurrentLocation() {
+    if (!navigator.geolocation) {
+      toast.error("Your browser does not support device location");
+      return;
+    }
+
+    setGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        setLatitude(latitude);
+        setLongitude(longitude);
+        
+        try {
+          const res = await fetch(`/api/places/reverse?lat=${latitude}&lon=${longitude}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.place) {
+              setPlaceName(data.place.placeName);
+              setCity(data.place.city);
+              setCountry(data.place.country);
+              setLocationQuery(data.place.placeName);
+            }
+          }
+        } catch (e) {
+          // Fall back gracefully if reverse geocoding fails
+        }
+        
+        toast.success("Location acquired");
+        setGettingLocation(false);
+      },
+      (error) => {
+        setGettingLocation(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          toast.error("Location permission was denied");
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          toast.error("Could not get your current location");
+        } else if (error.code === error.TIMEOUT) {
+          toast.error("Location request timed out");
+        } else {
+          toast.error("An unknown error occurred getting location");
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }
+
 
   async function onSubmit() {
     if (!uploadState) {
@@ -236,6 +285,24 @@ export function CreatePostForm() {
               <Crosshair className="h-4 w-4 text-[var(--accent)]" />
               Or tap the map to drop the memory exactly where it happened
             </div>
+            
+            <div className="mt-3 flex items-center gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                className="rounded-full bg-white/80 hover:bg-white text-xs font-medium"
+                onClick={getCurrentLocation}
+                disabled={gettingLocation}
+              >
+                {gettingLocation ? (
+                  <LoaderCircle className="h-3.5 w-3.5 mr-2 animate-spin" />
+                ) : (
+                  <MapPin className="h-3.5 w-3.5 mr-2" />
+                )}
+                {gettingLocation ? "Locating..." : "Use my current location"}
+              </Button>
+            </div>
+
             <div className="mt-4 overflow-hidden rounded-[1.75rem]">
               <DynamicLocationPicker
                 position={latitude !== null && longitude !== null ? { latitude, longitude } : null}
