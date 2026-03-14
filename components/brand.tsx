@@ -3,8 +3,8 @@ import Image from "next/image";
 export function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex h-12 w-12 items-center justify-center overflow-hidden drop-shadow-sm">
-        <Image src="/logo.png" alt="Pinly Logo" width={48} height={48} className="object-cover" />
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-[var(--accent)] bg-white/95 p-1.5 drop-shadow-sm">
+        <Image src="/logo.png" alt="Pinly Logo" width={34} height={34} className="h-full w-full object-contain" />
       </div>
       {!compact && (
         <div>

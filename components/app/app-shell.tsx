@@ -70,7 +70,7 @@ export function AppShell({ children, user }: AppShellProps) {
                 className={cn(
                   "relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
                   pathname === href 
-                    ? "bg-[var(--foreground)]/90 text-white z-10 shadow-sm" 
+                    ? "bg-[var(--accent)] text-white z-10 shadow-sm" 
                     : "bg-white/65 text-[var(--foreground)]/72 hover:bg-white/85"
                 )}
               >
@@ -91,7 +91,7 @@ export function AppShell({ children, user }: AppShellProps) {
                 className={cn(
                   "relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
                   pathname === resolvedHref
-                    ? "bg-white text-[var(--foreground)] z-10 shadow-sm"
+                    ? "bg-[var(--accent)] text-white z-10 shadow-sm"
                     : "text-[var(--foreground)]/70 hover:bg-white/60"
                 )}
               >
