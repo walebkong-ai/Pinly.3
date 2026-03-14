@@ -87,9 +87,15 @@ export async function authorizeCredentials(prisma: AuthPrisma, credentials: unkn
     return null;
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: parsed.data.email.toLowerCase() }
-  });
+  let user;
+  try {
+    user = await prisma.user.findUnique({
+      where: { email: parsed.data.email.toLowerCase() }
+    });
+  } catch (error) {
+    console.error("Database connection error during authorization:", error);
+    return null;
+  }
 
   if (!user) {
     return null;
