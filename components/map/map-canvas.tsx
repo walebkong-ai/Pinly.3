@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import Map, { Marker, Popup, MapRef, ViewStateChangeEvent } from "react-map-gl/maplibre";
-import "maplibre-gl/dist/maplibre-gl.css";
 import type { MapMarker, PostSummary } from "@/types/app";
 import { MarkerPreview } from "@/components/map/marker-preview";
 
@@ -109,7 +108,7 @@ export function MapCanvas({
   }
 
   return (
-    <div className="h-full min-h-[60vh] w-full bg-slate-50 overflow-hidden">
+    <div className="absolute inset-0 bg-slate-50">
       <Map
         ref={mapRef}
         {...viewState}

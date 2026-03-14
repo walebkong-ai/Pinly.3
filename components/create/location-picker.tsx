@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import Map, { Marker, MapRef, ViewStateChangeEvent } from "react-map-gl/maplibre";
-import "maplibre-gl/dist/maplibre-gl.css";
 
 const initialViewState = {
   longitude: 10,
