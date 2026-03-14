@@ -6,6 +6,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { MediaView } from "@/components/post/media-view";
 import { formatVisitDate } from "@/lib/utils";
 import { DeletePostButton } from "@/components/post/delete-post-button";
+import { BackButton } from "@/components/post/back-button";
 
 type Props = {
   params: Promise<{ postId: string }>;
@@ -26,8 +27,10 @@ export default async function PostDetailPage({ params }: Props) {
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-      <section className="glass-panel rounded-[2rem] p-5">
+    <div className="space-y-4">
+      <BackButton />
+      <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+        <section className="glass-panel rounded-[2rem] p-5">
         <div className="aspect-[16/10] overflow-hidden rounded-[1.75rem]">
           <MediaView mediaType={post.mediaType} mediaUrl={post.mediaUrl} thumbnailUrl={post.thumbnailUrl} />
         </div>
@@ -63,6 +66,7 @@ export default async function PostDetailPage({ params }: Props) {
           </p>
         </div>
       </section>
+      </div>
     </div>
   );
 }

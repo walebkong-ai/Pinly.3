@@ -22,15 +22,21 @@ export function FriendActivityPanel({
     setCollapsed(isZoomedIn);
   }, [isZoomedIn]);
   return (
-    <div className="glass-panel w-full max-w-sm rounded-3xl md:rounded-[2rem] p-3 md:p-4 transition-all">
+    <div 
+      className={`glass-panel w-full max-w-sm transition-all ${
+        collapsed ? "rounded-full p-2 px-4 md:rounded-[2rem] md:p-4" : "rounded-3xl p-3 md:rounded-[2rem] md:p-4"
+      }`}
+    >
       <button 
         onClick={() => setCollapsed(!collapsed)} 
-        className="flex w-full items-start justify-between text-left"
+        className="flex w-full items-center justify-between text-left"
         type="button"
       >
-        <div>
-          <p className="text-[10px] md:text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Friend activity</p>
-          <h2 className="mt-1 md:mt-2 font-[var(--font-serif)] text-xl md:text-3xl">Recent nearby memories</h2>
+        <div className="flex items-center gap-2 md:block">
+          <p className="text-[10px] md:text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45 select-none">Friend activity</p>
+          <h2 className={`font-[var(--font-serif)] text-xl md:text-3xl md:mt-2 ${collapsed ? "hidden md:block" : "mt-1 block"}`}>
+            Recent nearby memories
+          </h2>
         </div>
         <div className="flex shrink-0 items-center justify-center p-2 md:hidden">
           <ChevronDown className={`h-5 w-5 text-[var(--foreground)]/60 transition-transform ${collapsed ? "rotate-180" : ""}`} />
