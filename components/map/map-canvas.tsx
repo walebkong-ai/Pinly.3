@@ -128,6 +128,10 @@ export function MapCanvas({
         initialViewState={defaultCenter}
         style={{ width: "100%", height: "100%", backgroundColor: "transparent" }}
         onMoveEnd={handleMoveEnd}
+        onClick={(e) => {
+          // Explicitly prevent bubbling to ensure blank map taps never trigger undocumented layout/global hooks
+          e.originalEvent.stopPropagation();
+        }}
         mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
         interactiveLayerIds={[]}
         minZoom={1}
