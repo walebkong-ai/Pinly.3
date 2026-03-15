@@ -3,18 +3,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { Drawer } from "vaul";
 import { ChevronRight, Map, Route } from "lucide-react";
-import type { PostSummary } from "@/types/app";
 import {
   buildAppleMapsDirectionsUrl,
   buildGoogleMapsDirectionsUrl,
   getDirectionsProviderOrder,
   hasValidDirectionsCoordinates,
+  type DirectionLocation,
   type DirectionsProvider
 } from "@/lib/directions";
 import { cn } from "@/lib/utils";
 
 type DirectionsSheetProps = {
-  post: Pick<PostSummary, "placeName" | "city" | "country" | "latitude" | "longitude">;
+  post: DirectionLocation;
   label?: string;
   triggerStyle?: "inline" | "secondary" | "emphasis";
   className?: string;

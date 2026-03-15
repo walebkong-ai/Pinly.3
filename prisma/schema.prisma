@@ -30,6 +30,7 @@ model User {
   updatedAt        DateTime        @updatedAt
   posts            Post[]
   postCollections  PostCollection[]
+  wantToGoPlaces   WantToGoPlace[]
   visitTags        PostVisitTag[]
   likes            Like[]
   savedPosts       SavedPost[]
@@ -164,6 +165,24 @@ model SavedPost {
   @@unique([postId, userId])
   @@index([userId, createdAt])
   @@index([postId])
+}
+
+model WantToGoPlace {
+  id        String   @id @default(cuid())
+  userId    String
+  placeKey  String
+  placeName String
+  city      String
+  country   String
+  latitude  Float
+  longitude Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, placeKey])
+  @@index([userId, createdAt])
+  @@index([latitude, longitude])
 }
 
 model Comment {

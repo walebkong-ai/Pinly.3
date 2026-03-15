@@ -1,4 +1,4 @@
-type DirectionLocation = {
+export type DirectionLocation = {
   placeName?: string | null;
   city?: string | null;
   country?: string | null;

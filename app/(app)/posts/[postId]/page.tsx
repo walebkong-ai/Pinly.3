@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { CalendarDays, Crosshair, MapPin } from "lucide-react";
 import { auth } from "@/lib/auth";
-import { getOwnedCollectionsForPost, getVisiblePostById } from "@/lib/data";
+import { getOwnedCollectionsForPost, getVisiblePostById, getWantToGoPlaceByLocation } from "@/lib/data";
 import { prisma } from "@/lib/prisma";
 import { Avatar } from "@/components/ui/avatar";
 import { MediaView } from "@/components/post/media-view";
@@ -15,6 +15,7 @@ import { SaveButton } from "@/components/post/save-button";
 import { ShareSheet } from "@/components/post/share-sheet";
 import { VisitedWithList } from "@/components/post/visited-with-list";
 import { ManagePostCollectionsCard } from "@/components/collections/collection-picker";
+import { WantToGoButton } from "@/components/places/want-to-go-button";
 
 type Props = {
   params: Promise<{ postId: string }>;
@@ -36,6 +37,7 @@ export default async function PostDetailPage({ params }: Props) {
 
   const isOwnPost = session.user.id === post.userId;
   const postCollections = isOwnPost ? await getOwnedCollectionsForPost(session.user.id, post.id) : [];
+  const wantToGoItem = await getWantToGoPlaceByLocation(session.user.id, post);
 
   // Fetch like state and settings — wrapped in try-catch because the Like/UserSettings tables
   // may not exist in production yet if the migration hasn't been applied.
@@ -139,6 +141,7 @@ export default async function PostDetailPage({ params }: Props) {
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 <SaveButton postId={post.id} initialSaved={post.savedByViewer} triggerStyle="emphasis" />
+                <WantToGoButton location={post} initialItemId={wantToGoItem?.id ?? null} triggerStyle="emphasis" />
                 <DirectionsSheet post={post} label="Directions" triggerStyle="emphasis" />
                 <ShareSheet postId={post.id} triggerStyle="emphasis" />
               </div>

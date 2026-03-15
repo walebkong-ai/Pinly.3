@@ -74,6 +74,18 @@ export const collectionAssignmentSchema = z.object({
   collectionIds: z.array(z.string().cuid()).max(24).default([])
 });
 
+export const wantToGoPlaceSchema = z.object({
+  placeName: z.string().min(2).max(120),
+  city: z.string().min(2).max(80),
+  country: z.string().min(2).max(80),
+  latitude: z.coerce.number().min(-90).max(90),
+  longitude: z.coerce.number().min(-180).max(180)
+});
+
+export const wantToGoDeleteSchema = z.object({
+  itemId: z.string().cuid()
+});
+
 export const mapQuerySchema = z.object({
   north: z.coerce.number().min(-90).max(90),
   south: z.coerce.number().min(-90).max(90),

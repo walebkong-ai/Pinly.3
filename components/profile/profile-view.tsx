@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bookmark, Folders, Settings2 } from "lucide-react";
+import { Bookmark, Folders, MapPinned, Settings2 } from "lucide-react";
 import type { CollectionSummary, PostSummary } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
 import { PostCard } from "@/components/post/post-card";
@@ -57,6 +57,13 @@ export function ProfileView({
                 >
                   <Folders className="h-4 w-4 text-[var(--map-accent)]" />
                   Collections
+                </Link>
+                <Link
+                  href="/want-to-go"
+                  className="inline-flex items-center gap-2 rounded-full border border-[rgba(255,159,28,0.2)] bg-[var(--accent-soft)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[rgba(255,159,28,0.18)]"
+                >
+                  <MapPinned className="h-4 w-4 text-[var(--accent)]" />
+                  Want to go
                 </Link>
                 <Link
                   href="/settings"

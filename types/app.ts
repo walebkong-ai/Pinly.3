@@ -29,6 +29,16 @@ export type CollectionChip = {
   name: string;
 };
 
+export type WantToGoPlaceSummary = {
+  id: string;
+  placeName: string;
+  city: string;
+  country: string;
+  latitude: number;
+  longitude: number;
+  createdAt: string | Date;
+};
+
 export type PostSummary = {
   id: string;
   userId: string;

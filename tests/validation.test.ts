@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { mapQuerySchema, postSchema, signUpSchema } from "@/lib/validation";
+import { mapQuerySchema, postSchema, signUpSchema, wantToGoPlaceSchema } from "@/lib/validation";
 
 describe("schema validation", () => {
   test("sign up requires lowercase username pattern", () => {
@@ -103,5 +103,17 @@ describe("schema validation", () => {
       expect(result.data.groups).toHaveLength(2);
       expect(result.data.categories).toEqual(["photo", "food"]);
     }
+  });
+
+  test("want-to-go places require valid place coordinates", () => {
+    expect(
+      wantToGoPlaceSchema.safeParse({
+        placeName: "Mount Royal",
+        city: "Montreal",
+        country: "Canada",
+        latitude: 45.5048,
+        longitude: -73.5878
+      }).success
+    ).toBe(true);
   });
 });

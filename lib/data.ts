@@ -5,7 +5,8 @@ import { Prisma } from "@prisma/client";
 import { getMapStage, getTimeFilterStart, buildLayerUserIds, buildMapPayload } from "@/lib/map-data";
 import { prisma } from "@/lib/prisma";
 import { buildVisibleUserIds } from "@/lib/permissions";
-import type { CollectionChip, CollectionSummary, LayerMode, MapCategory, TimeFilter } from "@/types/app";
+import { buildWantToGoPlaceKey, type WantToGoLocation } from "@/lib/want-to-go";
+import type { CollectionChip, CollectionSummary, LayerMode, MapCategory, TimeFilter, WantToGoPlaceSummary } from "@/types/app";
 
 export const postSummaryInclude = Prisma.validator<Prisma.PostInclude>()({
   user: {
@@ -399,6 +400,46 @@ export async function getOwnedCollectionsForPost(userId: string, postId: string)
   });
 
   return collections;
+}
+
+export async function getWantToGoPlaceByLocation(userId: string, location: WantToGoLocation) {
+  const placeKey = buildWantToGoPlaceKey(location);
+
+  if (!placeKey.trim()) {
+    return null;
+  }
+
+  return prisma.wantToGoPlace.findUnique({
+    where: {
+      userId_placeKey: {
+        userId,
+        placeKey
+      }
+    },
+    select: {
+      id: true,
+      placeName: true
+    }
+  });
+}
+
+export async function getWantToGoPlaces(userId: string, limit = 64): Promise<WantToGoPlaceSummary[]> {
+  const items = await prisma.wantToGoPlace.findMany({
+    where: { userId },
+    orderBy: [{ createdAt: "desc" }, { placeName: "asc" }],
+    take: limit,
+    select: {
+      id: true,
+      placeName: true,
+      city: true,
+      country: true,
+      latitude: true,
+      longitude: true,
+      createdAt: true
+    }
+  });
+
+  return items;
 }
 
 export async function getRecentFeedPosts(viewerId: string, limit = 24) {
