@@ -23,6 +23,45 @@ export const postSummaryInclude = Prisma.validator<Prisma.PostInclude>()({
   }
 });
 
+type IncludedPost = Prisma.PostGetPayload<{
+  include: typeof postSummaryInclude;
+}>;
+
+async function getSavedPostIdSet(viewerId: string, postIds: string[]) {
+  if (postIds.length === 0) {
+    return new Set<string>();
+  }
+
+  try {
+    const savedPosts = await prisma.savedPost.findMany({
+      where: {
+        userId: viewerId,
+        postId: { in: postIds }
+      },
+      select: {
+        postId: true
+      }
+    });
+
+    return new Set(savedPosts.map((save) => save.postId));
+  } catch {
+    // The saved-posts migration may not be applied yet in every environment.
+    return new Set<string>();
+  }
+}
+
+async function attachSavedState(viewerId: string, posts: IncludedPost[]) {
+  const savedPostIds = await getSavedPostIdSet(
+    viewerId,
+    posts.map((post) => post.id)
+  );
+
+  return posts.map((post) => ({
+    ...post,
+    savedByViewer: savedPostIds.has(post.id)
+  }));
+}
+
 export async function getVisibleUserIds(viewerId: string) {
   const friendships = await prisma.friendship.findMany({
     where: {
@@ -166,8 +205,9 @@ export async function getCityData({
     take: pageSize
   });
 
-  const uniqueUsers = new Set(posts.map((post) => post.userId));
-  const center = posts.reduce(
+  const savedPosts = await attachSavedState(viewerId, posts);
+
+  const center = savedPosts.reduce(
     (acc, post, index) => ({
       latitude: acc.latitude + (post.latitude - acc.latitude) / (index + 1),
       longitude: acc.longitude + (post.longitude - acc.longitude) / (index + 1)
@@ -176,26 +216,33 @@ export async function getCityData({
   );
 
   return {
-    posts,
-    friendCount: new Set(posts.filter((post) => post.userId !== viewerId).map((post) => post.userId)).size,
+    posts: savedPosts,
+    friendCount: new Set(savedPosts.filter((post) => post.userId !== viewerId).map((post) => post.userId)).size,
     center,
     visitors: Array.from(
-      new Map(posts.map((post) => [post.user.id, post.user])).values()
+      new Map(savedPosts.map((post) => [post.user.id, post.user])).values()
     ),
-    recentTrips: posts.slice(0, 4)
+    recentTrips: savedPosts.slice(0, 4)
   };
 }
 
 export async function getVisiblePostById(viewerId: string, postId: string) {
   const visibleUserIds = await getVisibleUserIds(viewerId);
 
-  return prisma.post.findFirst({
+  const post = await prisma.post.findFirst({
     where: {
       id: postId,
       userId: { in: visibleUserIds }
     },
     include: postSummaryInclude
   });
+
+  if (!post) {
+    return null;
+  }
+
+  const [postWithSavedState] = await attachSavedState(viewerId, [post]);
+  return postWithSavedState;
 }
 
 export async function getProfileData(profileUsername: string, viewerId: string) {
@@ -225,16 +272,17 @@ export async function getProfileData(profileUsername: string, viewerId: string) 
     include: postSummaryInclude,
     orderBy: { visitedAt: "desc" }
   });
+  const postsWithSavedState = await attachSavedState(viewerId, posts);
 
-  const places = Array.from(new Set(posts.map((post) => `${post.city}, ${post.country}`)));
+  const places = Array.from(new Set(postsWithSavedState.map((post) => `${post.city}, ${post.country}`)));
 
-  return { user, posts, places };
+  return { user, posts: postsWithSavedState, places };
 }
 
 export async function getRecentFeedPosts(viewerId: string, limit = 24) {
   const visibleUserIds = await getVisibleUserIds(viewerId);
 
-  return prisma.post.findMany({
+  const posts = await prisma.post.findMany({
     where: {
       userId: { in: visibleUserIds }
     },
@@ -242,4 +290,35 @@ export async function getRecentFeedPosts(viewerId: string, limit = 24) {
     orderBy: { createdAt: "desc" },
     take: limit
   });
+
+  return attachSavedState(viewerId, posts);
+}
+
+export async function getSavedPosts(viewerId: string, limit = 48) {
+  const visibleUserIds = await getVisibleUserIds(viewerId);
+
+  try {
+    const savedPosts = await prisma.savedPost.findMany({
+      where: {
+        userId: viewerId,
+        post: {
+          userId: { in: visibleUserIds }
+        }
+      },
+      include: {
+        post: {
+          include: postSummaryInclude
+        }
+      },
+      orderBy: { createdAt: "desc" },
+      take: limit
+    });
+
+    return savedPosts.map((savedPost) => ({
+      ...savedPost.post,
+      savedByViewer: true
+    }));
+  } catch {
+    return [];
+  }
 }

@@ -11,6 +11,7 @@ import { BackButton } from "@/components/post/back-button";
 import { LikeButton } from "@/components/post/like-button";
 import { CommentSection } from "@/components/post/comment-section";
 import { DirectionsSheet } from "@/components/post/directions-sheet";
+import { SaveButton } from "@/components/post/save-button";
 import { ShareSheet } from "@/components/post/share-sheet";
 
 type Props = {
@@ -128,6 +129,7 @@ export default async function PostDetailPage({ params }: Props) {
                 )}
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
+                <SaveButton postId={post.id} initialSaved={post.savedByViewer} triggerStyle="emphasis" />
                 <DirectionsSheet post={post} label="Directions" triggerStyle="emphasis" />
                 <ShareSheet postId={post.id} triggerStyle="emphasis" />
               </div>

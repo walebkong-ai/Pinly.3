@@ -7,6 +7,7 @@ import { formatVisitDate } from "@/lib/utils";
 import { LikeButton } from "@/components/post/like-button";
 import { CommentSection } from "@/components/post/comment-section";
 import { ShareSheet } from "@/components/post/share-sheet";
+import { SaveButton } from "@/components/post/save-button";
 
 export function PostCard({
   post,
@@ -81,6 +82,7 @@ export function PostCard({
             Comments off
           </span>
         )}
+        <SaveButton postId={post.id} initialSaved={post.savedByViewer} />
         <ShareSheet postId={post.id} />
         {!openOnBodyTap ? (
           <Link href={`/posts/${post.id}`} className="ml-auto text-xs font-medium text-[var(--foreground)]/72 transition hover:text-[var(--foreground)]">

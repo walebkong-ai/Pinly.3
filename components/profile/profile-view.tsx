@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Settings2 } from "lucide-react";
+import { Bookmark, Settings2 } from "lucide-react";
 import type { PostSummary } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
 import { PostCard } from "@/components/post/post-card";
@@ -40,6 +40,13 @@ export function ProfileView({
                 initialAvatarUrl={profile.user.avatarUrl}
               />
               <div className="mt-4 flex flex-wrap items-center gap-2">
+                <Link
+                  href="/saved"
+                  className="inline-flex items-center gap-2 rounded-full border border-[rgba(255,95,162,0.2)] bg-[var(--social-accent-soft)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[rgba(255,95,162,0.16)]"
+                >
+                  <Bookmark className="h-4 w-4 text-[var(--social-accent)]" />
+                  Saved
+                </Link>
                 <Link
                   href="/settings"
                   className="inline-flex items-center gap-2 rounded-full border bg-[var(--surface-strong)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--muted)]"

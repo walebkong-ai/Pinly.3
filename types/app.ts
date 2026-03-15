@@ -22,6 +22,7 @@ export type PostSummary = {
   longitude: number;
   visitedAt: string | Date;
   createdAt: string | Date;
+  savedByViewer?: boolean;
   user: UserSummary;
 };
 
