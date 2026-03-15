@@ -10,6 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { VisitedWithPicker } from "@/components/create/visited-with-picker";
 import { CollectionPicker } from "@/components/collections/collection-picker";
+import {
+  buildLocationDisplayName,
+  getGeolocationErrorMessage,
+  getReverseLookupErrorMessage,
+  hasFiniteCoordinates,
+  parseCoordinateInput,
+  serializeVisitedDateInput
+} from "@/lib/create-post-location";
 import type { PlaceSearchResult } from "@/types/app";
 
 type UploadState = {
@@ -41,13 +49,20 @@ export function CreatePostForm() {
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationQuery, setLocationQuery] = useState("");
   const [searchingPlaces, setSearchingPlaces] = useState(false);
+  const [placeSearchError, setPlaceSearchError] = useState<string | null>(null);
   const [gettingLocation, setGettingLocation] = useState(false);
+  const [resolvingLocation, setResolvingLocation] = useState(false);
+  const [locationFeedback, setLocationFeedback] = useState<{
+    tone: "pending" | "success" | "error";
+    message: string;
+  } | null>(null);
   const [placeResults, setPlaceResults] = useState<PlaceSearchResult[]>([]);
   const [taggedUserIds, setTaggedUserIds] = useState<string[]>([]);
   const [collectionIds, setCollectionIds] = useState<string[]>([]);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const locationAbortRef = useRef<AbortController | null>(null);
+  const reverseLookupAbortRef = useRef<AbortController | null>(null);
+  const locationRequestIdRef = useRef(0);
   const ignoreNextSearchRef = useRef(false);
   const showFirstMemoryGuide =
     !uploadState &&
@@ -59,25 +74,181 @@ export function CreatePostForm() {
 
   useEffect(() => {
     return () => {
-      if (locationAbortRef.current) {
-        locationAbortRef.current.abort();
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
       }
+      abortRef.current?.abort();
+      reverseLookupAbortRef.current?.abort();
     };
   }, []);
+
+  function beginLocationRequest() {
+    reverseLookupAbortRef.current?.abort();
+    locationRequestIdRef.current += 1;
+    return locationRequestIdRef.current;
+  }
+
+  function cancelActiveLocationRequest() {
+    reverseLookupAbortRef.current?.abort();
+    locationRequestIdRef.current += 1;
+    setGettingLocation(false);
+    setResolvingLocation(false);
+  }
+
+  function clearPlaceSearchState() {
+    if (searchTimerRef.current) {
+      clearTimeout(searchTimerRef.current);
+    }
+    abortRef.current?.abort();
+    setSearchingPlaces(false);
+    setPlaceResults([]);
+    setPlaceSearchError(null);
+  }
+
+  function applyResolvedLocation(place: PlaceSearchResult, feedbackMessage?: string) {
+    setPlaceName(place.placeName);
+    setCity(place.city);
+    setCountry(place.country);
+    setLatitude(place.latitude);
+    setLongitude(place.longitude);
+    ignoreNextSearchRef.current = true;
+    setLocationQuery(place.displayName);
+    clearPlaceSearchState();
+    setResolvingLocation(false);
+    setGettingLocation(false);
+    setLocationFeedback(
+      feedbackMessage
+        ? {
+            tone: "success",
+            message: feedbackMessage
+          }
+        : null
+    );
+  }
+
+  async function resolveSelectedCoordinates({
+    latitude,
+    longitude,
+    source,
+    requestId
+  }: {
+    latitude: number;
+    longitude: number;
+    source: "device" | "map" | "coordinates";
+    requestId: number;
+  }) {
+    const controller = new AbortController();
+    reverseLookupAbortRef.current = controller;
+    clearPlaceSearchState();
+    setLatitude(latitude);
+    setLongitude(longitude);
+    setPlaceName("");
+    setCity("");
+    setCountry("");
+    ignoreNextSearchRef.current = true;
+    setLocationQuery("");
+    setResolvingLocation(true);
+    setLocationFeedback({
+      tone: "pending",
+      message:
+        source === "device"
+          ? "Applying your current location and confirming the place..."
+          : source === "coordinates"
+            ? "Refreshing place details from these coordinates..."
+            : "Updating the pin location and confirming the place..."
+    });
+
+    try {
+      const response = await fetch(`/api/places/reverse?lat=${latitude}&lon=${longitude}`, {
+        signal: controller.signal
+      });
+
+      if (controller.signal.aborted || requestId !== locationRequestIdRef.current) {
+        return;
+      }
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        const message = getReverseLookupErrorMessage(data?.code);
+        setLocationFeedback({ tone: "error", message });
+        if (source === "device") {
+          toast.error(message);
+        }
+        return;
+      }
+
+      const data = await response.json();
+      if (controller.signal.aborted || requestId !== locationRequestIdRef.current) {
+        return;
+      }
+
+      const resolvedPlace: PlaceSearchResult = {
+        id: `resolved:${latitude},${longitude}`,
+        placeName: data.place.placeName,
+        city: data.place.city,
+        country: data.place.country,
+        latitude,
+        longitude,
+        displayName: buildLocationDisplayName({
+          placeName: data.place.placeName,
+          city: data.place.city,
+          country: data.place.country
+        })
+      };
+
+      applyResolvedLocation(
+        resolvedPlace,
+        source === "device"
+          ? "Current location applied."
+          : source === "coordinates"
+            ? "Coordinates applied."
+            : "Pin location updated."
+      );
+
+      if (source === "device") {
+        toast.success("Current location applied.");
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return;
+      }
+
+      if (requestId !== locationRequestIdRef.current) {
+        return;
+      }
+
+      const message = getReverseLookupErrorMessage();
+      setLocationFeedback({ tone: "error", message });
+      if (source === "device") {
+        toast.error(message);
+      }
+    } finally {
+      if (requestId === locationRequestIdRef.current) {
+        setResolvingLocation(false);
+        if (source === "device") {
+          setGettingLocation(false);
+        }
+      }
+    }
+  }
 
   // Debounced place search — 300ms delay, cancels in-flight requests
   const searchPlaces = useCallback(async (q: string, signal: AbortSignal) => {
     if (q.trim().length < 2) {
       setPlaceResults([]);
       setSearchingPlaces(false);
+      setPlaceSearchError(null);
       return;
     }
 
     setSearchingPlaces(true);
+    setPlaceSearchError(null);
     try {
       const response = await fetch(`/api/places/search?q=${encodeURIComponent(q.trim())}`, { signal });
       if (signal.aborted) return;
       if (!response.ok) {
+        setPlaceResults([]);
+        setPlaceSearchError("Place search is temporarily unavailable. Try again or place the pin manually.");
         setSearchingPlaces(false);
         return;
       }
@@ -87,6 +258,8 @@ export function CreatePostForm() {
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;
+      setPlaceResults([]);
+      setPlaceSearchError("Place search is temporarily unavailable. Try again or place the pin manually.");
     } finally {
       if (!signal.aborted) setSearchingPlaces(false);
     }
@@ -105,6 +278,7 @@ export function CreatePostForm() {
     if (locationQuery.trim().length < 2) {
       setPlaceResults([]);
       setSearchingPlaces(false);
+      setPlaceSearchError(null);
       return;
     }
 
@@ -112,6 +286,7 @@ export function CreatePostForm() {
       ignoreNextSearchRef.current = false;
       setPlaceResults([]);
       setSearchingPlaces(false);
+      setPlaceSearchError(null);
       return;
     }
 
@@ -136,96 +311,109 @@ export function CreatePostForm() {
     formData.set("file", file);
     setUploading(true);
 
-    const response = await fetch("/api/uploads", {
-      method: "POST",
-      body: formData
-    });
+    try {
+      const response = await fetch("/api/uploads", {
+        method: "POST",
+        body: formData
+      });
 
-    setUploading(false);
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        toast.error(data?.error ?? "Upload failed.");
+        return;
+      }
 
-    if (!response.ok) {
       const data = await response.json();
-      toast.error(data.error ?? "Upload failed.");
-      return;
+      setUploadState(data);
+      toast.success("Media uploaded.");
+    } catch {
+      toast.error("Upload failed. Check your connection and try again.");
+    } finally {
+      setUploading(false);
     }
-
-    const data = await response.json();
-    setUploadState(data);
-    toast.success("Media uploaded.");
   }
 
   function applyPlaceResult(place: PlaceSearchResult) {
-    setPlaceName(place.placeName);
-    setCity(place.city);
-    setCountry(place.country);
-    setLatitude(place.latitude);
-    setLongitude(place.longitude);
-    ignoreNextSearchRef.current = true;
-    setLocationQuery(place.displayName);
-    setPlaceResults([]);
+    cancelActiveLocationRequest();
+    applyResolvedLocation(place, "Place selected.");
   }
 
   function getCurrentLocation() {
-    if (!navigator.geolocation) {
-      toast.error("Your browser does not support device location");
+    if (typeof window === "undefined") {
       return;
     }
 
-    if (locationAbortRef.current) {
-      locationAbortRef.current.abort();
+    const secureContext = window.isSecureContext;
+    if (!secureContext) {
+      const message = getGeolocationErrorMessage({
+        supported: !!navigator.geolocation,
+        secureContext
+      });
+      setLocationFeedback({ tone: "error", message });
+      toast.error(message);
+      return;
     }
-    const controller = new AbortController();
-    locationAbortRef.current = controller;
+
+    if (!navigator.geolocation) {
+      const message = getGeolocationErrorMessage({
+        supported: false,
+        secureContext
+      });
+      setLocationFeedback({ tone: "error", message });
+      toast.error(message);
+      return;
+    }
+
+    const requestId = beginLocationRequest();
 
     setGettingLocation(true);
+    setLocationFeedback({
+      tone: "pending",
+      message: "Requesting your current location..."
+    });
     navigator.geolocation.getCurrentPosition(
       async (position) => {
-        if (controller.signal.aborted) return;
-        
-        const { latitude, longitude } = position.coords;
-        setLatitude(latitude);
-        setLongitude(longitude);
-        
-        try {
-          const res = await fetch(`/api/places/reverse?lat=${latitude}&lon=${longitude}`, {
-            signal: controller.signal
-          });
-          if (res.ok && !controller.signal.aborted) {
-            const data = await res.json();
-            if (data.place && !controller.signal.aborted) {
-              setPlaceName(data.place.placeName);
-              setCity(data.place.city);
-              setCountry(data.place.country);
-              ignoreNextSearchRef.current = true;
-              setLocationQuery(data.place.placeName);
-            }
-          }
-        } catch (e) {
-          if (e instanceof DOMException && e.name === "AbortError") return;
-          // Fall back gracefully if reverse geocoding fails
+        if (requestId !== locationRequestIdRef.current) {
+          return;
         }
-        
-        if (!controller.signal.aborted) {
-          toast.success("Location acquired");
-          setGettingLocation(false);
-        }
+
+        await resolveSelectedCoordinates({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          source: "device",
+          requestId
+        });
       },
       (error) => {
-        if (controller.signal.aborted) return;
-        
-        setGettingLocation(false);
-        if (error.code === error.PERMISSION_DENIED) {
-          toast.error("Location permission was denied");
-        } else if (error.code === error.POSITION_UNAVAILABLE) {
-          toast.error("Could not get your current location");
-        } else if (error.code === error.TIMEOUT) {
-          toast.error("Location request timed out. Please try again.");
-        } else {
-          toast.error("An unknown error occurred getting location");
+        if (requestId !== locationRequestIdRef.current) {
+          return;
         }
+
+        setGettingLocation(false);
+        setResolvingLocation(false);
+        const message = getGeolocationErrorMessage({
+          supported: true,
+          secureContext,
+          code: error.code
+        });
+        setLocationFeedback({ tone: "error", message });
+        toast.error(message);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
+  }
+
+  function handleCoordinateSelection(
+    coordinates: { latitude: number; longitude: number },
+    source: "map" | "coordinates"
+  ) {
+    const requestId = beginLocationRequest();
+    void resolveSelectedCoordinates({
+      latitude: coordinates.latitude,
+      longitude: coordinates.longitude,
+      source,
+      requestId
+    });
   }
 
 
@@ -235,12 +423,17 @@ export function CreatePostForm() {
       return;
     }
 
+    if (gettingLocation || resolvingLocation) {
+      toast.error("Wait for the selected location to finish updating before publishing.");
+      return;
+    }
+
     if (!caption.trim() || !placeName.trim() || !city.trim() || !country.trim() || !visitedAt) {
       toast.error("Fill in the memory details before publishing.");
       return;
     }
 
-    if (latitude === null || longitude === null) {
+    if (!hasFiniteCoordinates(latitude, longitude)) {
       toast.error("Choose a place by tapping the map or searching for one.");
       return;
     }
@@ -255,28 +448,32 @@ export function CreatePostForm() {
       country,
       latitude,
       longitude,
-      visitedAt: new Date(visitedAt).toISOString(),
+      visitedAt: serializeVisitedDateInput(visitedAt),
       taggedUserIds,
       collectionIds
     };
 
-    const response = await fetch("/api/posts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
+    try {
+      const response = await fetch("/api/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
 
-    setSubmitting(false);
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        toast.error(data?.error ?? "Could not create post.");
+        return;
+      }
 
-    if (!response.ok) {
-      const data = await response.json();
-      toast.error(data.error ?? "Could not create post.");
-      return;
+      toast.success("Your memory is pinned.");
+      router.push("/map");
+      router.refresh();
+    } catch {
+      toast.error("Could not create post. Check your connection and try again.");
+    } finally {
+      setSubmitting(false);
     }
-
-    toast.success("Your memory is pinned.");
-    router.push("/map");
-    router.refresh();
   }
 
   return (
@@ -416,7 +613,10 @@ export function CreatePostForm() {
                   ))}
                 </div>
               )}
-              {!placeResults.length && !searchingPlaces && locationQuery.trim().length >= 2 && (
+              {placeSearchError ? (
+                <p className="mt-3 text-xs text-rose-600">{placeSearchError}</p>
+              ) : null}
+              {!placeSearchError && !placeResults.length && !searchingPlaces && locationQuery.trim().length >= 2 && (
                 <p className="mt-3 text-xs text-[var(--foreground)]/45">No places found. Try a different name or spelling.</p>
               )}
             </div>
@@ -433,26 +633,57 @@ export function CreatePostForm() {
                   variant="secondary"
                   className="rounded-full bg-[var(--surface-strong)] text-xs font-medium hover:bg-[var(--card-strong)]"
                   onClick={getCurrentLocation}
-                  disabled={gettingLocation}
+                  disabled={gettingLocation || resolvingLocation}
                 >
                   {gettingLocation ? (
                     <LoaderCircle className="mr-2 h-3.5 w-3.5 animate-spin" />
                   ) : (
                     <MapPin className="mr-2 h-3.5 w-3.5" />
                   )}
-                  {gettingLocation ? "Locating..." : "Use my current location"}
+                  {gettingLocation ? "Finding location..." : resolvingLocation ? "Updating place..." : "Use my current location"}
                 </Button>
               </div>
 
               <div className="mt-4 overflow-hidden rounded-[1.75rem]">
                 <DynamicLocationPicker
                   position={latitude !== null && longitude !== null ? { latitude, longitude } : null}
-                  onSelect={(coordinates) => {
-                    setLatitude(coordinates.latitude);
-                    setLongitude(coordinates.longitude);
-                  }}
+                  onSelect={(coordinates) => handleCoordinateSelection(coordinates, "map")}
                 />
               </div>
+
+              {(locationFeedback || hasFiniteCoordinates(latitude, longitude)) && (
+                <div
+                  className={`mt-4 rounded-[1.5rem] border px-4 py-3 ${
+                    locationFeedback?.tone === "error"
+                      ? "border-rose-200 bg-rose-50/80"
+                      : locationFeedback?.tone === "success"
+                        ? "border-[rgba(56,182,201,0.22)] bg-[rgba(56,182,201,0.08)]"
+                        : "border-[rgba(24,85,56,0.14)] bg-[var(--surface-strong)]"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--foreground)]/45">Selected location</p>
+                      <p className="mt-1 truncate text-sm font-medium text-[var(--foreground)]">
+                        {placeName.trim() || (hasFiniteCoordinates(latitude, longitude) ? "Pinned coordinates selected" : "No place selected yet")}
+                      </p>
+                      {city.trim() || country.trim() ? (
+                        <p className="mt-1 text-xs text-[var(--foreground)]/60">
+                          {[city.trim(), country.trim()].filter(Boolean).join(", ")}
+                        </p>
+                      ) : null}
+                      {locationFeedback ? (
+                        <p className="mt-2 text-xs text-[var(--foreground)]/68">{locationFeedback.message}</p>
+                      ) : null}
+                    </div>
+                    {hasFiniteCoordinates(latitude, longitude) ? (
+                      <p className="shrink-0 font-mono text-[11px] text-[var(--foreground)]/52">
+                        {latitude!.toFixed(4)}, {longitude!.toFixed(4)}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              )}
             </div>
 
           <Textarea
@@ -462,15 +693,45 @@ export function CreatePostForm() {
             required
           />
           <div className="grid gap-4 sm:grid-cols-2">
-            <Input value={placeName} onChange={(event) => setPlaceName(event.target.value)} placeholder="Place name" required />
+            <Input
+              value={placeName}
+              onChange={(event) => {
+                setPlaceName(event.target.value);
+                if (locationFeedback?.tone === "error") {
+                  setLocationFeedback(null);
+                }
+              }}
+              placeholder="Place name"
+              required
+            />
             <div>
               <label className="mb-1.5 block text-xs font-medium text-[var(--foreground)]/65">Date visited</label>
               <Input value={visitedAt} onChange={(event) => setVisitedAt(event.target.value)} type="date" required />
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Input value={city} onChange={(event) => setCity(event.target.value)} placeholder="City" required />
-            <Input value={country} onChange={(event) => setCountry(event.target.value)} placeholder="Country" required />
+            <Input
+              value={city}
+              onChange={(event) => {
+                setCity(event.target.value);
+                if (locationFeedback?.tone === "error") {
+                  setLocationFeedback(null);
+                }
+              }}
+              placeholder="City"
+              required
+            />
+            <Input
+              value={country}
+              onChange={(event) => {
+                setCountry(event.target.value);
+                if (locationFeedback?.tone === "error") {
+                  setLocationFeedback(null);
+                }
+              }}
+              placeholder="Country"
+              required
+            />
           </div>
 
           <VisitedWithPicker selectedFriendIds={taggedUserIds} onChange={setTaggedUserIds} />
@@ -482,19 +743,32 @@ export function CreatePostForm() {
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <Input
                 value={latitude ?? ""}
-                onChange={(event) => setLatitude(event.target.value ? Number(event.target.value) : null)}
+                onChange={(event) => setLatitude(parseCoordinateInput(event.target.value))}
+                onBlur={() => {
+                  if (hasFiniteCoordinates(latitude, longitude)) {
+                    handleCoordinateSelection({ latitude: latitude!, longitude: longitude! }, "coordinates");
+                  }
+                }}
                 type="number"
                 step="0.000001"
                 placeholder="Latitude"
               />
               <Input
                 value={longitude ?? ""}
-                onChange={(event) => setLongitude(event.target.value ? Number(event.target.value) : null)}
+                onChange={(event) => setLongitude(parseCoordinateInput(event.target.value))}
+                onBlur={() => {
+                  if (hasFiniteCoordinates(latitude, longitude)) {
+                    handleCoordinateSelection({ latitude: latitude!, longitude: longitude! }, "coordinates");
+                  }
+                }}
                 type="number"
                 step="0.000001"
                 placeholder="Longitude"
               />
             </div>
+            <p className="mt-3 text-xs text-[var(--foreground)]/55">
+              Leaving either coordinate field refreshes the selected place details from the newest pin.
+            </p>
           </details>
 
           <div className="rounded-3xl border bg-[var(--surface-soft)] p-4 text-sm text-[var(--foreground)]/65">
@@ -504,7 +778,12 @@ export function CreatePostForm() {
             </div>
             <p className="mt-2">Search for a place, tap the map, or fine-tune with advanced coordinates. No live location is used.</p>
           </div>
-          <Button type="button" onClick={onSubmit} className="w-full" disabled={submitting || uploading}>
+          <Button
+            type="button"
+            onClick={onSubmit}
+            className="w-full"
+            disabled={submitting || uploading || gettingLocation || resolvingLocation}
+          >
             {submitting ? "Saving pin..." : "Publish memory"}
           </Button>
           </div>

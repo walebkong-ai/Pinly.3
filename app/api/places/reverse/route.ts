@@ -47,11 +47,19 @@ export async function GET(request: Request) {
       data.address?.city ??
       data.address?.town ??
       data.address?.village ??
+      data.address?.hamlet ??
+      data.address?.suburb ??
+      data.address?.borough ??
+      data.address?.neighbourhood ??
+      data.address?.neighborhood ??
       data.address?.municipality ??
       data.address?.county ??
+      data.address?.state_district ??
+      data.address?.state ??
+      data.address?.region ??
       "";
 
-    const country = data.address?.country ?? "";
+    const country = data.address?.country ?? data.address?.country_code?.toUpperCase() ?? "";
     const placeName = data.name || data.display_name?.split(",")[0] || "Pinned Location";
 
     return Response.json({
