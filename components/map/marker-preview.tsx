@@ -60,7 +60,7 @@ export function MarkerPreview({
 
   return (
     <div className="w-64 space-y-3">
-      <div className="aspect-[16/10] overflow-hidden rounded-2xl">
+      <div className="aspect-square overflow-hidden rounded-2xl">
         <MediaView mediaType={post.mediaType} mediaUrl={post.mediaUrl} thumbnailUrl={post.thumbnailUrl} />
       </div>
       <div className="flex items-center gap-3">

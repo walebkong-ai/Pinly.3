@@ -150,7 +150,7 @@ export function CreatePostForm() {
           toast.error("An unknown error occurred getting location");
         }
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, maximumAge: 0 }
     );
   }
 

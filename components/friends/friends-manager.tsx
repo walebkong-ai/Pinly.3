@@ -164,14 +164,33 @@ export function FriendsManager() {
             <h2 className="text-sm font-semibold uppercase tracking-widest text-[var(--foreground)]/45">Invite Friends</h2>
             <p className="mt-1 text-sm text-[var(--foreground)]/80">Can't find them? Send a link.</p>
           </div>
-          <Button variant="secondary" onClick={async () => {
-            const res = await fetch("/api/invites", { method: "POST" });
-            if (res.ok) {
+          <Button variant="secondary" onClick={async (e) => {
+            const btn = e.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "Generating...";
+            try {
+              const res = await fetch("/api/invites", { method: "POST" });
+              if (!res.ok) throw new Error("Failed");
               const data = await res.json();
-              await navigator.clipboard.writeText(window.location.origin + data.link);
-              toast.success("Invite link copied!");
-            } else {
-              toast.error("Failed to generate link.");
+              const url = window.location.origin + data.link;
+              
+              if (navigator.share) {
+                await navigator.share({ url });
+              } else {
+                const textArea = document.createElement("textarea");
+                textArea.value = url;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand("copy");
+                textArea.remove();
+                toast.success("Invite link copied!");
+              }
+            } catch (err) {
+              if ((err as Error).name !== "AbortError") {
+                toast.error("Failed to generate link.");
+              }
+            } finally {
+              btn.innerHTML = originalText;
             }
           }}>
             <LinkIcon className="h-4 w-4 mr-2" />
