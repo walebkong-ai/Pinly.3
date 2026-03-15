@@ -29,6 +29,7 @@ model User {
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
   posts            Post[]
+  visitTags        PostVisitTag[]
   likes            Like[]
   savedPosts       SavedPost[]
   comments         Comment[]
@@ -86,6 +87,7 @@ model Post {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  visitedWith  PostVisitTag[]
   likes        Like[]
   saves        SavedPost[]
   comments     Comment[]
@@ -95,6 +97,19 @@ model Post {
   @@index([city, country])
   @@index([city, country, visitedAt])
   @@index([latitude, longitude])
+}
+
+model PostVisitTag {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId, createdAt])
+  @@index([userId])
 }
 
 model Like {

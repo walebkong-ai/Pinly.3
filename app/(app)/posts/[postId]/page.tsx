@@ -13,6 +13,7 @@ import { CommentSection } from "@/components/post/comment-section";
 import { DirectionsSheet } from "@/components/post/directions-sheet";
 import { SaveButton } from "@/components/post/save-button";
 import { ShareSheet } from "@/components/post/share-sheet";
+import { VisitedWithList } from "@/components/post/visited-with-list";
 
 type Props = {
   params: Promise<{ postId: string }>;
@@ -112,6 +113,8 @@ export default async function PostDetailPage({ params }: Props) {
                 </div>
               </div>
             </div>
+
+            <VisitedWithList friends={post.visitedWith} />
 
             {/* Caption */}
             <p className="text-sm leading-7 text-[var(--foreground)]/76 md:text-base md:leading-8">{post.caption}</p>

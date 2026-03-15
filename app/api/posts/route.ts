@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { mapQuerySchema, postSchema } from "@/lib/validation";
 import { apiError, apiValidationError } from "@/lib/api";
-import { getMapData } from "@/lib/data";
+import { getFriendIds, getMapData } from "@/lib/data";
 
 export const runtime = "nodejs";
 
@@ -67,11 +67,37 @@ export async function POST(request: Request) {
   }
 
   try {
+    const validFriendIds = await getFriendIds(session.user.id);
+    const taggedUserIds = Array.from(new Set(parsed.data.taggedUserIds)).filter(
+      (taggedUserId) => taggedUserId !== session.user.id
+    );
+
+    if (taggedUserIds.some((taggedUserId) => !validFriendIds.includes(taggedUserId))) {
+      return apiError("You can only tag friends who were with you.", 403);
+    }
+
     const post = await prisma.post.create({
       data: {
-        ...parsed.data,
+        mediaType: parsed.data.mediaType,
+        mediaUrl: parsed.data.mediaUrl,
+        thumbnailUrl: parsed.data.thumbnailUrl,
+        caption: parsed.data.caption,
+        placeName: parsed.data.placeName,
+        city: parsed.data.city,
+        country: parsed.data.country,
+        latitude: parsed.data.latitude,
+        longitude: parsed.data.longitude,
         visitedAt: new Date(parsed.data.visitedAt),
-        userId: session.user.id
+        userId: session.user.id,
+        ...(taggedUserIds.length > 0
+          ? {
+              visitedWith: {
+                create: taggedUserIds.map((taggedUserId) => ({
+                  userId: taggedUserId
+                }))
+              }
+            }
+          : {})
       },
       include: {
         user: {
@@ -81,11 +107,30 @@ export async function POST(request: Request) {
             username: true,
             avatarUrl: true
           }
+        },
+        visitedWith: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                username: true,
+                avatarUrl: true
+              }
+            }
+          }
         }
       }
     });
-
-    return Response.json({ post }, { status: 201 });
+    return Response.json(
+      {
+        post: {
+          ...post,
+          visitedWith: post.visitedWith.map((tag) => tag.user)
+        }
+      },
+      { status: 201 }
+    );
   } catch (error) {
     return apiError("Could not save this memory post.", 500, {
       code: "POST_CREATE_FAILED",

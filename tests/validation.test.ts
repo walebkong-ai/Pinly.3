@@ -25,9 +25,31 @@ describe("schema validation", () => {
         country: "Canada",
         latitude: 45.5,
         longitude: -73.55,
-        visitedAt: new Date().toISOString()
+        visitedAt: new Date().toISOString(),
+        taggedUserIds: ["cjf6x6q7m0000z6m5b3h9l3k1"]
       }).success
     ).toBe(true);
+  });
+
+  test("posts default visited-with tags to an empty array", () => {
+    const result = postSchema.safeParse({
+      mediaType: "IMAGE",
+      mediaUrl: "/uploads/example.jpg",
+      thumbnailUrl: null,
+      caption: "Golden hour by the water.",
+      placeName: "Harbourfront",
+      city: "Toronto",
+      country: "Canada",
+      latitude: 43.64,
+      longitude: -79.38,
+      visitedAt: new Date().toISOString()
+    });
+
+    expect(result.success).toBe(true);
+
+    if (result.success) {
+      expect(result.data.taggedUserIds).toEqual([]);
+    }
   });
 
   test("sign up password message uses password wording", () => {

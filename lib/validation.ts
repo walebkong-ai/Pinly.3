@@ -61,7 +61,8 @@ export const postSchema = z.object({
   country: z.string().min(2).max(80),
   latitude: z.coerce.number().min(-90).max(90),
   longitude: z.coerce.number().min(-180).max(180),
-  visitedAt: z.string().datetime()
+  visitedAt: z.string().datetime(),
+  taggedUserIds: z.array(z.string().cuid()).max(24).default([])
 });
 
 export const mapQuerySchema = z.object({

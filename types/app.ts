@@ -23,6 +23,7 @@ export type PostSummary = {
   visitedAt: string | Date;
   createdAt: string | Date;
   savedByViewer?: boolean;
+  visitedWith?: UserSummary[];
   user: UserSummary;
 };
 

@@ -20,6 +20,18 @@ export const postSummaryInclude = Prisma.validator<Prisma.PostInclude>()({
         }
       }
     }
+  },
+  visitedWith: {
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          avatarUrl: true
+        }
+      }
+    }
   }
 });
 
@@ -58,7 +70,15 @@ async function attachSavedState(viewerId: string, posts: IncludedPost[]) {
 
   return posts.map((post) => ({
     ...post,
+    visitedWith: post.visitedWith.map((tag) => tag.user),
     savedByViewer: savedPostIds.has(post.id)
+  }));
+}
+
+function normalizePostSummaries(posts: IncludedPost[]) {
+  return posts.map((post) => ({
+    ...post,
+    visitedWith: post.visitedWith.map((tag) => tag.user)
   }));
 }
 
@@ -168,7 +188,7 @@ export async function getMapData({
     take: 500
   });
 
-  const filteredPosts = filterPostsByCategories(posts, categories);
+  const filteredPosts = filterPostsByCategories(normalizePostSummaries(posts), categories);
 
   return buildMapPayload({
     posts: filteredPosts,
@@ -316,6 +336,7 @@ export async function getSavedPosts(viewerId: string, limit = 48) {
 
     return savedPosts.map((savedPost) => ({
       ...savedPost.post,
+      visitedWith: savedPost.post.visitedWith.map((tag) => tag.user),
       savedByViewer: true
     }));
   } catch {

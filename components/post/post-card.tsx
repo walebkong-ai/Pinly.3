@@ -8,6 +8,7 @@ import { LikeButton } from "@/components/post/like-button";
 import { CommentSection } from "@/components/post/comment-section";
 import { ShareSheet } from "@/components/post/share-sheet";
 import { SaveButton } from "@/components/post/save-button";
+import { VisitedWithList } from "@/components/post/visited-with-list";
 
 export function PostCard({
   post,
@@ -50,6 +51,7 @@ export function PostCard({
             </div>
           </div>
           <p className="mt-2 line-clamp-2 text-sm leading-6 text-[var(--foreground)]/72">{post.caption}</p>
+          <VisitedWithList friends={post.visitedWith} compact />
           <p className="mt-2 text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">
             Visited {formatVisitDate(post.visitedAt)}
           </p>
