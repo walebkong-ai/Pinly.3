@@ -130,7 +130,7 @@ export function AppShell({ children, user }: AppShellProps) {
         {children}
       </main>
 
-      <nav className="glass-panel fixed inset-x-4 bottom-4 z-[950] flex items-center justify-between rounded-full px-3 py-2 md:hidden">
+      <nav className="glass-panel fixed inset-x-4 bottom-4 z-[950] flex items-center justify-between rounded-full px-3 py-1.5 md:hidden">
         {[...primaryNavItems, ...secondaryNavItems.filter((item) => item.href !== "/cities")].map(({ href, label, icon: Icon }) => {
           const resolvedHref = href === "/profile/me" ? `/profile/${user.username}` : href;
           return (
@@ -138,7 +138,7 @@ export function AppShell({ children, user }: AppShellProps) {
               key={href}
               href={resolvedHref}
               className={cn(
-                "flex flex-col items-center gap-1 rounded-full px-2 py-2 text-[10px] sm:px-3 sm:text-[11px] font-medium",
+                "flex flex-col items-center gap-0.5 rounded-full px-2 py-1.5 text-[10px] sm:px-3 sm:text-[11px] font-medium",
                 pathname === resolvedHref ? "text-[var(--accent)]" : "text-[var(--foreground)]/58"
               )}
             >

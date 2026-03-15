@@ -19,7 +19,7 @@ export function BottomSheet({
   return (
     <div
       className={cn(
-        "pointer-events-none absolute inset-x-0 bottom-0 z-[760] flex justify-center p-3 transition-all duration-400 ease-out",
+        "pointer-events-none absolute inset-x-0 bottom-0 z-[760] flex justify-center p-3 transition-all duration-400 ease-out will-change-[transform,opacity]",
         post ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
       )}
     >

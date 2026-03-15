@@ -83,7 +83,9 @@ export async function getMapData({
               { placeName: { contains: query, mode: "insensitive" } },
               { city: { contains: query, mode: "insensitive" } },
               { country: { contains: query, mode: "insensitive" } },
-              { caption: { contains: query, mode: "insensitive" } }
+              { caption: { contains: query, mode: "insensitive" } },
+              { user: { name: { contains: query, mode: "insensitive" } } },
+              { user: { username: { contains: query, mode: "insensitive" } } }
             ]
           }
         : {})

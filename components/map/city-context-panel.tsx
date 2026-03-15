@@ -38,36 +38,41 @@ export function CityContextPanel({ cityContext }: { cityContext: CityContext | n
         </div>
       </button>
 
-      <div className={`mt-4 md:mt-5 max-h-[35vh] md:max-h-none overflow-y-auto md:overflow-visible space-y-5 md:space-y-0 pr-1 md:pr-0 ${collapsed ? "hidden md:block" : "block"}`}>
-        <div>
-          <p className="text-sm font-semibold">Who visited</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {cityContext.visitors.map((visitor) => (
-            <div key={visitor.id} className="flex items-center gap-2 rounded-full border bg-white/70 px-3 py-2">
-              <Avatar name={visitor.name} src={visitor.avatarUrl} className="h-7 w-7" />
-              <span className="text-sm">{visitor.name}</span>
-            </div>
-          ))}
-        </div>
-        </div>
-
-        <div className="mt-5 md:mt-5">
-          <p className="text-sm font-semibold">Recent trips</p>
-        <div className="mt-3 space-y-3">
-          {cityContext.recentTrips.map((trip) => (
-            <Link key={trip.id} href={`/posts/${trip.id}`} className="flex items-start gap-3 rounded-3xl border bg-white/70 p-3">
-              <Avatar name={trip.user.name} src={trip.user.avatarUrl} className="h-8 w-8" />
-              <div className="min-w-0">
-                <p className="text-sm font-medium">{trip.user.name}</p>
-                <p className="mt-1 text-sm text-[var(--foreground)]/68">{trip.placeName}</p>
-                <p className="mt-1 inline-flex items-center gap-1 text-xs uppercase tracking-[0.12em] text-[var(--foreground)]/45">
-                  <MapPin className="h-3.5 w-3.5" />
-                  {formatVisitDate(trip.visitedAt)}
-                </p>
+      {/* Animated expand/collapse on mobile, always visible on desktop */}
+      <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${collapsed ? "grid-rows-[0fr] md:grid-rows-[1fr]" : "grid-rows-[1fr]"}`}>
+        <div className="overflow-hidden">
+          <div className={`max-h-[35vh] md:max-h-none overflow-y-auto md:overflow-visible space-y-5 md:space-y-0 pr-1 md:pr-0 ${collapsed ? "" : "mt-4 md:mt-5"}`}>
+            <div>
+              <p className="text-sm font-semibold">Who visited</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {cityContext.visitors.map((visitor) => (
+                  <div key={visitor.id} className="flex items-center gap-2 rounded-full border bg-white/70 px-3 py-2">
+                    <Avatar name={visitor.name} src={visitor.avatarUrl} className="h-7 w-7" />
+                    <span className="text-sm">{visitor.name}</span>
+                  </div>
+                ))}
               </div>
-            </Link>
-          ))}
-        </div>
+            </div>
+
+            <div className="mt-5 md:mt-5">
+              <p className="text-sm font-semibold">Recent trips</p>
+              <div className="mt-3 space-y-3">
+                {cityContext.recentTrips.map((trip) => (
+                  <Link key={trip.id} href={`/posts/${trip.id}`} className="flex items-start gap-3 rounded-3xl border bg-white/70 p-3">
+                    <Avatar name={trip.user.name} src={trip.user.avatarUrl} className="h-8 w-8" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">{trip.user.name}</p>
+                      <p className="mt-1 text-sm text-[var(--foreground)]/68">{trip.placeName}</p>
+                      <p className="mt-1 inline-flex items-center gap-1 text-xs uppercase tracking-[0.12em] text-[var(--foreground)]/45">
+                        <MapPin className="h-3.5 w-3.5" />
+                        {formatVisitDate(trip.visitedAt)}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

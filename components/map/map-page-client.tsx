@@ -209,7 +209,7 @@ export function MapPageClient() {
                     <Input
                       value={query}
                       onChange={(event) => setQuery(event.target.value)}
-                      placeholder="Search cities, places, captions"
+                      placeholder="Search cities, places, people, captions"
                       className="bg-white/88 pl-11 shadow-sm"
                     />
                   </div>

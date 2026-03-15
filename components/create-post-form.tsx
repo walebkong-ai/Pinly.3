@@ -304,6 +304,9 @@ export function CreatePostForm() {
                 ))}
               </div>
             )}
+            {!placeResults.length && !searchingPlaces && locationQuery.trim().length >= 2 && (
+              <p className="mt-3 text-xs text-[var(--foreground)]/45">No places found. Try a different name or spelling.</p>
+            )}
           </div>
 
           <div className="rounded-[1.75rem] border bg-white/60 p-4">
