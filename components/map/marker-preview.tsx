@@ -59,25 +59,24 @@ export function MarkerPreview({
   const post = marker.post;
 
   return (
-    <div className="w-64 space-y-3">
-      <div className="aspect-square overflow-hidden rounded-2xl">
+    <div className="w-60 space-y-2">
+      <div className="aspect-[4/3] overflow-hidden rounded-xl">
         <MediaView mediaType={post.mediaType} mediaUrl={post.mediaUrl} thumbnailUrl={post.thumbnailUrl} />
       </div>
-      <div className="flex items-center gap-3">
-        <Avatar name={post.user.name} src={post.user.avatarUrl} className="h-8 w-8" />
+      <div className="flex items-center gap-2">
+        <Avatar name={post.user.name} src={post.user.avatarUrl} className="h-7 w-7 shrink-0" />
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">{post.user.name}</p>
+          <p className="truncate text-sm font-semibold leading-tight">{post.user.name}</p>
           <p className="truncate text-xs text-slate-500">@{post.user.username}</p>
         </div>
       </div>
       <div>
-        <p className="font-medium">{post.placeName}</p>
-        <p className="mt-1 inline-flex items-center gap-1 text-xs text-slate-500">
-          <MapPin className="h-3.5 w-3.5" />
+        <p className="inline-flex items-center gap-1 text-xs text-slate-500">
+          <MapPin className="h-3.5 w-3.5 shrink-0" />
           {post.city}, {post.country}
         </p>
-        <p className="mt-2 line-clamp-2 text-sm text-slate-700">{post.caption}</p>
-        <p className="mt-2 text-xs uppercase tracking-[0.14em] text-slate-400">{formatVisitDate(post.visitedAt)}</p>
+        <p className="mt-1 line-clamp-2 text-sm text-slate-700">{post.caption}</p>
+        <p className="mt-1 text-xs uppercase tracking-[0.14em] text-slate-400">{formatVisitDate(post.visitedAt)}</p>
       </div>
       <Button className="w-full justify-between" onClick={() => onExpandPost(post)}>
         Expand memory
