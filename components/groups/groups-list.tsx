@@ -5,6 +5,7 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { MessageCircle, Plus, Users } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
+import { StartDirectMessageSheet } from "@/components/messages/start-direct-message-sheet";
 
 type Group = {
   id: string;
@@ -31,6 +32,7 @@ type Group = {
     senderName: string;
     content: string;
   } | null;
+  hasUnread?: boolean;
   _count: {
     members: number;
     messages: number;
@@ -67,13 +69,16 @@ export function GroupsList() {
               Keep group trip chats and one-to-one friend conversations together in one place.
             </p>
           </div>
-          <Link
-            href="/messages/create"
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-95"
-          >
-            <Plus className="h-4 w-4" />
-            New Group
-          </Link>
+          <div className="flex flex-wrap gap-2 sm:justify-end">
+            <StartDirectMessageSheet />
+            <Link
+              href="/messages/create"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-95"
+            >
+              <Plus className="h-4 w-4" />
+              New Group
+            </Link>
+          </div>
         </div>
 
         <div className="mt-6 space-y-3">
@@ -88,7 +93,11 @@ export function GroupsList() {
               <Link
                 key={group.id}
                 href={`/messages/${group.id}`}
-                className="flex items-start justify-between gap-3 rounded-3xl border bg-[var(--surface-soft)] p-4 transition-colors hover:bg-[var(--surface-strong)]"
+                className={`flex items-start justify-between gap-3 rounded-3xl border p-4 transition-colors hover:bg-[var(--surface-strong)] ${
+                  group.hasUnread
+                    ? "border-[rgba(56,182,201,0.22)] bg-[rgba(56,182,201,0.1)]"
+                    : "bg-[var(--surface-soft)]"
+                }`}
               >
                 <div className="flex items-center gap-4">
                   {group.isDirect && group.directUser ? (
@@ -120,7 +129,7 @@ export function GroupsList() {
                     <p className="mt-1 truncate text-sm text-[var(--foreground)]/60">
                       {group.isDirect && group.directUser ? `@${group.directUser.username}` : `${group._count.members} members`}
                     </p>
-                    <p className="mt-1 line-clamp-2 text-sm text-[var(--foreground)]/72">
+                    <p className={`mt-1 line-clamp-2 text-sm ${group.hasUnread ? "font-medium text-[var(--foreground)]" : "text-[var(--foreground)]/72"}`}>
                       {group.lastMessage
                         ? `${group.lastMessage.senderName}: ${group.lastMessage.content}`
                         : group.isDirect
@@ -130,13 +139,18 @@ export function GroupsList() {
                   </div>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-2 pt-0.5 text-right">
-                  <span className="text-xs text-[var(--foreground)]/45">
+                  <span className={`text-xs ${group.hasUnread ? "font-medium text-[var(--map-accent)]" : "text-[var(--foreground)]/45"}`}>
                     {formatDistanceToNow(new Date(group.lastMessage?.createdAt ?? group.updatedAt), { addSuffix: true })}
                   </span>
                   <span className="inline-flex items-center gap-1 text-xs text-[var(--foreground)]/55">
                     <MessageCircle className="h-3.5 w-3.5" />
                     {group._count.messages}
                   </span>
+                  {group.hasUnread ? (
+                    <span className="inline-flex items-center rounded-full bg-[var(--map-accent)] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white">
+                      New
+                    </span>
+                  ) : null}
                 </div>
               </Link>
             ))

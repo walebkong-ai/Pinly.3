@@ -2,12 +2,13 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { apiError } from "@/lib/api";
 import { z } from "zod";
+import { getFriendIds } from "@/lib/data";
 
 export const runtime = "nodejs";
 
 const createGroupSchema = z.object({
   name: z.string().min(1).max(50),
-  memberIds: z.array(z.string()).min(1),
+  memberIds: z.array(z.string().cuid()).min(1),
 });
 
 export async function GET() {
@@ -64,11 +65,19 @@ export async function GET() {
       const directUser = group.isDirect
         ? group.members.find((member) => member.user.id !== userId)?.user ?? null
         : null;
+      const viewerMembership = group.members.find((member) => member.user.id === userId) ?? null;
       const latestMessage = group.messages[0] ?? null;
 
       return {
         ...group,
         directUser,
+        hasUnread:
+          Boolean(
+            latestMessage &&
+            viewerMembership &&
+            new Date(latestMessage.createdAt).getTime() > new Date(viewerMembership.lastReadAt).getTime() &&
+            latestMessage.user.id !== userId
+          ),
         lastMessage: latestMessage
           ? {
               id: latestMessage.id,
@@ -96,9 +105,16 @@ export async function POST(request: Request) {
   try {
     const json = await request.json();
     const { name, memberIds } = createGroupSchema.parse(json);
+    const requestedMemberIds = Array.from(new Set(memberIds)).filter((memberId) => memberId !== userId);
+    const friendIds = await getFriendIds(userId);
 
-    // Verify all memberIds are actually friends (omitted for brevity, assume valid or filter).
-    // In a real app, you would intersect memberIds with getVisibleUserIds(userId).
+    if (requestedMemberIds.length === 0) {
+      return apiError("Select at least one friend to start a group.", 400);
+    }
+
+    if (requestedMemberIds.some((memberId) => !friendIds.includes(memberId))) {
+      return apiError("Groups can only include your friends.", 403);
+    }
 
     const group = await prisma.group.create({
       data: {
@@ -106,7 +122,7 @@ export async function POST(request: Request) {
         members: {
           create: [
             { userId, role: "OWNER" },
-            ...memberIds.map(id => ({ userId: id, role: "MEMBER" as const }))
+            ...requestedMemberIds.map(id => ({ userId: id, role: "MEMBER" as const }))
           ],
         },
       },

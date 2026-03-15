@@ -12,13 +12,15 @@ export function MessageFriendButton({
   label = "Message",
   variant = "secondary",
   className,
-  fullWidth = false
+  fullWidth = false,
+  onConversationOpened
 }: {
   friendId: string;
   label?: string;
   variant?: "primary" | "secondary" | "ghost" | "danger";
   className?: string;
   fullWidth?: boolean;
+  onConversationOpened?: () => void;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -45,6 +47,7 @@ export function MessageFriendButton({
       const data = await response.json();
       router.push(`/messages/${data.groupId}`);
       router.refresh();
+      onConversationOpened?.();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not open this conversation.");
     } finally {

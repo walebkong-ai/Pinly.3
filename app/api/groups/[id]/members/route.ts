@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { apiError } from "@/lib/api";
 import { z } from "zod";
+import { getFriendIds } from "@/lib/data";
 
 export const runtime = "nodejs";
 
@@ -44,7 +45,14 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
   }
 
   const existingMemberIds = new Set(group.members.map((m: { userId: string }) => m.userId));
-  const newMembers = parsed.data.userIds.filter(id => !existingMemberIds.has(id));
+  const requestedMemberIds = Array.from(new Set(parsed.data.userIds)).filter((memberId) => memberId !== userId);
+  const friendIds = await getFriendIds(userId);
+
+  if (requestedMemberIds.some((memberId) => !friendIds.includes(memberId))) {
+    return apiError("You can only add friends to a group.", 403);
+  }
+
+  const newMembers = requestedMemberIds.filter(id => !existingMemberIds.has(id));
 
   if (newMembers.length > 0) {
     await prisma.groupMember.createMany({

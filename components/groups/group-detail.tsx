@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Send, Users, X, UserPlus, CheckCircle2, LoaderCircle, Share2, Image as ImageIcon } from "lucide-react";
@@ -7,6 +8,7 @@ import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 type GroupDetails = {
   id: string;
@@ -49,7 +51,7 @@ type Message = {
   } | null;
 };
 
-export function GroupDetail({ groupId }: { groupId: string }) {
+export function GroupDetail({ groupId, viewerId }: { groupId: string; viewerId: string }) {
   const [group, setGroup] = useState<GroupDetails | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [content, setContent] = useState("");
@@ -159,6 +161,9 @@ export function GroupDetail({ groupId }: { groupId: string }) {
       const data = await response.json();
       setMessages((prev) => [...prev, data.message]);
       scrollToBottom();
+    } else {
+      setContent(text);
+      toast.error("Could not send this message.");
     }
   };
 
@@ -240,26 +245,25 @@ export function GroupDetail({ groupId }: { groupId: string }) {
             </div>
           ) : (
             messages.map((msg) => (
-              <div key={msg.id} className="flex gap-3">
-                <Avatar name={msg.user.name} src={msg.user.avatarUrl} className="h-8 w-8 flex-shrink-0" />
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">{msg.user.name}</span>
+              <div key={msg.id} className={cn("flex gap-3", msg.user.id === viewerId && "justify-end")}>
+                {msg.user.id !== viewerId ? (
+                  <Avatar name={msg.user.name} src={msg.user.avatarUrl} className="h-8 w-8 flex-shrink-0" />
+                ) : null}
+                <div className={cn("flex max-w-[85%] flex-col", msg.user.id === viewerId && "items-end")}>
+                  <div className={cn("flex items-center gap-2", msg.user.id === viewerId && "justify-end")}>
+                    <span className="text-sm font-medium">{msg.user.id === viewerId ? "You" : msg.user.name}</span>
                     <span className="text-xs text-[var(--foreground)]/45">
                       {formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}
                     </span>
                   </div>
                   {msg.content.startsWith("[SHARED_POST]:") ? (
-                    <div className="mt-1 w-[240px] md:w-[280px] overflow-hidden rounded-2xl border bg-white shadow-sm">
+                    <div className="mt-1 w-[240px] overflow-hidden rounded-2xl border bg-white shadow-sm md:w-[280px]">
                       <div className="flex items-center gap-2 border-b bg-black/5 p-3 text-sm font-medium">
                         <Share2 className="h-4 w-4 text-[var(--accent)]" />
-                        Shared a post
+                        {msg.user.id === viewerId ? "You shared a post" : "Shared a post"}
                       </div>
                       {msg.sharedPost ? (
-                        <div 
-                          className="group relative cursor-pointer block"
-                          onClick={() => window.location.href = `/posts/${msg.sharedPost?.id}`}
-                        >
+                        <Link href={`/posts/${msg.sharedPost.id}`} className="group relative block">
                           <div className="aspect-[4/3] w-full bg-black/5 relative">
                             {msg.sharedPost.thumbnailUrl ? (
                               <img 
@@ -281,7 +285,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
                           <div className="p-3 bg-white text-center text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent)]/5 transition-colors">
                             Open Post
                           </div>
-                        </div>
+                        </Link>
                       ) : (
                         <div className="p-4 text-center text-sm text-[var(--foreground)]/60">
                           Post unavailable or you do not have permission to view it.
@@ -289,11 +293,21 @@ export function GroupDetail({ groupId }: { groupId: string }) {
                       )}
                     </div>
                   ) : (
-                    <div className="mt-1 inline-block rounded-2xl rounded-tl-none bg-white p-3 text-sm shadow-sm md:max-w-[80%] whitespace-pre-wrap break-words">
+                    <div
+                      className={cn(
+                        "mt-1 inline-block whitespace-pre-wrap break-words rounded-2xl p-3 text-sm shadow-sm md:max-w-[80%]",
+                        msg.user.id === viewerId
+                          ? "rounded-tr-none bg-[var(--accent)] text-[var(--accent-foreground)]"
+                          : "rounded-tl-none bg-white text-[var(--foreground)]"
+                      )}
+                    >
                       {msg.content}
                     </div>
                   )}
                 </div>
+                {msg.user.id === viewerId ? (
+                  <Avatar name={msg.user.name} src={msg.user.avatarUrl} className="h-8 w-8 flex-shrink-0" />
+                ) : null}
               </div>
             ))
           )}
