@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useDeferredValue, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Crosshair, LoaderCircle, MapPin, Search, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -41,38 +41,67 @@ export function CreatePostForm() {
   const [searchingPlaces, setSearchingPlaces] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [placeResults, setPlaceResults] = useState<PlaceSearchResult[]>([]);
-  const deferredLocationQuery = useDeferredValue(locationQuery);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  useEffect(() => {
-    let ignore = false;
-
-    async function searchPlaces() {
-      if (deferredLocationQuery.trim().length < 2) {
-        setPlaceResults([]);
-        return;
-      }
-
-      setSearchingPlaces(true);
-      const response = await fetch(`/api/places/search?q=${encodeURIComponent(deferredLocationQuery.trim())}`);
+  // Debounced place search — 300ms delay, cancels in-flight requests
+  const searchPlaces = useCallback(async (q: string, signal: AbortSignal) => {
+    if (q.trim().length < 2) {
+      setPlaceResults([]);
       setSearchingPlaces(false);
-
-      if (!response.ok) {
-        return;
-      }
-
-      const data = await response.json();
-
-      if (!ignore) {
-        setPlaceResults(data.places ?? []);
-      }
+      return;
     }
 
-    void searchPlaces();
+    setSearchingPlaces(true);
+    try {
+      const response = await fetch(`/api/places/search?q=${encodeURIComponent(q.trim())}`, { signal });
+      if (signal.aborted) return;
+      if (!response.ok) {
+        setSearchingPlaces(false);
+        return;
+      }
+      const data = await response.json();
+      if (!signal.aborted) {
+        setPlaceResults(data.places ?? []);
+      }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+    } finally {
+      if (!signal.aborted) setSearchingPlaces(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Clear previous timer
+    if (searchTimerRef.current) {
+      clearTimeout(searchTimerRef.current);
+    }
+    // Abort previous in-flight request
+    if (abortRef.current) {
+      abortRef.current.abort();
+    }
+
+    if (locationQuery.trim().length < 2) {
+      setPlaceResults([]);
+      setSearchingPlaces(false);
+      return;
+    }
+
+    // Show searching indicator immediately for responsiveness
+    setSearchingPlaces(true);
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    searchTimerRef.current = setTimeout(() => {
+      void searchPlaces(locationQuery, controller.signal);
+    }, 300);
 
     return () => {
-      ignore = true;
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+      controller.abort();
     };
-  }, [deferredLocationQuery]);
+  }, [locationQuery, searchPlaces]);
 
   async function uploadFile(file: File) {
     const formData = new FormData();

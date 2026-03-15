@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Map, { Marker, Popup, MapRef, ViewStateChangeEvent } from "react-map-gl/maplibre";
 import type { MapMarker, PostSummary } from "@/types/app";
 import { MarkerPreview } from "@/components/map/marker-preview";
@@ -72,27 +72,17 @@ export function MapCanvas({
   }) => void;
 }) {
   const mapRef = useRef<MapRef | null>(null);
-  const [viewState, setViewState] = useState(defaultCenter);
   const [popupInfo, setPopupInfo] = useState<MapMarker | null>(null);
 
-  // Re-report bounds when map data loads or viewport changes
-  useEffect(() => {
-    reportViewport(mapRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [markers]);
+  // Stable callback ref to avoid stale closures
+  const onViewportChangeRef = useRef(onViewportChange);
+  onViewportChangeRef.current = onViewportChange;
 
-  useEffect(() => {
-    // If a post is expanded externally (via a click from feed/profile, or clicking "Expand" inside the popup)
-    // we want to ensure the map popup itself disappears cleanly so it doesn't linger underneath or conflict.
-    if (selectedPostId) {
-      setPopupInfo(null);
-    }
-  }, [selectedPostId]);
-
-  function reportViewport(mapInstance: MapRef | null) {
+  const reportViewport = useCallback(() => {
+    const mapInstance = mapRef.current;
     if (!mapInstance) return;
     const bounds = mapInstance.getMap().getBounds();
-    onViewportChange({
+    onViewportChangeRef.current({
       zoom: mapInstance.getZoom(),
       bounds: {
         north: bounds.getNorth(),
@@ -101,11 +91,22 @@ export function MapCanvas({
         west: bounds.getWest()
       }
     });
-  }
+  }, []);
 
-  function handleMoveEnd(e: ViewStateChangeEvent) {
-    reportViewport(mapRef.current);
-  }
+  // Report bounds on initial load
+  useEffect(() => {
+    reportViewport();
+  }, [reportViewport]);
+
+  useEffect(() => {
+    if (selectedPostId) {
+      setPopupInfo(null);
+    }
+  }, [selectedPostId]);
+
+  const handleMoveEnd = useCallback(() => {
+    reportViewport();
+  }, [reportViewport]);
 
   function zoomToMarker(marker: MapMarker) {
     if (!mapRef.current) return;
@@ -124,9 +125,8 @@ export function MapCanvas({
     <div className="absolute inset-0 bg-[var(--background)]">
       <Map
         ref={mapRef}
-        {...viewState}
+        initialViewState={defaultCenter}
         style={{ width: "100%", height: "100%", backgroundColor: "transparent" }}
-        onMove={(e) => setViewState(e.viewState)}
         onMoveEnd={handleMoveEnd}
         mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
         interactiveLayerIds={[]}
