@@ -9,7 +9,6 @@ import {
   buildGoogleMapsDirectionsUrl,
   getDirectionsProviderOrder,
   hasValidDirectionsCoordinates,
-  isLikelyMobileDevice,
   type DirectionsProvider
 } from "@/lib/directions";
 import { cn } from "@/lib/utils";
@@ -40,7 +39,6 @@ export function DirectionsSheet({
 }: DirectionsSheetProps) {
   const [open, setOpen] = useState(false);
   const [providerOrder, setProviderOrder] = useState<DirectionsProvider[]>(["google", "apple"]);
-  const [preferSameWindow, setPreferSameWindow] = useState(false);
   const locationAvailable = hasValidDirectionsCoordinates(post);
 
   useEffect(() => {
@@ -55,7 +53,6 @@ export function DirectionsSheet({
     };
 
     setProviderOrder(getDirectionsProviderOrder(platformInfo));
-    setPreferSameWindow(isLikelyMobileDevice(platformInfo));
   }, []);
 
   const providerLinks = useMemo(
@@ -78,17 +75,6 @@ export function DirectionsSheet({
         .filter((provider): provider is NonNullable<typeof provider> => provider !== null),
     [post, providerOrder]
   );
-
-  function handleOpenDirections(url: string) {
-    setOpen(false);
-
-    if (preferSameWindow) {
-      window.location.assign(url);
-      return;
-    }
-
-    window.open(url, "_blank", "noopener,noreferrer");
-  }
 
   return (
     <Drawer.Root open={open} onOpenChange={setOpen}>
@@ -128,10 +114,12 @@ export function DirectionsSheet({
 
             <div className="mt-5 space-y-3">
               {providerLinks.map((provider) => (
-                <button
+                <a
                   key={provider.provider}
-                  type="button"
-                  onClick={() => handleOpenDirections(provider.href)}
+                  href={provider.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setOpen(false)}
                   className="flex w-full items-center gap-4 rounded-[1.5rem] border border-black/5 bg-[var(--background)]/65 px-4 py-4 text-left transition hover:border-[var(--accent)]/25 hover:bg-[var(--accent)]/4 active:scale-[0.99]"
                 >
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--accent)] shadow-sm">
@@ -142,7 +130,7 @@ export function DirectionsSheet({
                     <p className="mt-0.5 text-sm text-[var(--foreground)]/58">{provider.subtitle}</p>
                   </div>
                   <ChevronRight className="h-5 w-5 shrink-0 text-[var(--foreground)]/35" />
-                </button>
+                </a>
               ))}
             </div>
           </div>

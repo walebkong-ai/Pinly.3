@@ -15,8 +15,6 @@ type PlatformInfo = {
 export type DirectionsProvider = "apple" | "google";
 
 const IOS_DEVICE_REGEX = /iPhone|iPad|iPod/i;
-const ANDROID_DEVICE_REGEX = /Android/i;
-const MOBILE_DEVICE_REGEX = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
 
 function createLabel(location: DirectionLocation) {
   return [location.placeName, location.city, location.country]
@@ -68,18 +66,6 @@ export function buildGoogleMapsDirectionsUrl(location: DirectionLocation) {
 
 export function isLikelyIOSDevice({ userAgent = "", platform = "", maxTouchPoints = 0 }: PlatformInfo) {
   return IOS_DEVICE_REGEX.test(userAgent) || (platform === "MacIntel" && maxTouchPoints > 1);
-}
-
-export function isLikelyAndroidDevice({ userAgent = "" }: PlatformInfo) {
-  return ANDROID_DEVICE_REGEX.test(userAgent);
-}
-
-export function isLikelyMobileDevice(platformInfo: PlatformInfo) {
-  return (
-    MOBILE_DEVICE_REGEX.test(platformInfo.userAgent ?? "") ||
-    isLikelyIOSDevice(platformInfo) ||
-    isLikelyAndroidDevice(platformInfo)
-  );
 }
 
 export function getDirectionsProviderOrder(platformInfo: PlatformInfo = {}): DirectionsProvider[] {
