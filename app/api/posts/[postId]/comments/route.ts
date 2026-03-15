@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { getVisiblePostById } from "@/lib/data";
-import { createNotification } from "@/lib/notifications";
+import { createNotificationSafely } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { apiError } from "@/lib/api";
 import { z } from "zod";
@@ -128,7 +128,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pos
   });
 
   if (parentId && parentCommentUserId && parentCommentUserId !== session.user.id) {
-    await createNotification({
+    await createNotificationSafely({
       userId: parentCommentUserId,
       actorId: session.user.id,
       type: "COMMENT_REPLIED",
@@ -139,7 +139,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pos
   }
 
   if (!parentId && post.userId !== session.user.id) {
-    await createNotification({
+    await createNotificationSafely({
       userId: post.userId,
       actorId: session.user.id,
       type: "POST_COMMENTED",
@@ -150,7 +150,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pos
   }
 
   if (parentId && post.userId !== session.user.id && post.userId !== parentCommentUserId) {
-    await createNotification({
+    await createNotificationSafely({
       userId: post.userId,
       actorId: session.user.id,
       type: "POST_COMMENTED",

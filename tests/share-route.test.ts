@@ -9,7 +9,7 @@ const groupUpdateManyMock = vi.fn();
 const groupUpsertMock = vi.fn();
 const groupMessageCreateMock = vi.fn();
 const transactionMock = vi.fn();
-const createNotificationMock = vi.fn();
+const createNotificationSafelyMock = vi.fn();
 
 vi.mock("@/lib/auth", () => ({
   auth: authMock
@@ -33,7 +33,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 vi.mock("@/lib/notifications", () => ({
-  createNotification: createNotificationMock
+  createNotificationSafely: createNotificationSafelyMock
 }));
 
 describe("post share route", () => {
@@ -50,7 +50,7 @@ describe("post share route", () => {
     groupUpsertMock.mockReset();
     groupMessageCreateMock.mockReset();
     transactionMock.mockReset();
-    createNotificationMock.mockReset();
+    createNotificationSafelyMock.mockReset();
 
     authMock.mockResolvedValue({
       user: {
@@ -116,9 +116,8 @@ describe("post share route", () => {
         })
       })
     );
-    expect(createNotificationMock).toHaveBeenCalledWith(
+    expect(createNotificationSafelyMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        db: expect.any(Object),
         userId: "owner_1",
         actorId: viewerId,
         type: "POST_SHARED",

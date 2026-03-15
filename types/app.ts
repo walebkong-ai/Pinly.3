@@ -108,6 +108,8 @@ export type PostSummary = {
   visitedAt: string | Date;
   createdAt: string | Date;
   savedByViewer?: boolean;
+  likedByViewer?: boolean;
+  likeCount?: number;
   visitedWith?: UserSummary[];
   user: UserSummary;
 };

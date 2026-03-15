@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { Bookmark } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export function SaveButton({
@@ -38,6 +39,7 @@ export function SaveButton({
         setSaved(Boolean(data.saved));
       } catch {
         setSaved(wasSaved);
+        toast.error("Could not update saved posts right now.");
       }
     });
   }

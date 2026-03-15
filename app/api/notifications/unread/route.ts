@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { apiError } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
+import { isPrismaSchemaNotReadyError } from "@/lib/prisma-errors";
 
 export const runtime = "nodejs";
 
@@ -11,12 +12,20 @@ export async function GET() {
     return apiError("Unauthorized", 401);
   }
 
-  const unreadCount = await prisma.notification.count({
-    where: {
-      userId: session.user.id,
-      readAt: null
+  let unreadCount = 0;
+
+  try {
+    unreadCount = await prisma.notification.count({
+      where: {
+        userId: session.user.id,
+        readAt: null
+      }
+    });
+  } catch (error) {
+    if (!isPrismaSchemaNotReadyError(error)) {
+      throw error;
     }
-  });
+  }
 
   return Response.json({ unreadCount });
 }

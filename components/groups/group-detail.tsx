@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MESSAGES_UPDATED_EVENT } from "@/lib/notification-events";
 import { cn } from "@/lib/utils";
 
 type GroupDetails = {
@@ -63,6 +64,12 @@ export function GroupDetail({ groupId, viewerId }: { groupId: string; viewerId: 
   const [addingMembers, setAddingMembers] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  function emitMessagesUpdated() {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent(MESSAGES_UPDATED_EVENT));
+    }
+  }
+
   useEffect(() => {
     async function fetchAll() {
       try {
@@ -77,6 +84,7 @@ export function GroupDetail({ groupId, viewerId }: { groupId: string; viewerId: 
           setGroup(groupData.group);
           setMessages(msgData.messages);
           scrollToBottom();
+          emitMessagesUpdated();
         }
       } finally {
         setLoading(false);
@@ -149,21 +157,28 @@ export function GroupDetail({ groupId, viewerId }: { groupId: string; viewerId: 
     const text = content.trim();
     setContent("");
 
-    const response = await fetch(`/api/groups/${groupId}/messages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: text }),
-    });
+    try {
+      const response = await fetch(`/api/groups/${groupId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: text }),
+      });
 
-    setSending(false);
-
-    if (response.ok) {
-      const data = await response.json();
-      setMessages((prev) => [...prev, data.message]);
-      scrollToBottom();
-    } else {
-      setContent(text);
+      if (response.ok) {
+        const data = await response.json();
+        setMessages((prev) => [...prev, data.message]);
+        scrollToBottom();
+        emitMessagesUpdated();
+      } else {
+        const data = await response.json().catch(() => null);
+        toast.error(data?.error ?? "Could not send this message.");
+        setContent(text);
+      }
+    } catch {
       toast.error("Could not send this message.");
+      setContent(text);
+    } finally {
+      setSending(false);
     }
   };
 

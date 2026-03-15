@@ -89,6 +89,15 @@ export async function createNotification({
   return db.notification.create({ data });
 }
 
+export async function createNotificationSafely(input: CreateNotificationInput) {
+  try {
+    return await createNotification(input);
+  } catch (error) {
+    console.error("Notification delivery skipped:", error);
+    return null;
+  }
+}
+
 export function getNotificationHref(notification: NotificationSummary) {
   switch (notification.type) {
     case "POST_LIKED":

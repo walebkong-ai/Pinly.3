@@ -22,19 +22,21 @@ export async function GET() {
     return Response.json({ unreadCount: 0 });
   }
 
-  let totalUnread = 0;
-
-  for (const member of memberships) {
-    const unreadMessages = await prisma.groupMessage.count({
-      where: {
-        groupId: member.groupId,
-        createdAt: {
-          gt: member.lastReadAt
+  const unreadCounts = await Promise.all(
+    memberships.map((member) =>
+      prisma.groupMessage.count({
+        where: {
+          groupId: member.groupId,
+          userId: {
+            not: userId
+          },
+          createdAt: {
+            gt: member.lastReadAt
+          }
         }
-      }
-    });
-    totalUnread += unreadMessages;
-  }
+      })
+    )
+  );
 
-  return Response.json({ unreadCount: totalUnread });
+  return Response.json({ unreadCount: unreadCounts.reduce((total, count) => total + count, 0) });
 }

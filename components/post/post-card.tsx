@@ -76,7 +76,12 @@ export function PostCard({
 
       {/* Like + Comment + Share + Open */}
       <div className="flex flex-wrap items-center gap-1 border-t px-4 pb-4 pt-2">
-        <LikeButton postId={post.id} showCount={showLikeCounts} />
+        <LikeButton
+          postId={post.id}
+          initialLiked={post.likedByViewer}
+          initialCount={post.likeCount}
+          showCount={showLikeCounts}
+        />
         {commentsEnabled ? (
           <CommentSection postId={post.id} />
         ) : (

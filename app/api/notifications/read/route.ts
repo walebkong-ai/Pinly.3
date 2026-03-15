@@ -2,6 +2,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { apiError, apiValidationError } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
+import { isPrismaSchemaNotReadyError } from "@/lib/prisma-errors";
 
 const markNotificationsReadSchema = z
   .object({
@@ -50,19 +51,27 @@ export async function POST(request: Request) {
 
   const now = new Date();
 
-  await prisma.notification.updateMany({
-    where,
-    data: {
-      readAt: now
-    }
-  });
+  let unreadCount = 0;
 
-  const unreadCount = await prisma.notification.count({
-    where: {
-      userId: session.user.id,
-      readAt: null
+  try {
+    await prisma.notification.updateMany({
+      where,
+      data: {
+        readAt: now
+      }
+    });
+
+    unreadCount = await prisma.notification.count({
+      where: {
+        userId: session.user.id,
+        readAt: null
+      }
+    });
+  } catch (error) {
+    if (!isPrismaSchemaNotReadyError(error)) {
+      throw error;
     }
-  });
+  }
 
   return Response.json({ ok: true, unreadCount });
 }

@@ -5,7 +5,7 @@ const getVisiblePostByIdMock = vi.fn();
 const findManyMock = vi.fn();
 const findFirstMock = vi.fn();
 const createMock = vi.fn();
-const createNotificationMock = vi.fn();
+const createNotificationSafelyMock = vi.fn();
 
 vi.mock("@/lib/auth", () => ({
   auth: authMock
@@ -26,7 +26,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 vi.mock("@/lib/notifications", () => ({
-  createNotification: createNotificationMock
+  createNotificationSafely: createNotificationSafelyMock
 }));
 
 describe("post comments route", () => {
@@ -36,7 +36,7 @@ describe("post comments route", () => {
     findManyMock.mockReset();
     findFirstMock.mockReset();
     createMock.mockReset();
-    createNotificationMock.mockReset();
+    createNotificationSafelyMock.mockReset();
 
     authMock.mockResolvedValue({ user: { id: "viewer_1" } });
   });
@@ -106,7 +106,7 @@ describe("post comments route", () => {
         }
       })
     );
-    expect(createNotificationMock).toHaveBeenCalledWith(
+    expect(createNotificationSafelyMock).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: "owner_1",
         actorId: "viewer_1",
@@ -175,7 +175,7 @@ describe("post comments route", () => {
         }
       })
     );
-    expect(createNotificationMock).toHaveBeenNthCalledWith(
+    expect(createNotificationSafelyMock).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
         userId: "parent_1",
@@ -184,7 +184,7 @@ describe("post comments route", () => {
         postId: "post_3"
       })
     );
-    expect(createNotificationMock).toHaveBeenNthCalledWith(
+    expect(createNotificationSafelyMock).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
         userId: "owner_1",

@@ -4,7 +4,7 @@ import { apiError } from "@/lib/api";
 import { z } from "zod";
 import { getFriendIds, getVisiblePostById } from "@/lib/data";
 import { buildDirectPairKey } from "@/lib/friendships";
-import { createNotification } from "@/lib/notifications";
+import { createNotificationSafely } from "@/lib/notifications";
 
 export const runtime = "nodejs";
 
@@ -137,15 +137,14 @@ export async function POST(request: Request, props: { params: Promise<{ postId: 
           }
         });
       }
+    });
 
-      await createNotification({
-        db: tx,
-        userId: post.userId,
-        actorId: userId,
-        type: "POST_SHARED",
-        postId,
-        friendRequestId: null
-      });
+    await createNotificationSafely({
+      userId: post.userId,
+      actorId: userId,
+      type: "POST_SHARED",
+      postId,
+      friendRequestId: null
     });
 
     return Response.json({ success: true, message: "Post shared successfully." });

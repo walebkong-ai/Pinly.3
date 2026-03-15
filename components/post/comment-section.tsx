@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { CornerDownRight, LoaderCircle, MessageCircle, Send } from "lucide-react";
+import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
@@ -96,10 +97,13 @@ export function CommentSection({
       if (res.status === 403) {
         setCommentsDisabled(true);
         setExpanded(false);
+        toast.error("Comments are turned off for this post.");
         return;
       }
 
       if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error ?? "Could not post comment right now.");
         return;
       }
 
@@ -126,6 +130,8 @@ export function CommentSection({
       requestAnimationFrame(() => {
         scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
       });
+    } catch {
+      toast.error("Could not post comment right now.");
     } finally {
       if (parentId) {
         setReplySubmittingId(null);

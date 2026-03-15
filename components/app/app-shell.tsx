@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 import { Avatar } from "@/components/ui/avatar";
 import { Brand } from "@/components/brand";
 import { SignOutButton } from "@/components/sign-out-button";
-import { NOTIFICATIONS_UPDATED_EVENT } from "@/lib/notification-events";
+import { MESSAGES_UPDATED_EVENT, NOTIFICATIONS_UPDATED_EVENT } from "@/lib/notification-events";
 import { cn } from "@/lib/utils";
 
 type AppShellProps = {
@@ -70,16 +70,18 @@ export function AppShell({ children, user }: AppShellProps) {
         // ignore
       }
     }
-    const handleNotificationsUpdated = () => {
+    const handleUnreadDataUpdated = () => {
       void loadUnreadCounts();
     };
 
     void loadUnreadCounts();
-    window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, handleNotificationsUpdated);
+    window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, handleUnreadDataUpdated);
+    window.addEventListener(MESSAGES_UPDATED_EVENT, handleUnreadDataUpdated);
 
     return () => {
       ignore = true;
-      window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, handleNotificationsUpdated);
+      window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, handleUnreadDataUpdated);
+      window.removeEventListener(MESSAGES_UPDATED_EVENT, handleUnreadDataUpdated);
     };
   }, [pathname]);
 

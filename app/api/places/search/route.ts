@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { apiError, apiValidationError } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
+import { isPrismaSchemaNotReadyError } from "@/lib/prisma-errors";
 import { getSearchTerms, rankBySearch } from "@/lib/search";
 import { placeSearchSchema } from "@/lib/validation";
 import { buildWantToGoPlaceKey } from "@/lib/want-to-go";
@@ -63,31 +64,40 @@ export async function GET(request: Request) {
   }
 
   const searchTerms = getSearchTerms(parsed.data.q);
-  const wantToGoPlaces = session?.user?.id
-    ? await prisma.wantToGoPlace.findMany({
-        where: {
-          userId: session.user.id,
-          AND: searchTerms.map((term) => ({
-            OR: [
-              { placeName: { contains: term, mode: "insensitive" } },
-              { city: { contains: term, mode: "insensitive" } },
-              { country: { contains: term, mode: "insensitive" } }
-            ]
-          }))
-        },
-        select: {
-          id: true,
-          placeName: true,
-          city: true,
-          country: true,
-          latitude: true,
-          longitude: true,
-          updatedAt: true
-        },
-        take: 8,
-        orderBy: { updatedAt: "desc" }
-      })
-    : [];
+  const wantToGoPlaces =
+    session?.user?.id
+      ? await prisma.wantToGoPlace
+          .findMany({
+            where: {
+              userId: session.user.id,
+              AND: searchTerms.map((term) => ({
+                OR: [
+                  { placeName: { contains: term, mode: "insensitive" } },
+                  { city: { contains: term, mode: "insensitive" } },
+                  { country: { contains: term, mode: "insensitive" } }
+                ]
+              }))
+            },
+            select: {
+              id: true,
+              placeName: true,
+              city: true,
+              country: true,
+              latitude: true,
+              longitude: true,
+              updatedAt: true
+            },
+            take: 8,
+            orderBy: { updatedAt: "desc" }
+          })
+          .catch((error) => {
+            if (isPrismaSchemaNotReadyError(error)) {
+              return [];
+            }
+
+            throw error;
+          })
+      : [];
   const localPlaces: PlaceSearchResult[] = wantToGoPlaces.map((place) => ({
     id: `want-to-go:${place.id}`,
     placeName: place.placeName,

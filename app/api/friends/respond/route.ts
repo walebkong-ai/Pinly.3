@@ -1,9 +1,10 @@
 import { auth } from "@/lib/auth";
 import { normalizeFriendPair } from "@/lib/friendships";
-import { createNotification } from "@/lib/notifications";
+import { createNotificationSafely } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { friendRequestActionSchema } from "@/lib/validation";
 import { apiError, apiValidationError } from "@/lib/api";
+import { getPrismaErrorCode } from "@/lib/prisma-errors";
 
 export const runtime = "nodejs";
 
@@ -48,11 +49,17 @@ export async function POST(request: Request) {
   });
 
   if (status === "ACCEPTED") {
-    await prisma.friendship.create({
-      data: normalizeFriendPair(friendRequest.fromUserId, friendRequest.toUserId)
-    });
+    try {
+      await prisma.friendship.create({
+        data: normalizeFriendPair(friendRequest.fromUserId, friendRequest.toUserId)
+      });
+    } catch (error) {
+      if (getPrismaErrorCode(error) !== "P2002") {
+        throw error;
+      }
+    }
 
-    await createNotification({
+    await createNotificationSafely({
       userId: friendRequest.fromUserId,
       actorId: session.user.id,
       type: "FRIEND_REQUEST_ACCEPTED",

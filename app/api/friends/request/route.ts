@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { normalizeFriendPair } from "@/lib/friendships";
-import { createNotification } from "@/lib/notifications";
+import { createNotificationSafely } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { friendRequestSchema } from "@/lib/validation";
 import { apiError, apiValidationError } from "@/lib/api";
@@ -62,24 +62,40 @@ export async function POST(request: Request) {
     return apiError("A friend request is already pending.", 409);
   }
 
-  const friendRequest = await prisma.friendRequest.create({
-    data: {
-      fromUserId: session.user.id,
-      toUserId: target.id
-    },
-    include: {
-      toUser: {
-        select: {
-          id: true,
-          name: true,
-          username: true,
-          avatarUrl: true
-        }
-      }
-    }
-  });
+  const friendRequest =
+    existingRequest?.fromUserId === session.user.id && existingRequest.toUserId === target.id
+      ? await prisma.friendRequest.update({
+          where: { id: existingRequest.id },
+          data: { status: "PENDING" },
+          include: {
+            toUser: {
+              select: {
+                id: true,
+                name: true,
+                username: true,
+                avatarUrl: true
+              }
+            }
+          }
+        })
+      : await prisma.friendRequest.create({
+          data: {
+            fromUserId: session.user.id,
+            toUserId: target.id
+          },
+          include: {
+            toUser: {
+              select: {
+                id: true,
+                name: true,
+                username: true,
+                avatarUrl: true
+              }
+            }
+          }
+        });
 
-  await createNotification({
+  await createNotificationSafely({
     userId: target.id,
     actorId: session.user.id,
     type: "FRIEND_REQUEST_RECEIVED",

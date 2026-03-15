@@ -5,7 +5,7 @@ const getVisiblePostByIdMock = vi.fn();
 const likeCreateMock = vi.fn();
 const likeCountMock = vi.fn();
 const likeDeleteManyMock = vi.fn();
-const createNotificationMock = vi.fn();
+const createNotificationSafelyMock = vi.fn();
 
 vi.mock("@/lib/auth", () => ({
   auth: authMock
@@ -26,7 +26,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 vi.mock("@/lib/notifications", () => ({
-  createNotification: createNotificationMock
+  createNotificationSafely: createNotificationSafelyMock
 }));
 
 describe("post like route", () => {
@@ -38,7 +38,7 @@ describe("post like route", () => {
     likeCreateMock.mockReset();
     likeCountMock.mockReset();
     likeDeleteManyMock.mockReset();
-    createNotificationMock.mockReset();
+    createNotificationSafelyMock.mockReset();
 
     authMock.mockResolvedValue({
       user: {
@@ -62,7 +62,7 @@ describe("post like route", () => {
       liked: true,
       likeCount: 4
     });
-    expect(createNotificationMock).toHaveBeenCalledWith(
+    expect(createNotificationSafelyMock).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: "owner_1",
         actorId: viewerId,

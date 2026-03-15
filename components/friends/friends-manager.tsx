@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Check, Clock3, Search, UserPlus, X, Link as LinkIcon } from "lucide-react";
+import { Check, Clock3, LoaderCircle, Search, UserPlus, X, Link as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,8 @@ type FriendState = {
 export function FriendsManager() {
   const [query, setQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [copyingInvite, setCopyingInvite] = useState(false);
   const [state, setState] = useState<FriendState>({
     friends: [],
     incomingRequests: [],
@@ -49,19 +51,39 @@ export function FriendsManager() {
   }, []);
 
   useEffect(() => {
+    const abortController = new AbortController();
     let ignore = false;
 
     async function search() {
       if (query.trim().length < 2) {
         setSearchResults([]);
+        setSearching(false);
         return;
       }
 
-      const response = await fetch(`/api/friends/search?q=${encodeURIComponent(query)}`);
-      const data = await response.json();
+      setSearching(true);
 
-      if (!ignore) {
-        setSearchResults(data.users ?? []);
+      try {
+        const response = await fetch(`/api/friends/search?q=${encodeURIComponent(query)}`, {
+          signal: abortController.signal
+        });
+        const data = await response.json().catch(() => null);
+
+        if (!response.ok) {
+          throw new Error(data?.error || "Could not search friends.");
+        }
+
+        if (!ignore) {
+          setSearchResults(data?.users ?? []);
+        }
+      } catch (error) {
+        if (!ignore && !(error instanceof DOMException && error.name === "AbortError")) {
+          toast.error("Could not search friends right now.");
+        }
+      } finally {
+        if (!ignore) {
+          setSearching(false);
+        }
       }
     }
 
@@ -69,6 +91,7 @@ export function FriendsManager() {
 
     return () => {
       ignore = true;
+      abortController.abort();
     };
   }, [query]);
 
@@ -107,6 +130,45 @@ export function FriendsManager() {
     await refresh();
   }
 
+  async function handleInviteLink() {
+    if (copyingInvite) {
+      return;
+    }
+
+    setCopyingInvite(true);
+
+    try {
+      const res = await fetch("/api/invites", { method: "POST" });
+      if (!res.ok) {
+        throw new Error("Failed");
+      }
+
+      const data = await res.json();
+      const url = window.location.origin + data.link;
+
+      if (navigator.share) {
+        await navigator.share({ url });
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+        toast.success("Invite link copied!");
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = url;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        textArea.remove();
+        toast.success("Invite link copied!");
+      }
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") {
+        toast.error("Failed to generate link.");
+      }
+    } finally {
+      setCopyingInvite(false);
+    }
+  }
+
   return (
     <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr] animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
       <section className="glass-panel rounded-[2rem] p-5">
@@ -139,6 +201,11 @@ export function FriendsManager() {
           </div>
         ) : null}
         <div className="mt-5 space-y-3">
+          {searching ? (
+            <div className="flex justify-center py-3">
+              <LoaderCircle className="h-5 w-5 animate-spin text-[var(--accent)]" />
+            </div>
+          ) : null}
           {searchResults.map((user) => (
             <div key={user.id} className="flex items-center justify-between rounded-3xl border bg-[var(--surface-soft)] p-3">
               <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
@@ -168,7 +235,7 @@ export function FriendsManager() {
               </div>
             </div>
           ))}
-          {!searchResults.length && query.length >= 2 && (
+          {!searching && !searchResults.length && query.length >= 2 && (
             <div className="rounded-3xl border border-dashed bg-[var(--surface-soft)] p-6 text-sm text-[var(--foreground)]/60">
               No matching usernames found.
             </div>
@@ -182,37 +249,9 @@ export function FriendsManager() {
             <h2 className="text-sm font-semibold uppercase tracking-widest text-[var(--foreground)]/45">Invite Friends</h2>
             <p className="mt-1 text-sm text-[var(--foreground)]/80">Can't find them? Send a link.</p>
           </div>
-          <Button variant="secondary" onClick={async (e) => {
-            const btn = e.currentTarget;
-            const originalText = btn.innerHTML;
-            btn.innerHTML = "Generating...";
-            try {
-              const res = await fetch("/api/invites", { method: "POST" });
-              if (!res.ok) throw new Error("Failed");
-              const data = await res.json();
-              const url = window.location.origin + data.link;
-              
-              if (navigator.share) {
-                await navigator.share({ url });
-              } else {
-                const textArea = document.createElement("textarea");
-                textArea.value = url;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand("copy");
-                textArea.remove();
-                toast.success("Invite link copied!");
-              }
-            } catch (err) {
-              if ((err as Error).name !== "AbortError") {
-                toast.error("Failed to generate link.");
-              }
-            } finally {
-              btn.innerHTML = originalText;
-            }
-          }}>
+          <Button variant="secondary" onClick={() => void handleInviteLink()} disabled={copyingInvite}>
             <LinkIcon className="h-4 w-4 mr-2" />
-            Copy Link
+            {copyingInvite ? "Generating..." : "Copy Link"}
           </Button>
         </section>
 

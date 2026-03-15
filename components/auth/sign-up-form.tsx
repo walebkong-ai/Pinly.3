@@ -108,11 +108,18 @@ export function SignUpForm() {
       return;
     }
 
-    await signIn("credentials", {
+    const signInResult = await signIn("credentials", {
       email: payload.email,
       password: payload.password,
       redirect: false
     });
+
+    if (signInResult?.error) {
+      toast.error("Account created, but automatic sign-in failed. Please sign in.");
+      router.push("/sign-in");
+      router.refresh();
+      return;
+    }
 
     toast.success("Your map is ready. Add a memory or friend to get started.");
     router.push("/map?welcome=1");

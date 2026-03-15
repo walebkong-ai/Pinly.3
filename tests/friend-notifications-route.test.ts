@@ -8,7 +8,7 @@ const friendRequestCreateMock = vi.fn();
 const friendRequestFindUniqueMock = vi.fn();
 const friendRequestUpdateMock = vi.fn();
 const friendshipCreateMock = vi.fn();
-const createNotificationMock = vi.fn();
+const createNotificationSafelyMock = vi.fn();
 
 vi.mock("@/lib/auth", () => ({
   auth: authMock
@@ -33,7 +33,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 vi.mock("@/lib/notifications", () => ({
-  createNotification: createNotificationMock
+  createNotificationSafely: createNotificationSafelyMock
 }));
 
 describe("friend request notification routes", () => {
@@ -50,7 +50,7 @@ describe("friend request notification routes", () => {
     friendRequestFindUniqueMock.mockReset();
     friendRequestUpdateMock.mockReset();
     friendshipCreateMock.mockReset();
-    createNotificationMock.mockReset();
+    createNotificationSafelyMock.mockReset();
 
     authMock.mockResolvedValue({
       user: {
@@ -86,7 +86,7 @@ describe("friend request notification routes", () => {
     );
 
     expect(response.status).toBe(201);
-    expect(createNotificationMock).toHaveBeenCalledWith(
+    expect(createNotificationSafelyMock).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: otherUserId,
         actorId: viewerId,
@@ -119,12 +119,52 @@ describe("friend request notification routes", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(createNotificationMock).toHaveBeenCalledWith(
+    expect(createNotificationSafelyMock).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: otherUserId,
         actorId: viewerId,
         type: "FRIEND_REQUEST_ACCEPTED",
         friendRequestId: requestId
+      })
+    );
+  });
+
+  test("sending again after a declined same-direction request reuses the existing record", async () => {
+    userFindUniqueMock.mockResolvedValue({
+      id: otherUserId,
+      username: "jordan"
+    });
+    friendRequestFindFirstMock.mockResolvedValue({
+      id: requestId,
+      fromUserId: viewerId,
+      toUserId: otherUserId,
+      status: "DECLINED"
+    });
+    friendRequestUpdateMock.mockResolvedValue({
+      id: requestId,
+      toUser: {
+        id: otherUserId,
+        name: "Jordan",
+        username: "jordan",
+        avatarUrl: null
+      }
+    });
+
+    const { POST } = await import("@/app/api/friends/request/route");
+    const response = await POST(
+      new Request("http://localhost/api/friends/request", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ username: "jordan" })
+      })
+    );
+
+    expect(response.status).toBe(201);
+    expect(friendRequestCreateMock).not.toHaveBeenCalled();
+    expect(friendRequestUpdateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: requestId },
+        data: { status: "PENDING" }
       })
     );
   });

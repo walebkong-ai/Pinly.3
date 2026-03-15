@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { Heart } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export function LikeButton({
@@ -18,6 +19,14 @@ export function LikeButton({
   const [liked, setLiked] = useState(initialLiked);
   const [count, setCount] = useState(initialCount);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setLiked(initialLiked);
+  }, [initialLiked]);
+
+  useEffect(() => {
+    setCount(initialCount);
+  }, [initialCount]);
 
   function toggleLike() {
     const wasLiked = liked;
@@ -38,10 +47,12 @@ export function LikeButton({
           // Revert optimistic update
           setLiked(wasLiked);
           setCount((c) => (wasLiked ? c + 1 : Math.max(0, c - 1)));
+          toast.error("Could not update like right now.");
         }
       } catch {
         setLiked(wasLiked);
         setCount((c) => (wasLiked ? c + 1 : Math.max(0, c - 1)));
+        toast.error("Could not update like right now.");
       }
     });
   }

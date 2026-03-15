@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { getVisiblePostById } from "@/lib/data";
-import { createNotification } from "@/lib/notifications";
+import { createNotificationSafely } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { apiError } from "@/lib/api";
 
@@ -22,7 +22,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pos
     await prisma.like.create({
       data: { postId, userId: session.user.id }
     });
-    await createNotification({
+    await createNotificationSafely({
       userId: post.userId,
       actorId: session.user.id,
       type: "POST_LIKED",
