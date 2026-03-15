@@ -211,21 +211,7 @@ export function CreatePostForm() {
         <p className="mt-3 text-sm leading-6 text-[var(--foreground)]/66">
           Add a photo or video from a place you intentionally want to remember. No background tracking, ever.
         </p>
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          className="mt-6 flex h-72 w-full flex-col items-center justify-center rounded-[2rem] border border-dashed bg-white/60 text-center"
-        >
-          {uploading ? (
-            <LoaderCircle className="h-8 w-8 animate-spin text-[var(--accent)]" />
-          ) : (
-            <>
-              <Upload className="h-8 w-8 text-[var(--accent)]" />
-              <p className="mt-4 font-medium">{uploadState ? "Replace media" : "Choose image or video"}</p>
-              <p className="mt-2 max-w-xs text-sm text-[var(--foreground)]/55">Upload a photo or a short video for this memory moment.</p>
-            </>
-          )}
-        </button>
+        {/* Hidden file input — always mounted so fileRef.current.click() works from both the dashed area and the Replace button */}
         <input
           ref={fileRef}
           type="file"
@@ -233,16 +219,56 @@ export function CreatePostForm() {
           className="hidden"
           onChange={(event) => {
             const file = event.target.files?.[0];
-
             if (file) {
               void uploadFile(file);
             }
+            // Reset input so re-selecting same file triggers onChange again
+            event.target.value = "";
           }}
         />
-        {uploadState && (
-          <div className="mt-4 rounded-3xl border bg-white/72 p-4 text-sm text-[var(--foreground)]/66">
-            Ready to post: <span className="font-medium text-[var(--foreground)]">{uploadState.mediaType.toLowerCase()}</span>
+        {/* Upload / Preview area */}
+        {uploading ? (
+          <div className="mt-6 flex h-64 w-full flex-col items-center justify-center rounded-[2rem] border border-dashed bg-white/60">
+            <LoaderCircle className="h-8 w-8 animate-spin text-[var(--accent)]" />
+            <p className="mt-3 text-sm text-[var(--foreground)]/55">Uploading…</p>
           </div>
+        ) : uploadState ? (
+          <div className="relative mt-6 overflow-hidden rounded-[2rem]">
+            {uploadState.mediaType === "VIDEO" ? (
+              <video
+                src={uploadState.mediaUrl}
+                poster={uploadState.thumbnailUrl ?? undefined}
+                controls
+                playsInline
+                className="max-h-72 w-full rounded-[2rem] object-cover"
+              />
+            ) : (
+              <img
+                src={uploadState.mediaUrl}
+                alt="Upload preview"
+                className="max-h-72 w-full rounded-[2rem] object-cover"
+              />
+            )}
+            {/* Replace button — floated over the bottom-right of the preview */}
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm transition hover:bg-black/80"
+            >
+              <Upload className="h-3.5 w-3.5" />
+              Replace
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="mt-6 flex h-64 w-full flex-col items-center justify-center rounded-[2rem] border border-dashed bg-white/60 text-center transition hover:bg-white/80"
+          >
+            <Upload className="h-8 w-8 text-[var(--accent)]" />
+            <p className="mt-4 font-medium">Choose image or video</p>
+            <p className="mt-2 max-w-xs text-sm text-[var(--foreground)]/55">Upload a photo or a short video for this memory moment.</p>
+          </button>
         )}
       </section>
 
