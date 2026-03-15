@@ -11,13 +11,18 @@ export default async function FeedPage() {
     redirect("/sign-in");
   }
 
-  const [posts, settings] = await Promise.all([
-    getRecentFeedPosts(session.user.id, 24),
-    prisma.userSettings.findUnique({ where: { userId: session.user.id } })
-  ]);
+  const posts = await getRecentFeedPosts(session.user.id, 24);
 
-  const showLikeCounts = settings?.showLikeCounts ?? true;
-  const showCommentCounts = settings?.showCommentCounts ?? true;
+  let showLikeCounts = true;
+  let showCommentCounts = true;
+
+  try {
+    const settings = await prisma.userSettings.findUnique({ where: { userId: session.user.id } });
+    showLikeCounts = settings?.showLikeCounts ?? true;
+    showCommentCounts = settings?.showCommentCounts ?? true;
+  } catch {
+    // Table doesn't exist yet — use safe defaults
+  }
 
   return (
     <div className="mx-auto max-w-xl space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">

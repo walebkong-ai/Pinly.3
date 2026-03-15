@@ -29,15 +29,26 @@ export default async function PostDetailPage({ params }: Props) {
     notFound();
   }
 
-  // Fetch like state and settings in parallel
-  const [liked, likeCount, settings] = await Promise.all([
-    prisma.like.findUnique({ where: { postId_userId: { postId: post.id, userId: session.user.id } } }).then((l) => !!l),
-    prisma.like.count({ where: { postId: post.id } }),
-    prisma.userSettings.findUnique({ where: { userId: session.user.id } })
-  ]);
+  // Fetch like state and settings — wrapped in try-catch because the Like/UserSettings tables
+  // may not exist in production yet if the migration hasn't been applied.
+  let liked = false;
+  let likeCount = 0;
+  let showLikeCounts = true;
+  let showCommentCounts = true;
 
-  const showLikeCounts = settings?.showLikeCounts ?? true;
-  const showCommentCounts = settings?.showCommentCounts ?? true;
+  try {
+    const [likeRow, count, settings] = await Promise.all([
+      prisma.like.findUnique({ where: { postId_userId: { postId: post.id, userId: session.user.id } } }),
+      prisma.like.count({ where: { postId: post.id } }),
+      prisma.userSettings.findUnique({ where: { userId: session.user.id } })
+    ]);
+    liked = !!likeRow;
+    likeCount = count;
+    showLikeCounts = settings?.showLikeCounts ?? true;
+    showCommentCounts = settings?.showCommentCounts ?? true;
+  } catch {
+    // Tables don't exist yet — use safe defaults
+  }
 
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
