@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Map, Newspaper, Plus, Search, Settings, UserRound, UsersRound, Users } from "lucide-react";
+import { Bell, Map, Newspaper, Plus, Search, Settings, UserRound, UsersRound, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { Avatar } from "@/components/ui/avatar";
 import { Brand } from "@/components/brand";
 import { SignOutButton } from "@/components/sign-out-button";
+import { NOTIFICATIONS_UPDATED_EVENT } from "@/lib/notification-events";
 import { cn } from "@/lib/utils";
 
 type AppShellProps = {
@@ -41,25 +42,45 @@ function isNavActive(pathname: string, href: string) {
 export function AppShell({ children, user }: AppShellProps) {
   const pathname = usePathname();
   const [unreadGroupsCount, setUnreadGroupsCount] = useState(0);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
 
   useEffect(() => {
     let ignore = false;
-    async function loadUnread() {
+    async function loadUnreadCounts() {
       try {
-        const response = await fetch("/api/groups/unread");
-        if (response.ok) {
-          const data = await response.json();
+        const [groupsResponse, notificationsResponse] = await Promise.all([
+          fetch("/api/groups/unread"),
+          fetch("/api/notifications/unread")
+        ]);
+
+        if (groupsResponse.ok) {
+          const data = await groupsResponse.json();
           if (!ignore) {
             setUnreadGroupsCount(data.unreadCount || 0);
+          }
+        }
+
+        if (notificationsResponse.ok) {
+          const data = await notificationsResponse.json();
+          if (!ignore) {
+            setUnreadNotificationsCount(data.unreadCount || 0);
           }
         }
       } catch {
         // ignore
       }
     }
-    void loadUnread();
+    const handleNotificationsUpdated = () => {
+      void loadUnreadCounts();
+    };
 
-    return () => { ignore = true; };
+    void loadUnreadCounts();
+    window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, handleNotificationsUpdated);
+
+    return () => {
+      ignore = true;
+      window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, handleNotificationsUpdated);
+    };
   }, [pathname]);
 
   return (
@@ -115,6 +136,23 @@ export function AppShell({ children, user }: AppShellProps) {
         </div>
 
         <div className="flex items-center gap-3">
+          <Link
+            href="/notifications"
+            aria-label="Notifications"
+            className={cn(
+              "relative inline-flex h-11 w-11 items-center justify-center rounded-2xl border transition",
+              isNavActive(pathname, "/notifications")
+                ? "border-[rgba(24,85,56,0.14)] bg-[var(--foreground)] text-[var(--background)] shadow-sm"
+                : "border-[rgba(24,85,56,0.08)] bg-[var(--surface-soft)] text-[var(--foreground)] hover:bg-[var(--surface-strong)]"
+            )}
+          >
+            <Bell className="h-5 w-5" />
+            {unreadNotificationsCount > 0 ? (
+              <div className="absolute -right-1.5 -top-1.5 z-30 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[var(--social-accent)] px-1 text-[10px] font-bold text-white shadow-sm ring-1 ring-[rgba(255,250,244,0.72)]">
+                {unreadNotificationsCount > 99 ? "99+" : unreadNotificationsCount}
+              </div>
+            ) : null}
+          </Link>
           <div className="hidden items-center gap-3 rounded-full bg-[var(--surface-soft)] px-3 py-2 sm:flex">
             <Avatar name={user.name ?? user.username ?? "Me"} src={user.avatarUrl} className="h-9 w-9" />
             <div className="pr-2">

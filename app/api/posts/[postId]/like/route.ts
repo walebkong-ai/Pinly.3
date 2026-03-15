@@ -1,4 +1,6 @@
 import { auth } from "@/lib/auth";
+import { getVisiblePostById } from "@/lib/data";
+import { createNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { apiError } from "@/lib/api";
 
@@ -10,10 +12,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ pos
   if (!session?.user?.id) return apiError("Unauthorized", 401);
 
   const { postId } = await params;
+  const post = await getVisiblePostById(session.user.id, postId);
+
+  if (!post) {
+    return apiError("Post not found", 404);
+  }
 
   try {
     await prisma.like.create({
       data: { postId, userId: session.user.id }
+    });
+    await createNotification({
+      userId: post.userId,
+      actorId: session.user.id,
+      type: "POST_LIKED",
+      postId,
+      dedupeKey: `POST_LIKED:${post.userId}:${session.user.id}:${postId}`
     });
     const count = await prisma.like.count({ where: { postId } });
     return Response.json({ liked: true, likeCount: count });

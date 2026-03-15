@@ -19,6 +19,15 @@ enum MediaType {
   VIDEO
 }
 
+enum NotificationType {
+  POST_LIKED
+  POST_COMMENTED
+  COMMENT_REPLIED
+  POST_SHARED
+  FRIEND_REQUEST_RECEIVED
+  FRIEND_REQUEST_ACCEPTED
+}
+
 model User {
   id               String          @id @default(cuid())
   name             String
@@ -35,6 +44,8 @@ model User {
   likes            Like[]
   savedPosts       SavedPost[]
   comments         Comment[]
+  notifications    Notification[]  @relation("UserNotifications")
+  actorNotifications Notification[] @relation("ActorNotifications")
   settings         UserSettings?
   sentRequests     FriendRequest[] @relation("SentFriendRequests")
   receivedRequests FriendRequest[] @relation("ReceivedFriendRequests")
@@ -54,6 +65,7 @@ model FriendRequest {
   updatedAt  DateTime            @updatedAt
   fromUser   User                @relation("SentFriendRequests", fields: [fromUserId], references: [id], onDelete: Cascade)
   toUser     User                @relation("ReceivedFriendRequests", fields: [toUserId], references: [id], onDelete: Cascade)
+  notifications Notification[]
 
   @@unique([fromUserId, toUserId])
   @@index([toUserId, status])
@@ -94,6 +106,7 @@ model Post {
   likes        Like[]
   saves        SavedPost[]
   comments     Comment[]
+  notifications Notification[]
 
   @@index([userId, createdAt])
   @@index([userId, visitedAt])
@@ -167,6 +180,28 @@ model SavedPost {
   @@index([postId])
 }
 
+model Notification {
+  id              String           @id @default(cuid())
+  userId          String
+  actorId         String
+  type            NotificationType
+  postId          String?
+  commentId       String?
+  friendRequestId String?
+  dedupeKey       String?          @unique
+  createdAt       DateTime         @default(now())
+  readAt          DateTime?
+  user            User             @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  actor           User             @relation("ActorNotifications", fields: [actorId], references: [id], onDelete: Cascade)
+  post            Post?            @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment         Comment?         @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  friendRequest   FriendRequest?   @relation(fields: [friendRequestId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt, createdAt])
+  @@index([actorId, createdAt])
+}
+
 model WantToGoPlace {
   id        String   @id @default(cuid())
   userId    String
@@ -196,6 +231,7 @@ model Comment {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies   Comment[] @relation("CommentReplies")
+  notifications Notification[]
 
   @@index([postId, createdAt])
   @@index([userId])

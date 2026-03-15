@@ -9,6 +9,7 @@ const groupUpdateManyMock = vi.fn();
 const groupUpsertMock = vi.fn();
 const groupMessageCreateMock = vi.fn();
 const transactionMock = vi.fn();
+const createNotificationMock = vi.fn();
 
 vi.mock("@/lib/auth", () => ({
   auth: authMock
@@ -31,6 +32,10 @@ vi.mock("@/lib/prisma", () => ({
   }
 }));
 
+vi.mock("@/lib/notifications", () => ({
+  createNotification: createNotificationMock
+}));
+
 describe("post share route", () => {
   const viewerId = "ck12345678901234567890123";
   const friendId = "ck99999999999999999999999";
@@ -45,13 +50,14 @@ describe("post share route", () => {
     groupUpsertMock.mockReset();
     groupMessageCreateMock.mockReset();
     transactionMock.mockReset();
+    createNotificationMock.mockReset();
 
     authMock.mockResolvedValue({
       user: {
         id: viewerId
       }
     });
-    getVisiblePostByIdMock.mockResolvedValue({ id: "post_1" });
+    getVisiblePostByIdMock.mockResolvedValue({ id: "post_1", userId: "owner_1" });
     groupMemberFindManyMock.mockResolvedValue([]);
     transactionMock.mockImplementation(async (callback: any) =>
       callback({
@@ -108,6 +114,15 @@ describe("post share route", () => {
           userId: viewerId,
           content: "[SHARED_POST]:post_1"
         })
+      })
+    );
+    expect(createNotificationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        db: expect.any(Object),
+        userId: "owner_1",
+        actorId: viewerId,
+        type: "POST_SHARED",
+        postId: "post_1"
       })
     );
   });

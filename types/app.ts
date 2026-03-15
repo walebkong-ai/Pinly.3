@@ -39,6 +39,34 @@ export type WantToGoPlaceSummary = {
   createdAt: string | Date;
 };
 
+export type NotificationSummary = {
+  id: string;
+  type:
+    | "POST_LIKED"
+    | "POST_COMMENTED"
+    | "COMMENT_REPLIED"
+    | "POST_SHARED"
+    | "FRIEND_REQUEST_RECEIVED"
+    | "FRIEND_REQUEST_ACCEPTED";
+  createdAt: string | Date;
+  readAt: string | Date | null;
+  actor: UserSummary;
+  post: {
+    id: string;
+    placeName: string;
+    city: string;
+    country: string;
+  } | null;
+  comment: {
+    id: string;
+    content: string;
+  } | null;
+  friendRequest: {
+    id: string;
+    status: "PENDING" | "ACCEPTED" | "DECLINED";
+  } | null;
+};
+
 export type PostSummary = {
   id: string;
   userId: string;

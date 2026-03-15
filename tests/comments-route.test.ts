@@ -5,6 +5,7 @@ const getVisiblePostByIdMock = vi.fn();
 const findManyMock = vi.fn();
 const findFirstMock = vi.fn();
 const createMock = vi.fn();
+const createNotificationMock = vi.fn();
 
 vi.mock("@/lib/auth", () => ({
   auth: authMock
@@ -24,6 +25,10 @@ vi.mock("@/lib/prisma", () => ({
   }
 }));
 
+vi.mock("@/lib/notifications", () => ({
+  createNotification: createNotificationMock
+}));
+
 describe("post comments route", () => {
   beforeEach(() => {
     authMock.mockReset();
@@ -31,6 +36,7 @@ describe("post comments route", () => {
     findManyMock.mockReset();
     findFirstMock.mockReset();
     createMock.mockReset();
+    createNotificationMock.mockReset();
 
     authMock.mockResolvedValue({ user: { id: "viewer_1" } });
   });
@@ -57,6 +63,7 @@ describe("post comments route", () => {
   test("POST creates a comment when comments are enabled", async () => {
     getVisiblePostByIdMock.mockResolvedValue({
       id: "post_2",
+      userId: "owner_1",
       user: {
         settings: {
           commentsEnabled: true
@@ -99,11 +106,20 @@ describe("post comments route", () => {
         }
       })
     );
+    expect(createNotificationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "owner_1",
+        actorId: "viewer_1",
+        type: "POST_COMMENTED",
+        postId: "post_2"
+      })
+    );
   });
 
   test("POST creates a reply when the parent comment is top-level", async () => {
     getVisiblePostByIdMock.mockResolvedValue({
       id: "post_3",
+      userId: "owner_1",
       user: {
         settings: {
           commentsEnabled: true
@@ -112,7 +128,8 @@ describe("post comments route", () => {
     });
     findFirstMock.mockResolvedValue({
       id: "comment_parent",
-      parentId: null
+      parentId: null,
+      userId: "parent_1"
     });
     createMock.mockResolvedValue({
       id: "comment_reply",
@@ -156,6 +173,24 @@ describe("post comments route", () => {
           content: "Same here",
           parentId: "comment_parent"
         }
+      })
+    );
+    expect(createNotificationMock).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        userId: "parent_1",
+        actorId: "viewer_1",
+        type: "COMMENT_REPLIED",
+        postId: "post_3"
+      })
+    );
+    expect(createNotificationMock).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        userId: "owner_1",
+        actorId: "viewer_1",
+        type: "POST_COMMENTED",
+        postId: "post_3"
       })
     );
   });

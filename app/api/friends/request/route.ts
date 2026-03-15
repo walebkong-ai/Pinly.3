@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { normalizeFriendPair } from "@/lib/friendships";
+import { createNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { friendRequestSchema } from "@/lib/validation";
 import { apiError, apiValidationError } from "@/lib/api";
@@ -76,6 +77,14 @@ export async function POST(request: Request) {
         }
       }
     }
+  });
+
+  await createNotification({
+    userId: target.id,
+    actorId: session.user.id,
+    type: "FRIEND_REQUEST_RECEIVED",
+    friendRequestId: friendRequest.id,
+    dedupeKey: `FRIEND_REQUEST_RECEIVED:${friendRequest.id}`
   });
 
   return Response.json({ friendRequest }, { status: 201 });

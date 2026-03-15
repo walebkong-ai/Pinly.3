@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { getVisiblePostById } from "@/lib/data";
+import { createNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { apiError } from "@/lib/api";
 import { z } from "zod";
@@ -85,6 +86,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pos
   }
 
   let parentId: string | null = null;
+  let parentCommentUserId: string | null = null;
 
   if (parsed.data.parentId) {
     const parentComment = await prisma.comment.findFirst({
@@ -94,7 +96,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ pos
       },
       select: {
         id: true,
-        parentId: true
+        parentId: true,
+        userId: true
       }
     });
 
@@ -107,6 +110,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pos
     }
 
     parentId = parentComment.id;
+    parentCommentUserId = parentComment.userId;
   }
 
   const comment = await prisma.comment.create({
@@ -122,6 +126,39 @@ export async function POST(request: Request, { params }: { params: Promise<{ pos
       }
     }
   });
+
+  if (parentId && parentCommentUserId && parentCommentUserId !== session.user.id) {
+    await createNotification({
+      userId: parentCommentUserId,
+      actorId: session.user.id,
+      type: "COMMENT_REPLIED",
+      postId,
+      commentId: comment.id,
+      dedupeKey: `COMMENT_REPLIED:${comment.id}`
+    });
+  }
+
+  if (!parentId && post.userId !== session.user.id) {
+    await createNotification({
+      userId: post.userId,
+      actorId: session.user.id,
+      type: "POST_COMMENTED",
+      postId,
+      commentId: comment.id,
+      dedupeKey: `POST_COMMENTED:${comment.id}`
+    });
+  }
+
+  if (parentId && post.userId !== session.user.id && post.userId !== parentCommentUserId) {
+    await createNotification({
+      userId: post.userId,
+      actorId: session.user.id,
+      type: "POST_COMMENTED",
+      postId,
+      commentId: comment.id,
+      dedupeKey: `POST_COMMENTED:${comment.id}:OWNER`
+    });
+  }
 
   return Response.json({ comment: { ...comment, replies: [] } }, { status: 201 });
 }

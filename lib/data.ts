@@ -6,7 +6,8 @@ import { getMapStage, getTimeFilterStart, buildLayerUserIds, buildMapPayload } f
 import { prisma } from "@/lib/prisma";
 import { buildVisibleUserIds } from "@/lib/permissions";
 import { buildWantToGoPlaceKey, type WantToGoLocation } from "@/lib/want-to-go";
-import type { CollectionChip, CollectionSummary, LayerMode, MapCategory, TimeFilter, WantToGoPlaceSummary } from "@/types/app";
+import { notificationInclude } from "@/lib/notifications";
+import type { CollectionChip, CollectionSummary, LayerMode, MapCategory, NotificationSummary, TimeFilter, WantToGoPlaceSummary } from "@/types/app";
 
 export const postSummaryInclude = Prisma.validator<Prisma.PostInclude>()({
   user: {
@@ -67,6 +68,10 @@ const collectionSummaryInclude = Prisma.validator<Prisma.PostCollectionInclude>(
 
 type IncludedCollection = Prisma.PostCollectionGetPayload<{
   include: typeof collectionSummaryInclude;
+}>;
+
+type IncludedNotification = Prisma.NotificationGetPayload<{
+  include: typeof notificationInclude;
 }>;
 
 function normalizeCollectionSummary(collection: IncludedCollection): CollectionSummary {
@@ -440,6 +445,26 @@ export async function getWantToGoPlaces(userId: string, limit = 64): Promise<Wan
   });
 
   return items;
+}
+
+export async function getNotifications(userId: string, limit = 50): Promise<NotificationSummary[]> {
+  const notifications = await prisma.notification.findMany({
+    where: { userId },
+    include: notificationInclude,
+    orderBy: { createdAt: "desc" },
+    take: limit
+  });
+
+  return notifications.map((notification: IncludedNotification) => ({
+    id: notification.id,
+    type: notification.type,
+    createdAt: notification.createdAt,
+    readAt: notification.readAt,
+    actor: notification.actor,
+    post: notification.post,
+    comment: notification.comment,
+    friendRequest: notification.friendRequest
+  }));
 }
 
 export async function getRecentFeedPosts(viewerId: string, limit = 24) {

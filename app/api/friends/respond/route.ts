@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { normalizeFriendPair } from "@/lib/friendships";
+import { createNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { friendRequestActionSchema } from "@/lib/validation";
 import { apiError, apiValidationError } from "@/lib/api";
@@ -49,6 +50,14 @@ export async function POST(request: Request) {
   if (status === "ACCEPTED") {
     await prisma.friendship.create({
       data: normalizeFriendPair(friendRequest.fromUserId, friendRequest.toUserId)
+    });
+
+    await createNotification({
+      userId: friendRequest.fromUserId,
+      actorId: session.user.id,
+      type: "FRIEND_REQUEST_ACCEPTED",
+      friendRequestId: friendRequest.id,
+      dedupeKey: `FRIEND_REQUEST_ACCEPTED:${friendRequest.id}`
     });
   }
 
