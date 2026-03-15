@@ -221,13 +221,13 @@ export function GroupDetail({ groupId }: { groupId: string }) {
                       {msg.sharedPost ? (
                         <div 
                           className="group relative cursor-pointer block"
-                          onClick={() => window.location.href = `/posts/${msg.sharedPost.id}`}
+                          onClick={() => window.location.href = `/posts/${msg.sharedPost?.id}`}
                         >
                           <div className="aspect-[4/3] w-full bg-black/5 relative">
                             {msg.sharedPost.thumbnailUrl ? (
                               <img 
                                 src={msg.sharedPost.thumbnailUrl} 
-                                alt={msg.sharedPost.placeName}
+                                alt={msg.sharedPost.placeName || "Shared post"}
                                 className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                               />
                             ) : (
