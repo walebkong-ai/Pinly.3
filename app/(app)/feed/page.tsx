@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getRecentFeedPosts } from "@/lib/data";
+import { prisma } from "@/lib/prisma";
 import { PostCard } from "@/components/post/post-card";
 
 export default async function FeedPage() {
@@ -10,22 +11,38 @@ export default async function FeedPage() {
     redirect("/sign-in");
   }
 
-  const posts = await getRecentFeedPosts(session.user.id, 24);
+  const [posts, settings] = await Promise.all([
+    getRecentFeedPosts(session.user.id, 24),
+    prisma.userSettings.findUnique({ where: { userId: session.user.id } })
+  ]);
+
+  const showLikeCounts = settings?.showLikeCounts ?? true;
+  const showCommentCounts = settings?.showCommentCounts ?? true;
 
   return (
-    <div className="grid gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
-      <section className="glass-panel rounded-[2rem] p-5">
+    <div className="mx-auto max-w-xl space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
+      <section className="glass-panel rounded-[1.75rem] p-4">
         <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Feed</p>
-        <h1 className="mt-2 font-[var(--font-serif)] text-4xl">Recent memories from your circle</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--foreground)]/66">
-          The feed is secondary to the map, but it is useful when you want a quick scroll through the latest trips.
+        <h1 className="mt-1.5 font-[var(--font-serif)] text-2xl md:text-3xl">Recent memories</h1>
+        <p className="mt-2 text-sm leading-6 text-[var(--foreground)]/66">
+          Scroll through the latest trips from your circle.
         </p>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <section className="space-y-4">
         {posts.map((post) => (
-          <PostCard key={post.id} post={post} />
+          <PostCard
+            key={post.id}
+            post={post}
+            showLikeCounts={showLikeCounts}
+            showCommentCounts={showCommentCounts}
+          />
         ))}
+        {posts.length === 0 && (
+          <div className="rounded-[1.75rem] border bg-white/80 p-6 text-center">
+            <p className="text-sm text-[var(--foreground)]/55">No memories yet. Add your first memory from the map!</p>
+          </div>
+        )}
       </section>
     </div>
   );

@@ -1,0 +1,70 @@
+"use client";
+
+import { useEffect, useState, useTransition } from "react";
+import { Heart } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+export function LikeButton({
+  postId,
+  initialLiked = false,
+  initialCount = 0,
+  showCount = true
+}: {
+  postId: string;
+  initialLiked?: boolean;
+  initialCount?: number;
+  showCount?: boolean;
+}) {
+  const [liked, setLiked] = useState(initialLiked);
+  const [count, setCount] = useState(initialCount);
+  const [isPending, startTransition] = useTransition();
+
+  function toggleLike() {
+    const wasLiked = liked;
+    // Optimistic update
+    setLiked(!wasLiked);
+    setCount((c) => (wasLiked ? Math.max(0, c - 1) : c + 1));
+
+    startTransition(async () => {
+      try {
+        const response = await fetch(`/api/posts/${postId}/like`, {
+          method: wasLiked ? "DELETE" : "POST"
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setLiked(data.liked);
+          setCount(data.likeCount);
+        } else {
+          // Revert optimistic update
+          setLiked(wasLiked);
+          setCount((c) => (wasLiked ? c + 1 : Math.max(0, c - 1)));
+        }
+      } catch {
+        setLiked(wasLiked);
+        setCount((c) => (wasLiked ? c + 1 : Math.max(0, c - 1)));
+      }
+    });
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={toggleLike}
+      disabled={isPending}
+      className={cn(
+        "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-all active:scale-95",
+        liked
+          ? "text-rose-500"
+          : "text-[var(--foreground)]/55 hover:text-rose-400"
+      )}
+    >
+      <Heart
+        className={cn(
+          "h-5 w-5 transition-all",
+          liked && "fill-rose-500 text-rose-500 scale-110"
+        )}
+      />
+      {showCount && count > 0 && <span>{count}</span>}
+    </button>
+  );
+}

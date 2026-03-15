@@ -29,6 +29,9 @@ model User {
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
   posts            Post[]
+  likes            Like[]
+  comments         Comment[]
+  settings         UserSettings?
   sentRequests     FriendRequest[] @relation("SentFriendRequests")
   receivedRequests FriendRequest[] @relation("ReceivedFriendRequests")
   friendshipsA     Friendship[]    @relation("FriendshipA")
@@ -82,12 +85,48 @@ model Post {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes        Like[]
+  comments     Comment[]
 
   @@index([userId, createdAt])
   @@index([userId, visitedAt])
   @@index([city, country])
   @@index([city, country, visitedAt])
   @@index([latitude, longitude])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
+  @@index([userId])
+}
+
+model UserSettings {
+  id                String  @id @default(cuid())
+  userId            String  @unique
+  showLikeCounts    Boolean @default(true)
+  showCommentCounts Boolean @default(true)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum GroupRole {

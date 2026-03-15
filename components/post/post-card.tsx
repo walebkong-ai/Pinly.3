@@ -4,14 +4,26 @@ import type { PostSummary } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
 import { MediaView } from "@/components/post/media-view";
 import { formatVisitDate } from "@/lib/utils";
+import { LikeButton } from "@/components/post/like-button";
+import { CommentSection } from "@/components/post/comment-section";
 
-export function PostCard({ post, compact = false }: { post: PostSummary; compact?: boolean }) {
+export function PostCard({
+  post,
+  compact = false,
+  showLikeCounts = true,
+  showCommentCounts = true
+}: {
+  post: PostSummary;
+  compact?: boolean;
+  showLikeCounts?: boolean;
+  showCommentCounts?: boolean;
+}) {
   return (
     <article className="overflow-hidden rounded-[1.75rem] border bg-white/80 shadow-sm">
-      <div className={compact ? "aspect-[4/3]" : "aspect-[16/10]"}>
+      <div className={compact ? "aspect-[4/3]" : "aspect-[4/3]"}>
         <MediaView mediaType={post.mediaType} mediaUrl={post.mediaUrl} thumbnailUrl={post.thumbnailUrl} />
       </div>
-      <div className="space-y-4 p-4">
+      <div className="space-y-3 p-4">
         <div className="flex items-center gap-3">
           <Avatar name={post.user.name} src={post.user.avatarUrl} className="h-9 w-9 shrink-0" />
           <div className="min-w-0 flex-1">
@@ -29,14 +41,20 @@ export function PostCard({ post, compact = false }: { post: PostSummary; compact
               </p>
             </div>
           </div>
-          <p className="mt-3 line-clamp-2 text-sm leading-6 text-[var(--foreground)]/72">{post.caption}</p>
-          <p className="mt-3 text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">
+          <p className="mt-2 line-clamp-2 text-sm leading-6 text-[var(--foreground)]/72">{post.caption}</p>
+          <p className="mt-2 text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">
             Visited {formatVisitDate(post.visitedAt)}
           </p>
         </div>
-        <Link href={`/posts/${post.id}`} className="text-sm font-medium text-[var(--accent)]">
-          Open post
-        </Link>
+
+        {/* Like + Comment + Open */}
+        <div className="flex items-center gap-1 border-t pt-2">
+          <LikeButton postId={post.id} showCount={showLikeCounts} />
+          <CommentSection postId={post.id} showCount={showCommentCounts} />
+          <Link href={`/posts/${post.id}`} className="ml-auto text-xs font-medium text-[var(--accent)]">
+            Open
+          </Link>
+        </div>
       </div>
     </article>
   );

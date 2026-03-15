@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Map, Newspaper, Plus, Search, UserRound, UsersRound, Users } from "lucide-react";
+import { Map, Newspaper, Plus, Search, Settings, UserRound, UsersRound, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { Avatar } from "@/components/ui/avatar";
 import { Brand } from "@/components/brand";
@@ -30,6 +30,7 @@ const secondaryNavItems = [
   { href: "/groups", label: "Groups", icon: Users },
   { href: "/create", label: "Create", icon: Plus },
   { href: "/cities", label: "Cities", icon: Search },
+  { href: "/settings", label: "Settings", icon: Settings },
   { href: "/profile/me", label: "Profile", icon: UserRound }
 ];
 
@@ -58,8 +59,8 @@ export function AppShell({ children, user }: AppShellProps) {
   }, [pathname]);
 
   return (
-    <div className="min-h-screen px-4 py-4 md:px-6">
-      <header className="glass-panel mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-4 rounded-[2rem] px-4 py-3">
+    <div className="min-h-screen px-2 py-2 md:px-6 md:py-4">
+      <header className="glass-panel mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3 rounded-2xl px-3 py-2 md:rounded-[2rem] md:gap-4 md:px-4 md:py-3">
         <div className="flex items-center gap-4">
           <Brand compact />
           <nav className="hidden items-center gap-2 md:flex">
@@ -123,15 +124,15 @@ export function AppShell({ children, user }: AppShellProps) {
 
       <main
         className={cn(
-          "mx-auto max-w-[1600px] pb-24 pt-4",
+          "mx-auto max-w-[1600px] pb-20 pt-3 md:pb-24 md:pt-4",
           pathname === "/map" ? "max-w-[1700px]" : "max-w-[1500px]"
         )}
       >
         {children}
       </main>
 
-      <nav className="glass-panel fixed inset-x-4 bottom-4 z-[950] flex items-center justify-between rounded-full px-3 py-1.5 md:hidden">
-        {[...primaryNavItems, ...secondaryNavItems.filter((item) => item.href !== "/cities")].map(({ href, label, icon: Icon }) => {
+      <nav className="glass-panel fixed inset-x-2 bottom-2 z-[950] flex items-center justify-between rounded-full px-2 py-1.5 md:hidden">
+        {[...primaryNavItems, ...secondaryNavItems.filter((item) => item.href !== "/cities" && item.href !== "/settings")].map(({ href, label, icon: Icon }) => {
           const resolvedHref = href === "/profile/me" ? `/profile/${user.username}` : href;
           return (
             <Link
