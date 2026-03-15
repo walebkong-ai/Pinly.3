@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 type DirectionsSheetProps = {
   post: Pick<PostSummary, "placeName" | "city" | "country" | "latitude" | "longitude">;
   label?: string;
-  triggerStyle?: "inline" | "secondary";
+  triggerStyle?: "inline" | "secondary" | "emphasis";
   className?: string;
 };
 
@@ -88,10 +88,18 @@ export function DirectionsSheet({
               "flex h-8 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-[var(--foreground)]/60 transition-colors hover:bg-[var(--foreground)]/5 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50",
             triggerStyle === "secondary" &&
               "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border bg-[var(--card-strong)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-50",
+            triggerStyle === "emphasis" &&
+              "inline-flex min-h-11 items-center gap-2 rounded-full border border-[rgba(56,182,201,0.24)] bg-[var(--map-accent-soft)] px-3.5 py-2 text-sm font-medium text-[var(--foreground)] shadow-sm transition hover:bg-[rgba(56,182,201,0.22)] disabled:cursor-not-allowed disabled:opacity-50",
             className
           )}
         >
-          <Route className="h-4 w-4" />
+          {triggerStyle === "emphasis" ? (
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--map-accent)] text-white">
+              <Route className="h-3.5 w-3.5" />
+            </span>
+          ) : (
+            <Route className="h-4 w-4" />
+          )}
           <span>{label}</span>
         </button>
       </Drawer.Trigger>

@@ -6,6 +6,7 @@ import { Share2, Search, Users, CheckCircle2, LoaderCircle } from "lucide-react"
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 type GroupOption = {
   id: string;
@@ -15,9 +16,17 @@ type GroupOption = {
 
 interface ShareSheetProps {
   postId: string;
+  label?: string;
+  triggerStyle?: "inline" | "emphasis";
+  className?: string;
 }
 
-export function ShareSheet({ postId }: ShareSheetProps) {
+export function ShareSheet({
+  postId,
+  label = "Share",
+  triggerStyle = "inline",
+  className
+}: ShareSheetProps) {
   const [open, setOpen] = useState(false);
   const [groups, setGroups] = useState<GroupOption[]>([]);
   const [loading, setLoading] = useState(false);
@@ -97,9 +106,24 @@ export function ShareSheet({ postId }: ShareSheetProps) {
   return (
     <Drawer.Root open={open} onOpenChange={setOpen}>
       <Drawer.Trigger asChild>
-        <button className="flex h-8 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-[var(--foreground)]/60 transition-colors hover:bg-[var(--foreground)]/5 active:scale-95">
-          <Share2 className="h-4 w-4" />
-          <span>Share</span>
+        <button
+          type="button"
+          className={cn(
+            triggerStyle === "inline" &&
+              "flex h-8 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-[var(--foreground)]/60 transition-colors hover:bg-[var(--foreground)]/5 active:scale-95",
+            triggerStyle === "emphasis" &&
+              "inline-flex min-h-11 items-center gap-2 rounded-full border border-[rgba(255,95,162,0.22)] bg-[var(--social-accent-soft)] px-3.5 py-2 text-sm font-medium text-[var(--foreground)] shadow-sm transition hover:bg-[rgba(255,95,162,0.18)]",
+            className
+          )}
+        >
+          {triggerStyle === "emphasis" ? (
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--social-accent)] text-white">
+              <Share2 className="h-3.5 w-3.5" />
+            </span>
+          ) : (
+            <Share2 className="h-4 w-4" />
+          )}
+          <span>{label}</span>
         </button>
       </Drawer.Trigger>
       <Drawer.Portal>

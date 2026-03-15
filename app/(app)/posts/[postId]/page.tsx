@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { MapPin } from "lucide-react";
+import { CalendarDays, Crosshair, MapPin } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { getVisiblePostById } from "@/lib/data";
 import { prisma } from "@/lib/prisma";
@@ -86,11 +86,28 @@ export default async function PostDetailPage({ params }: Props) {
             {/* Place info */}
             <div>
               <h1 className="font-[var(--font-serif)] text-2xl md:text-3xl">{post.placeName}</h1>
-              <div className="mt-2 flex items-start gap-2 text-sm text-[var(--foreground)]/68">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[var(--map-accent)]" />
-                <div>
-                  <p>{post.city}, {post.country}</p>
-                  <p className="text-xs">Visited {formatVisitDate(post.visitedAt)}</p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <div className="rounded-[1.4rem] border border-[rgba(56,182,201,0.2)] bg-[rgba(56,182,201,0.1)] px-3.5 py-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[var(--map-accent)] text-white shadow-sm">
+                      <MapPin className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--foreground)]/45">Location</p>
+                      <p className="mt-1 text-sm font-medium text-[var(--foreground)]">{post.city}, {post.country}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-[1.4rem] border border-[rgba(255,159,28,0.22)] bg-[var(--accent-soft)] px-3.5 py-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent)] text-[var(--accent-foreground)] shadow-sm">
+                      <CalendarDays className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--foreground)]/45">Visited</p>
+                      <p className="mt-1 text-sm font-medium text-[var(--foreground)]">{formatVisitDate(post.visitedAt)}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -99,19 +116,42 @@ export default async function PostDetailPage({ params }: Props) {
             <p className="text-sm leading-7 text-[var(--foreground)]/76 md:text-base md:leading-8">{post.caption}</p>
 
             {/* Like + Comment actions */}
-            <div className="flex flex-wrap items-center gap-1 border-t pt-3">
-              <LikeButton postId={post.id} initialLiked={liked} initialCount={likeCount} showCount={showLikeCounts} />
-              <CommentSection postId={post.id} showCount={showCommentCounts} />
-              <DirectionsSheet post={post} label="Directions" />
-              <ShareSheet postId={post.id} />
+            <div className="border-t pt-4">
+              <div className="flex flex-wrap items-center gap-1">
+                <LikeButton postId={post.id} initialLiked={liked} initialCount={likeCount} showCount={showLikeCounts} />
+                <CommentSection postId={post.id} showCount={showCommentCounts} />
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <DirectionsSheet post={post} label="Directions" triggerStyle="emphasis" />
+                <ShareSheet postId={post.id} triggerStyle="emphasis" />
+              </div>
             </div>
 
             {/* Coordinates */}
-            <div className="rounded-2xl border bg-[var(--surface-soft)] p-3">
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Coordinates</p>
-              <p className="mt-1.5 text-sm">
-                {post.latitude.toFixed(4)}, {post.longitude.toFixed(4)}
-              </p>
+            <div className="rounded-[1.5rem] border border-[rgba(56,182,201,0.18)] bg-[rgba(56,182,201,0.08)] p-3.5">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--map-accent-soft)] text-[var(--map-accent)]">
+                  <Crosshair className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Coordinates</p>
+                  <p className="mt-1 text-xs text-[var(--foreground)]/62">Exact map pin for this memory</p>
+                </div>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <div className="rounded-2xl border bg-[var(--surface-strong)] px-3 py-2.5">
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--foreground)]/42">Latitude</p>
+                  <p className="mt-1 font-mono text-sm font-medium tabular-nums text-[var(--foreground)]">
+                    {post.latitude.toFixed(4)}
+                  </p>
+                </div>
+                <div className="rounded-2xl border bg-[var(--surface-strong)] px-3 py-2.5">
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--foreground)]/42">Longitude</p>
+                  <p className="mt-1 font-mono text-sm font-medium tabular-nums text-[var(--foreground)]">
+                    {post.longitude.toFixed(4)}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </article>
