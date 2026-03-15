@@ -58,3 +58,37 @@ a {
 .pinly-popup-container .maplibregl-popup-tip {
   display: none;
 }
+
+/* Restyle the close button as a distinct circular dark button */
+.pinly-popup-container .maplibregl-popup-close-button {
+  /* Reset defaults */
+  all: unset;
+  cursor: pointer;
+  /* Circular button */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  background: rgba(29, 43, 38, 0.82);
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 1;
+  /* Position: top-right corner of the card, slightly inset */
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  /* Touch target padding (invisible, outside the visual circle) */
+  padding: 8px;
+  margin: -8px;
+  box-sizing: content-box;
+  /* Subtle shadow so it reads over both light and dark images */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  transition: background 0.15s ease;
+}
+
+.pinly-popup-container .maplibregl-popup-close-button:hover {
+  background: rgba(29, 43, 38, 0.96);
+}
