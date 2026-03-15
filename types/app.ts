@@ -67,6 +67,32 @@ export type NotificationSummary = {
   } | null;
 };
 
+export type ProfileTravelSummary = {
+  cityCount: number;
+  countryCount: number;
+  recentPlaces: Array<{
+    placeName: string;
+    city: string;
+    country: string;
+    visitedAt: string | Date;
+  }>;
+  recentMemories: Array<{
+    id: string;
+    caption: string;
+    placeName: string;
+    city: string;
+    country: string;
+    visitedAt: string | Date;
+    mediaType: "IMAGE" | "VIDEO";
+    mediaUrl: string;
+    thumbnailUrl: string | null;
+  }>;
+  sharedPlaces: Array<{
+    city: string;
+    country: string;
+  }>;
+};
+
 export type PostSummary = {
   id: string;
   userId: string;

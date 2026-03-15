@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 import { getMapStage, getTimeFilterStart, buildLayerUserIds, buildMapPayload } from "@/lib/map-data";
 import { prisma } from "@/lib/prisma";
 import { buildVisibleUserIds } from "@/lib/permissions";
+import { buildProfileTravelSummary } from "@/lib/profile-summary";
 import { buildWantToGoPlaceKey, type WantToGoLocation } from "@/lib/want-to-go";
 import { notificationInclude } from "@/lib/notifications";
 import type { CollectionChip, CollectionSummary, LayerMode, MapCategory, NotificationSummary, TimeFilter, WantToGoPlaceSummary } from "@/types/app";
@@ -340,8 +341,27 @@ export async function getProfileData(profileUsername: string, viewerId: string) 
   const postsWithSavedState = await attachSavedState(viewerId, posts);
 
   const places = Array.from(new Set(postsWithSavedState.map((post) => `${post.city}, ${post.country}`)));
+  const viewerPosts =
+    viewerId === user.id
+      ? postsWithSavedState
+      : await prisma.post.findMany({
+          where: { userId: viewerId },
+          orderBy: { visitedAt: "desc" },
+          select: {
+            id: true,
+            caption: true,
+            placeName: true,
+            city: true,
+            country: true,
+            visitedAt: true,
+            mediaType: true,
+            mediaUrl: true,
+            thumbnailUrl: true
+          }
+        });
+  const travelSummary = buildProfileTravelSummary(postsWithSavedState, viewerPosts);
 
-  return { user, posts: postsWithSavedState, places };
+  return { user, posts: postsWithSavedState, places, travelSummary };
 }
 
 export async function getOwnedCollections(userId: string, limit = 24) {

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Bookmark, Folders, MapPinned, Settings2 } from "lucide-react";
-import type { CollectionSummary, PostSummary } from "@/types/app";
+import type { CollectionSummary, PostSummary, ProfileTravelSummary } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
 import { PostCard } from "@/components/post/post-card";
 import { EditProfile } from "@/components/profile/edit-profile";
@@ -24,11 +24,20 @@ export function ProfileView({
     };
     posts: PostSummary[];
     places: string[];
+    travelSummary: ProfileTravelSummary;
   };
   isOwnProfile: boolean;
   showLikeCounts?: boolean;
   collections?: CollectionSummary[];
 }) {
+  const visiblePlaces = profile.places.slice(0, 8);
+  const hiddenPlaceCount = Math.max(profile.places.length - visiblePlaces.length, 0);
+  const firstName = profile.user.name.split(" ")[0] || profile.user.name;
+  const summaryDateFormatter = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    year: "numeric"
+  });
+
   return (
     <div className="grid gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
       <section className="glass-panel rounded-[2rem] p-5">
@@ -101,24 +110,109 @@ export function ProfileView({
               <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">Posts</p>
             </div>
             <div className="rounded-3xl border bg-[var(--surface-soft)] px-4 py-3">
-              <p className="text-2xl font-semibold">{profile.places.length}</p>
-              <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">Places</p>
+              <p className="text-2xl font-semibold">{profile.travelSummary.cityCount}</p>
+              <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">Cities</p>
             </div>
             <div className="rounded-3xl border bg-[var(--surface-soft)] px-4 py-3">
-              <p className="text-2xl font-semibold">{new Set(profile.posts.map((post) => post.country)).size}</p>
+              <p className="text-2xl font-semibold">{profile.travelSummary.countryCount}</p>
               <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">Countries</p>
             </div>
           </div>
         </div>
 
         <div className="mt-6 flex flex-wrap gap-2">
-          {profile.places.map((place) => (
+          {visiblePlaces.map((place) => (
             <span key={place} className="rounded-full border bg-[var(--surface-soft)] px-3 py-1 text-sm text-[var(--foreground)]/68">
               {place}
             </span>
           ))}
+          {hiddenPlaceCount > 0 ? (
+            <span className="rounded-full border bg-[var(--surface-soft)] px-3 py-1 text-sm text-[var(--foreground)]/52">
+              +{hiddenPlaceCount} more
+            </span>
+          ) : null}
         </div>
       </section>
+
+      {!isOwnProfile && profile.posts.length > 0 ? (
+        <section className="glass-panel rounded-[2rem] p-5">
+          <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Travel summary</p>
+          <h2 className="mt-1.5 text-2xl font-semibold">{firstName}&apos;s travel footprint</h2>
+          <p className="mt-2 text-sm leading-6 text-[var(--foreground)]/62">
+            A quick look at where they&apos;ve pinned memories lately, without turning the profile into a stats dashboard.
+          </p>
+
+          <div className="mt-5 grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+            <div className="rounded-[1.5rem] border bg-[var(--surface-soft)] p-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">Recent places</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {profile.travelSummary.recentPlaces.map((place) => (
+                  <span
+                    key={`${place.placeName}-${place.city}-${place.country}`}
+                    className="rounded-full border bg-[var(--surface-strong)] px-3 py-1.5 text-sm text-[var(--foreground)]/72"
+                  >
+                    {place.placeName}, {place.city}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-[1.5rem] border bg-[var(--surface-soft)] p-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">
+                {profile.travelSummary.sharedPlaces.length > 0 ? "Overlap with you" : "Shared places"}
+              </p>
+              {profile.travelSummary.sharedPlaces.length > 0 ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {profile.travelSummary.sharedPlaces.map((place) => (
+                    <span
+                      key={`${place.city}-${place.country}`}
+                      className="rounded-full border border-[rgba(56,182,201,0.18)] bg-[rgba(56,182,201,0.08)] px-3 py-1.5 text-sm text-[var(--foreground)]/74"
+                    >
+                      {place.city}, {place.country}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-3 text-sm leading-6 text-[var(--foreground)]/58">
+                  No overlapping places yet, but this will light up when you&apos;ve both pinned the same city.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-5 rounded-[1.5rem] border bg-[var(--surface-soft)] p-4">
+            <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">Recent memories</p>
+            <div className="mt-3 space-y-3">
+              {profile.travelSummary.recentMemories.map((memory) => (
+                <Link
+                  key={memory.id}
+                  href={`/posts/${memory.id}`}
+                  className="flex items-center gap-3 rounded-[1.25rem] border bg-[var(--surface-strong)] p-3 transition hover:bg-[var(--card-strong)]"
+                >
+                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-[var(--surface-soft)]">
+                    <img
+                      src={memory.thumbnailUrl ?? memory.mediaUrl}
+                      alt={memory.placeName}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-[var(--foreground)]">
+                      {memory.caption.trim() || `Memory from ${memory.placeName}`}
+                    </p>
+                    <p className="mt-1 truncate text-xs text-[var(--foreground)]/58">
+                      {memory.placeName}, {memory.city}, {memory.country}
+                    </p>
+                    <p className="mt-1 text-xs text-[var(--foreground)]/45">
+                      {summaryDateFormatter.format(new Date(memory.visitedAt))}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       {isOwnProfile ? (
         <section className="glass-panel rounded-[2rem] p-5">
