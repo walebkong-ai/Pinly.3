@@ -10,6 +10,7 @@ import { DeletePostButton } from "@/components/post/delete-post-button";
 import { BackButton } from "@/components/post/back-button";
 import { LikeButton } from "@/components/post/like-button";
 import { CommentSection } from "@/components/post/comment-section";
+import { DirectionsSheet } from "@/components/post/directions-sheet";
 import { ShareSheet } from "@/components/post/share-sheet";
 
 type Props = {
@@ -98,9 +99,10 @@ export default async function PostDetailPage({ params }: Props) {
             <p className="text-sm leading-7 text-[var(--foreground)]/76 md:text-base md:leading-8">{post.caption}</p>
 
             {/* Like + Comment actions */}
-            <div className="flex items-center gap-1 border-t pt-3">
+            <div className="flex flex-wrap items-center gap-1 border-t pt-3">
               <LikeButton postId={post.id} initialLiked={liked} initialCount={likeCount} showCount={showLikeCounts} />
               <CommentSection postId={post.id} showCount={showCommentCounts} />
+              <DirectionsSheet post={post} label="Directions" />
               <ShareSheet postId={post.id} />
             </div>
 
