@@ -49,8 +49,7 @@ export async function POST(request: Request) {
         name: parsed.data.name,
         username,
         email,
-        passwordHash: await hash(parsed.data.password, 10),
-        avatarUrl: parsed.data.avatarUrl || null
+        passwordHash: await hash(parsed.data.password, 10)
       },
       select: {
         id: true,

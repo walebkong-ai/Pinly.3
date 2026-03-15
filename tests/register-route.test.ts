@@ -43,8 +43,7 @@ describe("register route", () => {
           name: "Avery Chen",
           username: "avery",
           email: "Avery@pinly.demo",
-          password: "password123",
-          avatarUrl: ""
+          password: "password123"
         })
       })
     );
@@ -52,6 +51,13 @@ describe("register route", () => {
     expect(response.status).toBe(201);
     const payload = await response.json();
     expect(payload.user.email).toBe("avery@pinly.demo");
+    expect(createMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.not.objectContaining({
+          avatarUrl: expect.anything()
+        })
+      })
+    );
   });
 
   test("returns conflict for duplicate user", async () => {
@@ -68,8 +74,7 @@ describe("register route", () => {
           name: "Avery Chen",
           username: "avery",
           email: "avery@pinly.demo",
-          password: "password123",
-          avatarUrl: ""
+          password: "password123"
         })
       })
     );

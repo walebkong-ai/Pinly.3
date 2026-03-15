@@ -28,7 +28,6 @@ export const signUpSchema = z.object({
   username: z.string().regex(usernameRegex, "Use 3-20 lowercase letters, numbers, underscores, or hyphens"),
   email: z.string().email(),
   password: z.string().min(8, "Password must be at least 8 characters.").max(100),
-  avatarUrl: z.string().url().optional().or(z.literal("")),
   inviteToken: z.string().optional()
 });
 

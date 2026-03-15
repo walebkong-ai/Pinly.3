@@ -43,7 +43,6 @@ export function SignUpForm() {
       username: "",
       email: "",
       password: "",
-      avatarUrl: "",
       inviteToken: inviteToken || undefined
     }
   });
@@ -149,10 +148,6 @@ export function SignUpForm() {
             placeholder="Password (8+ characters)"
           />
           {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
-        </div>
-        <div>
-          <Input {...register("avatarUrl")} type="url" placeholder="Avatar URL (optional)" />
-          {errors.avatarUrl && <p className="mt-1 text-xs text-red-500">{errors.avatarUrl.message}</p>}
         </div>
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Creating account..." : "Create account"}

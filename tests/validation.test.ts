@@ -8,8 +8,7 @@ describe("schema validation", () => {
         name: "Avery Chen",
         username: "Avery",
         email: "avery@example.com",
-        password: "password123",
-        avatarUrl: ""
+        password: "password123"
       }).success
     ).toBe(false);
   });
@@ -36,8 +35,7 @@ describe("schema validation", () => {
       name: "Avery Chen",
       username: "avery",
       email: "avery@example.com",
-      password: "short",
-      avatarUrl: ""
+      password: "short"
     });
 
     expect(result.success).toBe(false);
