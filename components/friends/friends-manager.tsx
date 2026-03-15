@@ -122,7 +122,7 @@ export function FriendsManager() {
         </div>
         <div className="mt-5 space-y-3">
           {searchResults.map((user) => (
-            <div key={user.id} className="flex items-center justify-between rounded-3xl border bg-white/72 p-3">
+            <div key={user.id} className="flex items-center justify-between rounded-3xl border bg-[var(--surface-soft)] p-3">
               <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
                 <Avatar name={user.name} src={user.avatarUrl} className="shrink-0" />
                 <div className="min-w-0">
@@ -151,7 +151,7 @@ export function FriendsManager() {
             </div>
           ))}
           {!searchResults.length && query.length >= 2 && (
-            <div className="rounded-3xl border border-dashed bg-white/50 p-6 text-sm text-[var(--foreground)]/60">
+            <div className="rounded-3xl border border-dashed bg-[var(--surface-soft)] p-6 text-sm text-[var(--foreground)]/60">
               No matching usernames found.
             </div>
           )}
@@ -202,7 +202,7 @@ export function FriendsManager() {
           <h2 className="text-xl font-semibold">Incoming requests</h2>
           <div className="mt-4 space-y-3">
             {state.incomingRequests.map((request) => (
-              <div key={request.id} className="flex items-center justify-between rounded-3xl border bg-white/72 p-3">
+              <div key={request.id} className="flex items-center justify-between rounded-3xl border bg-[var(--surface-soft)] p-3">
                 <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
                   <Avatar name={request.fromUser.name} src={request.fromUser.avatarUrl} className="shrink-0" />
                   <div className="min-w-0">
@@ -221,7 +221,7 @@ export function FriendsManager() {
               </div>
             ))}
             {!state.incomingRequests.length && (
-              <div className="rounded-3xl border border-dashed bg-white/50 p-6 text-sm text-[var(--foreground)]/60">
+              <div className="rounded-3xl border border-dashed bg-[var(--surface-soft)] p-6 text-sm text-[var(--foreground)]/60">
                 No pending requests right now.
               </div>
             )}
@@ -232,7 +232,7 @@ export function FriendsManager() {
           <h2 className="text-xl font-semibold">Your friends</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {state.friends.map((friend) => (
-              <Link key={friend.id} href={`/profile/${friend.username}`} className="block rounded-3xl border bg-white/72 p-3 transition hover:bg-white">
+              <Link key={friend.id} href={`/profile/${friend.username}`} className="block rounded-3xl border bg-[var(--surface-soft)] p-3 transition hover:bg-[var(--surface-strong)]">
                 <div className="flex items-center gap-3 min-w-0">
                   <Avatar name={friend.name} src={friend.avatarUrl} className="shrink-0" />
                   <div className="min-w-0 flex-1">
@@ -243,7 +243,7 @@ export function FriendsManager() {
               </Link>
             ))}
             {!state.friends.length && (
-              <div className="rounded-3xl border border-dashed bg-white/50 p-6 text-sm text-[var(--foreground)]/60">
+              <div className="rounded-3xl border border-dashed bg-[var(--surface-soft)] p-6 text-sm text-[var(--foreground)]/60">
                 Add your first friend to unlock the social map.
               </div>
             )}
@@ -253,7 +253,7 @@ export function FriendsManager() {
               <h3 className="mt-6 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--foreground)]/45">Sent requests</h3>
               <div className="mt-3 space-y-3">
                 {state.outgoingRequests.map((request) => (
-                  <div key={request.id} className="flex items-center gap-3 rounded-3xl border bg-white/72 p-3">
+                  <div key={request.id} className="flex items-center gap-3 rounded-3xl border bg-[var(--surface-soft)] p-3">
                     <Avatar name={request.toUser.name} src={request.toUser.avatarUrl} />
                     <div>
                       <p className="font-medium">{request.toUser.name}</p>

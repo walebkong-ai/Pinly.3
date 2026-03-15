@@ -39,19 +39,19 @@ export function FriendActivityPanel({
 
       <div className={`mt-2 md:mt-4 max-h-[35vh] md:max-h-none overflow-y-auto md:overflow-visible space-y-2 md:space-y-3 pr-1 md:pr-0 ${collapsed ? "hidden md:block" : "block"}`}>
         {layer === "you" && (
-          <div className="rounded-2xl md:rounded-3xl border bg-white/60 p-3 md:p-4 text-xs md:text-sm text-[var(--foreground)]/62">
+          <div className="rounded-2xl border bg-[var(--surface-soft)] p-3 text-xs text-[var(--foreground)]/62 md:rounded-3xl md:p-4 md:text-sm">
             Switch the layer to <span className="font-medium text-[var(--foreground)]">Friends</span> or{" "}
             <span className="font-medium text-[var(--foreground)]">Both</span> to see social activity.
           </div>
         )}
         {layer !== "you" && !items.length && (
-          <div className="rounded-2xl md:rounded-3xl border bg-white/60 p-3 md:p-4 text-xs md:text-sm text-[var(--foreground)]/62">
+          <div className="rounded-2xl border bg-[var(--surface-soft)] p-3 text-xs text-[var(--foreground)]/62 md:rounded-3xl md:p-4 md:text-sm">
             No recent friend memories inside this map view yet.
           </div>
         )}
         {layer !== "you" &&
           items.map((item) => (
-            <Link key={item.id} href={`/posts/${item.postId}`} className="flex items-center gap-2 md:gap-3 rounded-2xl md:rounded-3xl border bg-white/72 p-2 md:p-3">
+            <Link key={item.id} href={`/posts/${item.postId}`} className="flex items-center gap-2 rounded-2xl border bg-[var(--surface-soft)] p-2 md:gap-3 md:rounded-3xl md:p-3">
               <Avatar name={item.user.name} src={item.user.avatarUrl} className="h-8 w-8 md:h-9 md:w-9" />
               <div className="min-w-0">
                 <p className="text-xs md:text-sm font-medium">{item.user.name}</p>

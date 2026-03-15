@@ -83,7 +83,7 @@ export function CityBrowser() {
             </div>
           </div>
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <div className="rounded-[1.75rem] border bg-white/72 p-4">
+            <div className="rounded-[1.75rem] border bg-[var(--surface-soft)] p-4">
               <p className="text-sm font-semibold">Who visited</p>
               <div className="mt-3 space-y-2">
                 {result.visitors.map((visitor) => (
@@ -94,7 +94,7 @@ export function CityBrowser() {
                 ))}
               </div>
             </div>
-            <div className="rounded-[1.75rem] border bg-white/72 p-4 md:col-span-1 xl:col-span-2">
+            <div className="rounded-[1.75rem] border bg-[var(--surface-soft)] p-4 md:col-span-1 xl:col-span-2">
               <p className="text-sm font-semibold">Recent trips</p>
               <div className="mt-3 grid gap-3 md:grid-cols-2">
                 {result.recentTrips.map((trip) => (

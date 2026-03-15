@@ -89,7 +89,7 @@ export function CommentSection({
           >
             {loading && (
               <div className="flex justify-center py-4">
-                <LoaderCircle className="h-5 w-5 animate-spin text-[var(--accent)]" />
+                <LoaderCircle className="h-5 w-5 animate-spin text-[var(--foreground)]" />
               </div>
             )}
             {!loading && comments.length === 0 && (
@@ -119,7 +119,7 @@ export function CommentSection({
               onChange={(e) => setInput(e.target.value)}
               placeholder="Add a comment…"
               maxLength={1000}
-              className="min-w-0 flex-1 rounded-full border bg-white/60 px-4 py-2 text-sm outline-none transition focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]/30"
+              className="min-w-0 flex-1 rounded-full border bg-[var(--surface-soft)] px-4 py-2 text-sm outline-none transition focus:border-[var(--foreground)] focus:ring-1 focus:ring-[var(--foreground)]/20"
             />
             <button
               type="submit"
@@ -127,7 +127,7 @@ export function CommentSection({
               className={cn(
                 "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition",
                 input.trim()
-                  ? "bg-[var(--accent)] text-white"
+                  ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
                   : "bg-[var(--foreground)]/10 text-[var(--foreground)]/30"
               )}
             >

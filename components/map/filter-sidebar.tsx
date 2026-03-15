@@ -71,11 +71,13 @@ export function FilterSidebar({
                 onClick={() => onTimeChange(option.value)}
                 className={cn(
                   "flex w-full items-center justify-between rounded-3xl border px-4 py-3 text-left text-sm transition",
-                  time === option.value ? "bg-[var(--accent-soft)] text-[var(--foreground)]" : "bg-white/55 hover:bg-white/72"
+                  time === option.value
+                    ? "border-[rgba(56,182,201,0.24)] bg-[var(--map-accent-soft)] text-[var(--foreground)]"
+                    : "bg-[var(--surface-soft)] hover:bg-[var(--surface-strong)]"
                 )}
               >
                 <span>{option.label}</span>
-                <span className={cn("h-3 w-3 rounded-full border", time === option.value && "bg-[var(--accent)] border-[var(--accent)]")} />
+                <span className={cn("h-3 w-3 rounded-full border", time === option.value && "bg-[var(--map-accent)] border-[var(--map-accent)]")} />
               </button>
             ))}
           </div>
@@ -87,7 +89,7 @@ export function FilterSidebar({
             <p className="mt-1 text-sm text-[var(--foreground)]/58">Create a temporary friend group for this map view.</p>
           </div>
           {!groupOptions.length && (
-            <div className="rounded-3xl border bg-white/55 px-4 py-3 text-sm text-[var(--foreground)]/58">
+            <div className="rounded-3xl border bg-[var(--surface-soft)] px-4 py-3 text-sm text-[var(--foreground)]/58">
               Add friends to unlock group filtering.
             </div>
           )}
@@ -101,8 +103,8 @@ export function FilterSidebar({
                   className={cn(
                     "inline-flex items-center rounded-full border px-3 py-2 text-sm transition",
                     selectedGroupIds.includes(group.id)
-                      ? "bg-[var(--accent-soft)] text-[var(--foreground)]"
-                      : "bg-white/55 text-[var(--foreground)]/72 hover:bg-white/72"
+                      ? "border-[rgba(56,182,201,0.24)] bg-[var(--map-accent-soft)] text-[var(--foreground)]"
+                      : "bg-[var(--surface-soft)] text-[var(--foreground)]/72 hover:bg-[var(--surface-strong)]"
                   )}
                 >
                   <span>{group.label}</span>
@@ -127,8 +129,8 @@ export function FilterSidebar({
                 className={cn(
                   "rounded-full border px-3 py-2 text-sm transition",
                   selectedCategories.includes(category.value)
-                    ? "bg-[var(--accent-soft)] text-[var(--foreground)]"
-                    : "bg-white/55 text-[var(--foreground)]/72 hover:bg-white/72"
+                    ? "border-[rgba(56,182,201,0.24)] bg-[var(--map-accent-soft)] text-[var(--foreground)]"
+                    : "bg-[var(--surface-soft)] text-[var(--foreground)]/72 hover:bg-[var(--surface-strong)]"
                 )}
               >
                 {category.label}
@@ -137,7 +139,7 @@ export function FilterSidebar({
           </div>
         </section>
 
-        <div className="mt-auto flex items-center justify-between rounded-[1.75rem] border bg-white/60 p-4 text-sm text-[var(--foreground)]/62">
+        <div className="mt-auto flex items-center justify-between rounded-[1.75rem] border bg-[var(--surface-soft)] p-4 text-sm text-[var(--foreground)]/62">
           <span>Filters are wired for future expansion without changing the map flow.</span>
           <Button variant="secondary" onClick={onClear}>
             Clear all

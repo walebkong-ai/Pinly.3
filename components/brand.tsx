@@ -5,9 +5,9 @@ import { cn } from "@/lib/utils";
 export function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <Link href="/map" className="group flex items-center gap-3 transition-transform active:scale-95">
-      <div 
-        className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 bg-white/95 p-1.5 drop-shadow-sm transition-transform group-hover:scale-105"
-        style={{ borderColor: "#0f746c" }}
+      <div
+        className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 bg-[var(--surface-strong)] p-1.5 drop-shadow-sm transition-transform group-hover:scale-105"
+        style={{ borderColor: "rgba(24, 85, 56, 0.16)" }}
       >
         <Image src="/logo.png" alt="Pinly Logo" width={34} height={34} className="h-full w-full object-contain" />
       </div>

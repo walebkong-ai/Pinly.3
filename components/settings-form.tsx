@@ -48,7 +48,7 @@ export function SettingsForm() {
   if (loading) {
     return (
       <div className="flex justify-center py-8">
-        <LoaderCircle className="h-6 w-6 animate-spin text-[var(--accent)]" />
+        <LoaderCircle className="h-6 w-6 animate-spin text-[var(--foreground)]" />
       </div>
     );
   }
@@ -56,7 +56,7 @@ export function SettingsForm() {
   return (
     <div className="space-y-4">
       {/* Like counts toggle */}
-      <label className="flex items-center justify-between rounded-2xl border bg-white/70 p-4">
+      <label className="flex items-center justify-between rounded-2xl border bg-[var(--surface-soft)] p-4">
         <div>
           <p className="text-sm font-medium">Show like counts</p>
           <p className="mt-0.5 text-xs text-[var(--foreground)]/55">Display the number of likes on posts</p>
@@ -68,12 +68,12 @@ export function SettingsForm() {
             setShowLikeCounts(e.target.checked);
             void save({ showLikeCounts: e.target.checked });
           }}
-          className="h-5 w-5 rounded accent-[var(--accent)]"
+          className="h-5 w-5 rounded accent-[var(--foreground)]"
         />
       </label>
 
       {/* Comment counts toggle */}
-      <label className="flex items-center justify-between rounded-2xl border bg-white/70 p-4">
+      <label className="flex items-center justify-between rounded-2xl border bg-[var(--surface-soft)] p-4">
         <div>
           <p className="text-sm font-medium">Show comment counts</p>
           <p className="mt-0.5 text-xs text-[var(--foreground)]/55">Display the number of comments on posts</p>
@@ -85,7 +85,7 @@ export function SettingsForm() {
             setShowCommentCounts(e.target.checked);
             void save({ showCommentCounts: e.target.checked });
           }}
-          className="h-5 w-5 rounded accent-[var(--accent)]"
+          className="h-5 w-5 rounded accent-[var(--foreground)]"
         />
       </label>
     </div>

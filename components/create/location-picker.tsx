@@ -62,7 +62,7 @@ export function LocationPicker({
               onSelect({ latitude: e.lngLat.lat, longitude: e.lngLat.lng });
             }}
           >
-            <div className="flex items-center justify-center w-5 h-5 rounded-full bg-[#0f766e] border-4 border-white shadow-[0_10px_20px_rgba(15,118,110,0.28)]" />
+            <div className="flex h-5 w-5 items-center justify-center rounded-full border-4 border-[var(--background)] bg-[var(--map-accent)] shadow-[0_10px_20px_rgba(56,182,201,0.28)]" />
           </Marker>
         )}
       </Map>

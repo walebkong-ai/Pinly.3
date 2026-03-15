@@ -48,15 +48,15 @@ export function ProfileView({
             </div>
           )}
           <div className="grid grid-cols-2 gap-3 text-center sm:grid-cols-3">
-            <div className="rounded-3xl border bg-white/72 px-4 py-3">
+            <div className="rounded-3xl border bg-[var(--surface-soft)] px-4 py-3">
               <p className="text-2xl font-semibold">{profile.posts.length}</p>
               <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">Posts</p>
             </div>
-            <div className="rounded-3xl border bg-white/72 px-4 py-3">
+            <div className="rounded-3xl border bg-[var(--surface-soft)] px-4 py-3">
               <p className="text-2xl font-semibold">{profile.places.length}</p>
               <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">Places</p>
             </div>
-            <div className="rounded-3xl border bg-white/72 px-4 py-3">
+            <div className="rounded-3xl border bg-[var(--surface-soft)] px-4 py-3">
               <p className="text-2xl font-semibold">{new Set(profile.posts.map((post) => post.country)).size}</p>
               <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">Countries</p>
             </div>
@@ -65,7 +65,7 @@ export function ProfileView({
 
         <div className="mt-6 flex flex-wrap gap-2">
           {profile.places.map((place) => (
-            <span key={place} className="rounded-full border bg-white/70 px-3 py-1 text-sm text-[var(--foreground)]/68">
+            <span key={place} className="rounded-full border bg-[var(--surface-soft)] px-3 py-1 text-sm text-[var(--foreground)]/68">
               {place}
             </span>
           ))}

@@ -32,16 +32,16 @@ function sanitizeImageUrl(value?: string | null) {
 
 const cityClusterHTML = (count: number) => {
   const size = Math.min(64, Math.max(44, 40 + count * 2));
-  return `<div style="display:flex;min-width:${size + 12}px;align-items:center;justify-content:center;padding:0 14px;height:${size}px;border-radius:9999px;background:rgba(29,43,38,0.92);color:white;border:4px solid rgba(255,255,255,0.92);font-size:${size > 50 ? 14 : 12}px;font-weight:700;box-shadow:0 18px 30px rgba(29,43,38,0.18)">${count}</div>`;
+  return `<div style="display:flex;min-width:${size + 12}px;align-items:center;justify-content:center;padding:0 14px;height:${size}px;border-radius:9999px;background:rgba(24,85,56,0.94);color:#fcecda;border:4px solid rgba(252,236,218,0.94);font-size:${size > 50 ? 14 : 12}px;font-weight:700;box-shadow:0 18px 30px rgba(24,85,56,0.18)">${count}</div>`;
 };
 
 const placeClusterHTML = (count: number) => {
   const size = Math.min(56, Math.max(38, 34 + count * 2));
-  return `<div style="display:flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:9999px;background:rgba(15,118,110,0.94);color:white;border:4px solid rgba(255,255,255,0.95);font-size:${size > 44 ? 14 : 12}px;font-weight:700;box-shadow:0 12px 24px rgba(15,118,110,0.2)">${count}</div>`;
+  return `<div style="display:flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:9999px;background:rgba(56,182,201,0.96);color:#08343d;border:4px solid rgba(252,236,218,0.95);font-size:${size > 44 ? 14 : 12}px;font-weight:700;box-shadow:0 12px 24px rgba(56,182,201,0.22)">${count}</div>`;
 };
 
 const pinHTML = (selected = false) =>
-  `<div style="display:flex;align-items:center;justify-content:center;width:${selected ? 22 : 18}px;height:${selected ? 22 : 18}px;border-radius:9999px;background:${selected ? "#cf8b43" : "#0f766e"};border:3px solid white;box-shadow:0 10px 20px rgba(15,118,110,0.28)"></div>`;
+  `<div style="display:flex;align-items:center;justify-content:center;width:${selected ? 22 : 18}px;height:${selected ? 22 : 18}px;border-radius:9999px;background:${selected ? "#38B6C9" : "#185538"};border:3px solid #FCECDA;box-shadow:0 10px 20px ${selected ? "rgba(56,182,201,0.28)" : "rgba(24,85,56,0.22)"}"></div>`;
 
 const bubbleHTML = ({ name, avatarUrl, selected }: { name: string; avatarUrl?: string | null; selected: boolean }) => {
   const safeName = escapeHtml(name);
@@ -49,11 +49,11 @@ const bubbleHTML = ({ name, avatarUrl, selected }: { name: string; avatarUrl?: s
   return `<div style="display:flex;align-items:center;justify-content:center;width:${selected ? 44 : 38}px;height:${
     selected ? 44 : 38
   }px;border-radius:9999px;background:white;border:3px solid ${
-    selected ? "#cf8b43" : "rgba(15,118,110,0.85)"
-  };box-shadow:0 16px 24px rgba(29,43,38,0.2);overflow:hidden">${
+    selected ? "#38B6C9" : "rgba(24,85,56,0.82)"
+  };box-shadow:0 16px 24px rgba(24,85,56,0.18);overflow:hidden">${
     safeAvatarUrl
       ? `<img src="${safeAvatarUrl}" alt="${safeName}" style="width:100%;height:100%;object-fit:cover" />`
-      : `<span style="font-size:12px;font-weight:700;color:#1d2b26">${safeName.slice(0, 2).toUpperCase()}</span>`
+      : `<span style="font-size:12px;font-weight:700;color:#185538">${safeName.slice(0, 2).toUpperCase()}</span>`
   }</div>`;
 };
 

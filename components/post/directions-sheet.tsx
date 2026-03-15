@@ -97,11 +97,11 @@ export function DirectionsSheet({
       </Drawer.Trigger>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-[210] bg-black/35 backdrop-blur-sm transition-opacity" />
-        <Drawer.Content className="fixed inset-x-0 bottom-0 z-[210] mt-24 rounded-t-[2.25rem] bg-white pb-safe after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-white">
+        <Drawer.Content className="fixed inset-x-0 bottom-0 z-[210] mt-24 rounded-t-[2.25rem] bg-[var(--surface-strong)] pb-safe after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]">
           <div className="mx-auto mt-4 h-1.5 w-12 rounded-full bg-[var(--foreground)]/15" />
           <div className="px-5 pb-8 pt-5 sm:px-6">
             <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent)]/10 text-[var(--accent)]">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--map-accent-soft)] text-[var(--map-accent)]">
                 <Map className="h-5 w-5" />
               </div>
               <div className="min-w-0">
@@ -120,9 +120,9 @@ export function DirectionsSheet({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => setOpen(false)}
-                  className="flex w-full items-center gap-4 rounded-[1.5rem] border border-black/5 bg-[var(--background)]/65 px-4 py-4 text-left transition hover:border-[var(--accent)]/25 hover:bg-[var(--accent)]/4 active:scale-[0.99]"
+                  className="flex w-full items-center gap-4 rounded-[1.5rem] border bg-[var(--surface-soft)] px-4 py-4 text-left transition hover:border-[rgba(56,182,201,0.24)] hover:bg-[var(--map-accent-soft)] active:scale-[0.99]"
                 >
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--accent)] shadow-sm">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--surface-strong)] text-[var(--map-accent)] shadow-sm">
                     <Route className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1">

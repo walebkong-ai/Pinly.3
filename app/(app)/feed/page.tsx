@@ -44,7 +44,7 @@ export default async function FeedPage() {
           />
         ))}
         {posts.length === 0 && (
-          <div className="rounded-[1.75rem] border bg-white/80 p-6 text-center">
+          <div className="rounded-[1.75rem] border bg-[var(--surface-strong)] p-6 text-center">
             <p className="text-sm text-[var(--foreground)]/55">No memories yet. Add your first memory from the map!</p>
           </div>
         )}

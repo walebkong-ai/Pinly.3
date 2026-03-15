@@ -20,7 +20,7 @@ const DynamicLocationPicker = dynamic(
   () => import("@/components/create/location-picker").then((mod) => mod.LocationPicker),
   {
     ssr: false,
-    loading: () => <div className="h-[320px] rounded-[1.75rem] border bg-white/60" />
+    loading: () => <div className="h-[320px] rounded-[1.75rem] border bg-[var(--surface-soft)]" />
   }
 );
 
@@ -291,7 +291,7 @@ export function CreatePostForm() {
         />
         {/* Upload / Preview area */}
         {uploading ? (
-          <div className="mt-6 flex h-64 w-full flex-col items-center justify-center rounded-[2rem] border border-dashed bg-white/60">
+          <div className="mt-6 flex h-64 w-full flex-col items-center justify-center rounded-[2rem] border border-dashed bg-[var(--surface-soft)]">
             <LoaderCircle className="h-8 w-8 animate-spin text-[var(--accent)]" />
             <p className="mt-3 text-sm text-[var(--foreground)]/55">Uploading…</p>
           </div>
@@ -335,7 +335,7 @@ export function CreatePostForm() {
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="mt-6 flex h-64 w-full flex-col items-center justify-center rounded-[2rem] border border-dashed bg-white/60 text-center transition hover:bg-white/80"
+            className="mt-6 flex h-64 w-full flex-col items-center justify-center rounded-[2rem] border border-dashed bg-[var(--surface-soft)] text-center transition hover:bg-[var(--surface-strong)]"
           >
             <Upload className="h-8 w-8 text-[var(--accent)]" />
             <p className="mt-4 font-medium">Choose image or video</p>
@@ -348,9 +348,9 @@ export function CreatePostForm() {
         <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Step 2</p>
         <h2 className="mt-2 font-[var(--font-serif)] text-4xl">Choose the place</h2>
         <div className="mt-6 space-y-4">
-          <div className="rounded-[1.75rem] border bg-white/60 p-4">
+          <div className="rounded-[1.75rem] border bg-[var(--surface-soft)] p-4">
             <div className="flex items-center gap-2 text-sm font-medium text-[var(--foreground)]">
-              <Search className="h-4 w-4 text-[var(--accent)]" />
+              <Search className="h-4 w-4 text-[var(--map-accent)]" />
               Search for a place
             </div>
             <div className="relative mt-3">
@@ -359,7 +359,7 @@ export function CreatePostForm() {
                 onChange={(event) => setLocationQuery(event.target.value)}
                 placeholder="Search cities, landmarks, neighborhoods"
               />
-              {searchingPlaces && <LoaderCircle className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[var(--accent)]" />}
+              {searchingPlaces && <LoaderCircle className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[var(--map-accent)]" />}
             </div>
             {!!placeResults.length && (
               <div className="mt-3 max-h-52 space-y-2 overflow-y-auto">
@@ -368,7 +368,7 @@ export function CreatePostForm() {
                     key={place.id}
                     type="button"
                     onClick={() => applyPlaceResult(place)}
-                    className="block w-full rounded-3xl border bg-white/72 px-4 py-3 text-left transition hover:bg-white"
+                    className="block w-full rounded-3xl border bg-[var(--surface-strong)] px-4 py-3 text-left transition hover:bg-[var(--card-strong)]"
                   >
                     <p className="text-sm font-medium">{place.placeName}</p>
                     <p className="mt-1 text-xs text-[var(--foreground)]/55">{place.displayName}</p>
@@ -381,9 +381,9 @@ export function CreatePostForm() {
             )}
           </div>
 
-          <div className="rounded-[1.75rem] border bg-white/60 p-4">
+          <div className="rounded-[1.75rem] border bg-[var(--surface-soft)] p-4">
             <div className="flex items-center gap-2 text-sm font-medium text-[var(--foreground)]">
-              <Crosshair className="h-4 w-4 text-[var(--accent)]" />
+              <Crosshair className="h-4 w-4 text-[var(--map-accent)]" />
               Or tap the map to drop the memory exactly where it happened
             </div>
             
@@ -391,7 +391,7 @@ export function CreatePostForm() {
               <Button
                 type="button"
                 variant="secondary"
-                className="rounded-full bg-white/80 hover:bg-white text-xs font-medium"
+                className="rounded-full bg-[var(--surface-strong)] text-xs font-medium hover:bg-[var(--card-strong)]"
                 onClick={getCurrentLocation}
                 disabled={gettingLocation}
               >
@@ -433,7 +433,7 @@ export function CreatePostForm() {
             <Input value={country} onChange={(event) => setCountry(event.target.value)} placeholder="Country" required />
           </div>
 
-          <details className="rounded-3xl border bg-white/65 p-4 text-sm text-[var(--foreground)]/65">
+          <details className="rounded-3xl border bg-[var(--surface-soft)] p-4 text-sm text-[var(--foreground)]/65">
             <summary className="cursor-pointer font-medium text-[var(--foreground)]">Advanced coordinates</summary>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <Input
@@ -453,9 +453,9 @@ export function CreatePostForm() {
             </div>
           </details>
 
-          <div className="rounded-3xl border bg-white/65 p-4 text-sm text-[var(--foreground)]/65">
+          <div className="rounded-3xl border bg-[var(--surface-soft)] p-4 text-sm text-[var(--foreground)]/65">
             <div className="flex items-center gap-2 font-medium text-[var(--foreground)]">
-              <MapPin className="h-4 w-4 text-[var(--accent)]" />
+              <MapPin className="h-4 w-4 text-[var(--map-accent)]" />
               Intentional place-based posting only
             </div>
             <p className="mt-2">Search for a place, tap the map, or fine-tune with advanced coordinates. No live location is used.</p>

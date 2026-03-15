@@ -47,7 +47,7 @@ export function DeletePostButton({ postId, redirectToMap }: { postId: string, re
       variant="danger" 
       onClick={handleDelete} 
       disabled={isDeleting}
-      className="gap-2 h-9 px-3 rounded-2xl bg-red-500/10 text-red-600 hover:bg-red-500/20"
+      className="h-9 gap-2 rounded-2xl bg-[rgba(180,35,24,0.1)] px-3 text-[var(--danger)] hover:bg-[rgba(180,35,24,0.16)]"
     >
       {isDeleting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
       Delete

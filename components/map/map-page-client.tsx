@@ -19,8 +19,8 @@ import type { LayerMode, MapCategory, MapGroupOption, MapResponse, PostSummary, 
 const DynamicMapCanvas = dynamic(() => import("@/components/map/map-canvas").then((mod) => mod.MapCanvas), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[70vh] items-center justify-center rounded-[2rem] border bg-white/70">
-      <LoaderCircle className="h-6 w-6 animate-spin text-[var(--accent)]" />
+    <div className="flex h-[70vh] items-center justify-center rounded-[2rem] border bg-[var(--surface-soft)]">
+      <LoaderCircle className="h-6 w-6 animate-spin text-[var(--map-accent)]" />
     </div>
   )
 });
@@ -197,7 +197,7 @@ export function MapPageClient() {
   }
 
   return (
-    <section className="relative min-h-[calc(100vh-7.5rem)] overflow-hidden rounded-[2.2rem] border bg-white/70 shadow-2xl shadow-black/5">
+    <section className="relative min-h-[calc(100vh-7.5rem)] overflow-hidden rounded-[2.2rem] border bg-[var(--surface-soft)] shadow-2xl shadow-black/5">
       <DynamicMapCanvas
         markers={mapData.markers}
         selectedPostId={selectedPost?.id ?? null}
@@ -208,7 +208,7 @@ export function MapPageClient() {
       <div className="pointer-events-none absolute inset-0 z-[700]">
         <div className="pointer-events-none flex h-full flex-col justify-between p-4 md:p-5">
           <div className="space-y-4">
-            <div className="pointer-events-auto hidden md:inline-flex max-w-xl items-center gap-4 rounded-full border bg-white/86 px-4 py-3 shadow-sm">
+            <div className="pointer-events-auto hidden max-w-xl items-center gap-4 rounded-full border bg-[var(--surface-strong)] px-4 py-3 shadow-sm md:inline-flex">
               <Brand compact />
               <p className="text-sm text-[var(--foreground)]/62">{minimalCopy}</p>
             </div>
@@ -222,7 +222,7 @@ export function MapPageClient() {
                       value={query}
                       onChange={(event) => setQuery(event.target.value)}
                       placeholder="Search cities, places, people, captions"
-                      className="bg-white/88 pl-11 shadow-sm"
+                      className="bg-[var(--surface-strong)] pl-11 shadow-sm"
                     />
                   </div>
                   <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">

@@ -13,7 +13,7 @@ export default async function SignInPage() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-5xl items-center px-6 py-12">
-      <div className="grid w-full gap-6 rounded-[2rem] border bg-white/75 p-6 shadow-xl shadow-black/5 md:grid-cols-[1fr_0.92fr] md:p-10">
+      <div className="grid w-full gap-6 rounded-[2rem] border bg-[var(--surface-strong)] p-6 shadow-xl shadow-black/5 md:grid-cols-[1fr_0.92fr] md:p-10">
         <div className="rounded-[1.75rem] bg-[var(--foreground)] p-8 text-white">
           <Brand compact />
           <h1 className="mt-12 font-[var(--font-serif)] text-4xl">Welcome back to your map.</h1>

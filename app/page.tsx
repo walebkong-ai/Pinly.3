@@ -53,7 +53,7 @@ export default async function LandingPage() {
 
         <div className="relative z-10 mt-16 grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
           <div>
-            <p className="mb-4 inline-flex rounded-full border bg-white/70 px-3 py-1 text-xs uppercase tracking-[0.2em] text-[var(--foreground)]/60">
+            <p className="mb-4 inline-flex rounded-full border bg-[var(--surface-soft)] px-3 py-1 text-xs uppercase tracking-[0.2em] text-[var(--foreground)]/60">
               Private social travel app
             </p>
             <h1 className="max-w-3xl font-[var(--font-serif)] text-5xl leading-tight text-balance sm:text-7xl">
@@ -77,8 +77,8 @@ export default async function LandingPage() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             {features.map(({ icon: Icon, title, description }) => (
-              <div key={title} className="rounded-[1.75rem] border bg-white/72 p-5 shadow-sm">
-                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)]">
+              <div key={title} className="rounded-[1.75rem] border bg-[var(--surface-soft)] p-5 shadow-sm">
+                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--map-accent-soft)] text-[var(--map-accent)]">
                   <Icon className="h-5 w-5" />
                 </div>
                 <h2 className="text-lg font-semibold">{title}</h2>

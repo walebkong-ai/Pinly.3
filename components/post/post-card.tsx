@@ -20,7 +20,7 @@ export function PostCard({
   showCommentCounts?: boolean;
 }) {
   return (
-    <article className="overflow-hidden rounded-[1.75rem] border bg-white/80 shadow-sm">
+    <article className="overflow-hidden rounded-[1.75rem] border bg-[var(--surface-strong)] shadow-sm">
       <div className={compact ? "aspect-[4/3]" : "aspect-[4/3]"}>
         <MediaView
           mediaType={post.mediaType}
@@ -39,7 +39,7 @@ export function PostCard({
         </div>
         <div>
           <div className="flex items-start gap-2 text-sm text-[var(--foreground)]/68 min-w-0">
-            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent)]" />
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[var(--map-accent)]" />
             <div className="min-w-0 flex-1">
               <p className="font-medium text-[var(--foreground)] truncate">{post.placeName}</p>
               <p className="truncate">
@@ -58,7 +58,7 @@ export function PostCard({
           <LikeButton postId={post.id} showCount={showLikeCounts} />
           <CommentSection postId={post.id} showCount={showCommentCounts} />
           <ShareSheet postId={post.id} />
-          <Link href={`/posts/${post.id}`} className="ml-auto text-xs font-medium text-[var(--accent)]">
+          <Link href={`/posts/${post.id}`} className="ml-auto text-xs font-medium text-[var(--foreground)]/72 transition hover:text-[var(--foreground)]">
             Open
           </Link>
         </div>

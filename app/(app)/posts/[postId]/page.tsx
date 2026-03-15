@@ -56,7 +56,7 @@ export default async function PostDetailPage({ params }: Props) {
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
       <BackButton />
       <div className="mx-auto max-w-xl">
-        <article className="overflow-hidden rounded-[1.75rem] border bg-white/80 shadow-sm">
+        <article className="overflow-hidden rounded-[1.75rem] border bg-[var(--surface-strong)] shadow-sm">
           {/* Media */}
           <div className="aspect-[4/3] md:aspect-[16/10]">
             <MediaView
@@ -87,7 +87,7 @@ export default async function PostDetailPage({ params }: Props) {
             <div>
               <h1 className="font-[var(--font-serif)] text-2xl md:text-3xl">{post.placeName}</h1>
               <div className="mt-2 flex items-start gap-2 text-sm text-[var(--foreground)]/68">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent)]" />
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[var(--map-accent)]" />
                 <div>
                   <p>{post.city}, {post.country}</p>
                   <p className="text-xs">Visited {formatVisitDate(post.visitedAt)}</p>
@@ -107,7 +107,7 @@ export default async function PostDetailPage({ params }: Props) {
             </div>
 
             {/* Coordinates */}
-            <div className="rounded-2xl border bg-white/70 p-3">
+            <div className="rounded-2xl border bg-[var(--surface-soft)] p-3">
               <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Coordinates</p>
               <p className="mt-1.5 text-sm">
                 {post.latitude.toFixed(4)}, {post.longitude.toFixed(4)}

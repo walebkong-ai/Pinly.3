@@ -54,7 +54,7 @@ export function GroupsList() {
           {loading ? (
             <div className="text-sm text-[var(--foreground)]/60">Loading groups...</div>
           ) : groups.length === 0 ? (
-            <div className="rounded-3xl border border-dashed bg-white/50 p-6 text-sm text-[var(--foreground)]/60">
+            <div className="rounded-3xl border border-dashed bg-[var(--surface-soft)] p-6 text-sm text-[var(--foreground)]/60">
               You aren't in any groups yet. Create one to start a persistent trip history!
             </div>
           ) : (
@@ -62,7 +62,7 @@ export function GroupsList() {
               <Link
                 key={group.id}
                 href={`/groups/${group.id}`}
-                className="flex items-center justify-between rounded-3xl border bg-white/72 p-4 transition-colors hover:bg-white"
+                className="flex items-center justify-between rounded-3xl border bg-[var(--surface-soft)] p-4 transition-colors hover:bg-[var(--surface-strong)]"
               >
                 <div className="flex items-center gap-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--accent)]/10 text-[var(--accent)]">

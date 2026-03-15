@@ -14,7 +14,7 @@ export function Avatar({
 
   if (proxyUrl) {
     return (
-      <div className={cn("relative h-10 w-10 overflow-hidden rounded-full border bg-white", className)}>
+      <div className={cn("relative h-10 w-10 overflow-hidden rounded-full border bg-[var(--surface-strong)]", className)}>
         <Image 
           src={proxyUrl} 
           alt={name} 
@@ -29,7 +29,7 @@ export function Avatar({
   return (
     <div
       className={cn(
-        "flex h-10 w-10 items-center justify-center rounded-full border bg-[var(--accent-soft)] text-sm font-semibold uppercase",
+        "flex h-10 w-10 items-center justify-center rounded-full border bg-[var(--map-accent-soft)] text-sm font-semibold uppercase text-[var(--foreground)]",
         className
       )}
     >

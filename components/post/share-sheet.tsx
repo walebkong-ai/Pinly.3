@@ -104,7 +104,7 @@ export function ShareSheet({ postId }: ShareSheetProps) {
       </Drawer.Trigger>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm transition-opacity" />
-        <Drawer.Content className="fixed inset-x-0 bottom-0 z-[200] mt-24 flex h-[85vh] flex-col rounded-t-[2.5rem] bg-white pb-safe after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-white md:h-[75vh]">
+        <Drawer.Content className="fixed inset-x-0 bottom-0 z-[200] mt-24 flex h-[85vh] flex-col rounded-t-[2.5rem] bg-[var(--surface-strong)] pb-safe after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)] md:h-[75vh]">
           <div className="mx-auto mt-4 h-1.5 w-12 shrink-0 rounded-full bg-[var(--foreground)]/15" />
           <div className="flex flex-1 flex-col overflow-hidden p-6">
             <h2 className="font-[var(--font-serif)] text-2xl font-semibold">Share to Group</h2>
@@ -115,7 +115,7 @@ export function ShareSheet({ postId }: ShareSheetProps) {
                 placeholder="Search groups..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 h-12 rounded-2xl bg-black/5 border-none"
+                className="h-12 rounded-2xl border-none bg-[var(--surface-soft)] pl-10"
               />
             </div>
 
@@ -136,10 +136,12 @@ export function ShareSheet({ postId }: ShareSheetProps) {
                       key={group.id}
                       onClick={() => toggleGroup(group.id)}
                       className={`flex cursor-pointer items-center gap-4 rounded-2xl p-3 transition-colors border ${
-                        isSelected ? "border-[var(--accent)] bg-[var(--accent)]/5" : "border-transparent hover:bg-black/5"
+                        isSelected
+                          ? "border-[var(--social-accent)] bg-[var(--social-accent-soft)]"
+                          : "border-transparent hover:bg-[var(--foreground)]/5"
                       }`}
                     >
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)]/10 text-[var(--accent)]">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--social-accent-soft)] text-[var(--social-accent)]">
                         <Users className="h-6 w-6" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -148,7 +150,7 @@ export function ShareSheet({ postId }: ShareSheetProps) {
                           {group.memberCount} member{group.memberCount !== 1 && "s"}
                         </p>
                       </div>
-                      <div className="shrink-0 px-2 text-[var(--accent)]">
+                      <div className="shrink-0 px-2 text-[var(--social-accent)]">
                         {isSelected && <CheckCircle2 className="h-6 w-6" />}
                       </div>
                     </div>
