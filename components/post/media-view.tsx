@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import { cn, getMediaProxyUrl } from "@/lib/utils";
 
@@ -14,6 +17,7 @@ export function MediaView({
 }) {
   const proxyUrl = getMediaProxyUrl(mediaUrl);
   const proxyThumb = getMediaProxyUrl(thumbnailUrl);
+  const [loaded, setLoaded] = useState(false);
 
   if (mediaType === "VIDEO") {
     return (
@@ -29,12 +33,13 @@ export function MediaView({
   }
 
   return (
-    <div className={cn("relative h-full w-full overflow-hidden rounded-[1.5rem]", className)}>
+    <div className={cn("relative h-full w-full overflow-hidden rounded-[1.5rem] bg-black/5", className)}>
       <Image 
         src={proxyUrl} 
         alt="" 
         fill 
-        className="object-cover" 
+        onLoad={() => setLoaded(true)}
+        className={cn("object-cover transition-opacity duration-500", loaded ? "opacity-100" : "opacity-0")}
         unoptimized={proxyUrl.startsWith("/api/media")}
       />
     </div>

@@ -34,7 +34,7 @@ export function GroupsList() {
   }, []);
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+    <div className="grid gap-4 xl:grid-cols-[1fr_1fr] animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
       <section className="glass-panel rounded-[2rem] p-5">
         <div className="flex items-center justify-between">
           <div>

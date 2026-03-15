@@ -21,7 +21,7 @@ export function ProfileView({
   isOwnProfile: boolean;
 }) {
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
       <section className="glass-panel rounded-[2rem] p-5">
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           {isOwnProfile ? (

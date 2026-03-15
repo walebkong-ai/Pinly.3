@@ -202,7 +202,7 @@ export function MapPageClient() {
             </div>
 
             {showControls && (
-              <div className="pointer-events-auto flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+              <div className="pointer-events-auto flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between animate-in fade-in slide-in-from-top-4 duration-500 ease-out">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <div className="relative min-w-[280px]">
                     <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--foreground)]/40" />
@@ -240,7 +240,7 @@ export function MapPageClient() {
         </div>
 
         {showControls && (
-          <div className="pointer-events-none absolute inset-x-4 bottom-20 grid gap-4 md:bottom-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-end xl:px-1">
+          <div className="pointer-events-none absolute inset-x-4 bottom-20 grid gap-4 md:bottom-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-end xl:px-1 animate-in fade-in duration-500 ease-out">
             <div className="pointer-events-none flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
               <div className="pointer-events-auto max-w-md">
                 <CityContextPanel cityContext={mapData.cityContext} />

@@ -11,9 +11,9 @@ export function BackButton() {
     <Button 
       variant="ghost" 
       onClick={() => router.back()} 
-      className="mb-2 gap-2 -ml-2 h-9 rounded-2xl text-[var(--foreground)]/60 hover:text-[var(--foreground)]"
+      className="group mb-2 h-9 gap-2 -ml-2 rounded-2xl text-[var(--foreground)]/60 transition hover:bg-black/5 hover:text-[var(--foreground)]"
     >
-      <ArrowLeft className="h-4 w-4" />
+      <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
       Back
     </Button>
   );

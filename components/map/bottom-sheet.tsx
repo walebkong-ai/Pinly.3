@@ -19,11 +19,11 @@ export function BottomSheet({
   return (
     <div
       className={cn(
-        "pointer-events-none absolute inset-x-0 bottom-0 z-[760] flex justify-center p-4 transition duration-300",
+        "pointer-events-none absolute inset-x-0 bottom-0 z-[760] flex justify-center p-3 transition-all duration-400 ease-out",
         post ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
       )}
     >
-      <div className="pointer-events-auto glass-panel w-full max-w-3xl rounded-[2rem] p-4 shadow-2xl shadow-black/20">
+      <div className="pointer-events-auto glass-panel w-full max-w-3xl rounded-[2rem] p-3 shadow-2xl shadow-black/20">
         {post && (
           <div className="grid gap-4 md:grid-cols-[0.9fr_1.1fr]">
             <div className="aspect-[4/3] overflow-hidden rounded-[1.5rem]">

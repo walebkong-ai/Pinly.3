@@ -204,7 +204,7 @@ export function CreatePostForm() {
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
+    <div className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr] animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
       <section className="glass-panel rounded-[2rem] p-5">
         <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Step 1</p>
         <h1 className="mt-2 font-[var(--font-serif)] text-4xl">Upload your moment</h1>

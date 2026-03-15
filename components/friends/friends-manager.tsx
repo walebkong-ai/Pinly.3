@@ -107,7 +107,7 @@ export function FriendsManager() {
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+    <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr] animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
       <section className="glass-panel rounded-[2rem] p-5">
         <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Grow your circle</p>
         <h1 className="mt-2 font-[var(--font-serif)] text-4xl">Friends & requests</h1>
