@@ -6,7 +6,7 @@ import { z } from "zod";
 export const runtime = "nodejs";
 
 const createMessageSchema = z.object({
-  content: z.string().min(1).max(2000),
+  content: z.string().min(1).max(2500),
 });
 
 export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
@@ -54,7 +54,30 @@ export async function GET(request: Request, props: { params: Promise<{ id: strin
     orderBy: { createdAt: "asc" }
   });
 
-  return Response.json({ messages });
+  // Hydrate shared posts if they exist and the user has permission to see them
+  // We do this manually to enforce the visibility rules from `getVisiblePostById`
+  const { getVisiblePostById } = await import("@/lib/data");
+  
+  const hydratedMessages = await Promise.all(messages.map(async (msg) => {
+    if (msg.content.startsWith("[SHARED_POST]:")) {
+      const postId = msg.content.replace("[SHARED_POST]:", "");
+      const post = await getVisiblePostById(userId, postId);
+      
+      return {
+        ...msg,
+        sharedPost: post ? {
+          id: post.id,
+          placeName: post.placeName,
+          city: post.city,
+          country: post.country,
+          thumbnailUrl: post.thumbnailUrl || post.mediaUrl,
+        } : null // If null, the user doesn't have access or it was deleted
+      };
+    }
+    return msg;
+  }));
+
+  return Response.json({ messages: hydratedMessages });
 }
 
 export async function POST(request: Request, props: { params: Promise<{ id: string }> }) {

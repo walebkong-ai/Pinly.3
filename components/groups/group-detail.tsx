@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Plus, Send, Users, X, UserPlus, CheckCircle2, LoaderCircle } from "lucide-react";
+import { Plus, Send, Users, X, UserPlus, CheckCircle2, LoaderCircle, Share2, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,13 @@ type Message = {
     username: string;
     avatarUrl: string | null;
   };
+  sharedPost?: {
+    id: string;
+    placeName: string;
+    city: string;
+    country: string;
+    thumbnailUrl: string;
+  } | null;
 };
 
 export function GroupDetail({ groupId }: { groupId: string }) {
@@ -205,9 +212,50 @@ export function GroupDetail({ groupId }: { groupId: string }) {
                       {formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}
                     </span>
                   </div>
-                  <div className="mt-1 inline-block rounded-2xl rounded-tl-none bg-white p-3 text-sm shadow-sm md:max-w-[80%]">
-                    {msg.content}
-                  </div>
+                  {msg.content.startsWith("[SHARED_POST]:") ? (
+                    <div className="mt-1 w-[240px] md:w-[280px] overflow-hidden rounded-2xl border bg-white shadow-sm">
+                      <div className="flex items-center gap-2 border-b bg-black/5 p-3 text-sm font-medium">
+                        <Share2 className="h-4 w-4 text-[var(--accent)]" />
+                        Shared a post
+                      </div>
+                      {msg.sharedPost ? (
+                        <div 
+                          className="group relative cursor-pointer block"
+                          onClick={() => window.location.href = `/posts/${msg.sharedPost.id}`}
+                        >
+                          <div className="aspect-[4/3] w-full bg-black/5 relative">
+                            {msg.sharedPost.thumbnailUrl ? (
+                              <img 
+                                src={msg.sharedPost.thumbnailUrl} 
+                                alt={msg.sharedPost.placeName}
+                                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center">
+                                <ImageIcon size={32} className="text-[var(--foreground)]/20" />
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                            <div className="absolute bottom-3 left-3 right-3 text-white">
+                              <p className="font-semibold text-sm line-clamp-1">{msg.sharedPost.placeName}</p>
+                              <p className="text-xs text-white/80 line-clamp-1">{msg.sharedPost.city}, {msg.sharedPost.country}</p>
+                            </div>
+                          </div>
+                          <div className="p-3 bg-white text-center text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent)]/5 transition-colors">
+                            Open Post
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-4 text-center text-sm text-[var(--foreground)]/60">
+                          Post unavailable or you do not have permission to view it.
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="mt-1 inline-block rounded-2xl rounded-tl-none bg-white p-3 text-sm shadow-sm md:max-w-[80%] whitespace-pre-wrap break-words">
+                      {msg.content}
+                    </div>
+                  )}
                 </div>
               </div>
             ))

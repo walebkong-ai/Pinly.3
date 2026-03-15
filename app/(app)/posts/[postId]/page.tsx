@@ -10,6 +10,7 @@ import { DeletePostButton } from "@/components/post/delete-post-button";
 import { BackButton } from "@/components/post/back-button";
 import { LikeButton } from "@/components/post/like-button";
 import { CommentSection } from "@/components/post/comment-section";
+import { ShareSheet } from "@/components/post/share-sheet";
 
 type Props = {
   params: Promise<{ postId: string }>;
@@ -100,6 +101,7 @@ export default async function PostDetailPage({ params }: Props) {
             <div className="flex items-center gap-1 border-t pt-3">
               <LikeButton postId={post.id} initialLiked={liked} initialCount={likeCount} showCount={showLikeCounts} />
               <CommentSection postId={post.id} showCount={showCommentCounts} />
+              <ShareSheet postId={post.id} />
             </div>
 
             {/* Coordinates */}
