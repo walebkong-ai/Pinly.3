@@ -42,5 +42,14 @@ export async function GET(request: Request, props: { params: Promise<{ id: strin
     return apiError("Forbidden", 403);
   }
 
-  return Response.json({ group });
+  const directUser = group.isDirect
+    ? group.members.find((member) => member.user.id !== userId)?.user ?? null
+    : null;
+
+  return Response.json({
+    group: {
+      ...group,
+      directUser
+    }
+  });
 }

@@ -27,12 +27,16 @@ const primaryNavItems = [
 
 const secondaryNavItems = [
   { href: "/friends", label: "Friends", icon: UsersRound },
-  { href: "/groups", label: "Groups", icon: Users },
+  { href: "/messages", label: "Messages", icon: Users },
   { href: "/create", label: "Create", icon: Plus },
   { href: "/cities", label: "Cities", icon: Search },
   { href: "/settings", label: "Settings", icon: Settings },
   { href: "/profile/me", label: "Profile", icon: UserRound }
 ];
+
+function isNavActive(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function AppShell({ children, user }: AppShellProps) {
   const pathname = usePathname();
@@ -70,7 +74,7 @@ export function AppShell({ children, user }: AppShellProps) {
                 href={href}
                 className={cn(
                   "relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
-                  pathname === href 
+                  isNavActive(pathname, href)
                     ? "z-10 bg-[var(--foreground)] text-[var(--background)] shadow-sm"
                     : "bg-[var(--surface-soft)] text-[var(--foreground)]/72 hover:bg-[var(--surface-strong)]"
                 )}
@@ -91,14 +95,14 @@ export function AppShell({ children, user }: AppShellProps) {
                 href={resolvedHref}
                 className={cn(
                   "relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
-                  pathname === resolvedHref
+                  isNavActive(pathname, resolvedHref)
                     ? "z-10 bg-[var(--foreground)] text-[var(--background)] shadow-sm"
                     : "text-[var(--foreground)]/70 hover:bg-[var(--surface-soft)]"
                 )}
               >
                 <div className="relative">
                   <Icon className="relative z-20 h-4 w-4" />
-                  {href === "/groups" && unreadGroupsCount > 0 && (
+                  {href === "/messages" && unreadGroupsCount > 0 && (
                     <div className="absolute -right-1.5 -top-1.5 z-30 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--social-accent)] px-1 text-[9px] font-bold text-white shadow-sm ring-1 ring-[rgba(255,250,244,0.72)]">
                       {unreadGroupsCount > 99 ? "99+" : unreadGroupsCount}
                     </div>
@@ -140,14 +144,14 @@ export function AppShell({ children, user }: AppShellProps) {
               href={resolvedHref}
               className={cn(
                 "flex flex-col items-center gap-0.5 rounded-full px-2 py-1.5 text-[10px] font-medium transition sm:px-3 sm:text-[11px]",
-                pathname === resolvedHref
+                isNavActive(pathname, resolvedHref)
                   ? "bg-[rgba(24,85,56,0.08)] text-[var(--foreground)]"
                   : "text-[var(--foreground)]/58 hover:bg-[var(--foreground)]/5"
               )}
             >
               <div className="relative">
                 <Icon className="h-4 w-4" />
-                {href === "/groups" && unreadGroupsCount > 0 && (
+                {href === "/messages" && unreadGroupsCount > 0 && (
                   <div className="absolute -right-1.5 -top-1 z-30 flex h-[14px] min-w-[14px] items-center justify-center rounded-full bg-[var(--social-accent)] px-0.5 text-[8px] font-bold text-white ring-1 ring-[rgba(255,250,244,0.68)]">
                     {unreadGroupsCount > 99 ? "99+" : unreadGroupsCount}
                   </div>

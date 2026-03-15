@@ -1,5 +1,5 @@
-import { GroupsList } from "@/components/groups/groups-list";
+import { redirect } from "next/navigation";
 
 export default function GroupsPage() {
-  return <GroupsList />;
+  redirect("/messages");
 }

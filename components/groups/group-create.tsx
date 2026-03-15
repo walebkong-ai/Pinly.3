@@ -67,7 +67,7 @@ export function GroupCreate() {
     if (response.ok) {
       const data = await response.json();
       toast.success("Group created!");
-      router.push(`/groups/${data.group.id}`);
+      router.push(`/messages/${data.group.id}`);
     } else {
       const error = await response.json();
       toast.error(error.error || "Failed to create group.");
@@ -77,8 +77,11 @@ export function GroupCreate() {
   return (
     <div className="grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
       <section className="glass-panel rounded-[2rem] p-5">
-        <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">New Group</p>
+        <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Messages</p>
         <h1 className="mt-2 font-[var(--font-serif)] text-4xl">Create Group</h1>
+        <p className="mt-2 max-w-md text-sm text-[var(--foreground)]/62">
+          Start a shared conversation for a trip, city plan, or memory circle.
+        </p>
         
         <div className="mt-6 space-y-4">
           <div>

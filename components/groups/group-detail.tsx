@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Plus, Send, Users, X, UserPlus, CheckCircle2, LoaderCircle, Share2, Image as ImageIcon } from "lucide-react";
+import { Send, Users, X, UserPlus, CheckCircle2, LoaderCircle, Share2, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,12 @@ type GroupDetails = {
   id: string;
   name: string;
   isDirect?: boolean;
+  directUser?: {
+    id: string;
+    name: string;
+    username: string;
+    avatarUrl: string | null;
+  } | null;
   members: Array<{
     user: {
       id: string;
@@ -156,20 +162,33 @@ export function GroupDetail({ groupId }: { groupId: string }) {
     }
   };
 
-  if (loading) return <div className="p-4 text-sm">Loading group...</div>;
-  if (!group) return <div className="p-4 text-sm text-red-500">Group not found or access denied.</div>;
+  if (loading) return <div className="p-4 text-sm">Loading conversation...</div>;
+  if (!group) return <div className="p-4 text-sm text-red-500">Conversation not found or access denied.</div>;
+
+  const conversationName = group.isDirect ? group.directUser?.name ?? group.name : group.name;
+  const conversationSubtitle = group.isDirect
+    ? group.directUser
+      ? `Direct message with @${group.directUser.username}`
+      : "Direct conversation"
+    : "Group chat for shared plans, memories, and updates";
 
   return (
     <div className="grid h-[calc(100vh-8rem)] gap-4 xl:grid-cols-[0.8fr_1.2fr]">
-      {/* Group Info Sidebar */}
+      {/* Conversation Info Sidebar */}
       <section className="glass-panel hidden flex-col rounded-[2rem] p-5 xl:flex">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--accent)]/10 text-[var(--accent)]">
-          <Users className="h-8 w-8" />
-        </div>
-        <h1 className="mt-4 font-[var(--font-serif)] text-3xl">{group.name}</h1>
-        <p className="mt-1 text-sm text-[var(--foreground)]/60">
-          {group.isDirect ? "Direct shares & messages" : "Persistent Trip History & Messages"}
-        </p>
+        {group.isDirect && group.directUser ? (
+          <Avatar
+            name={group.directUser.name}
+            src={group.directUser.avatarUrl}
+            className="h-16 w-16 rounded-2xl border border-white/70"
+          />
+        ) : (
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--accent)]/10 text-[var(--accent)]">
+            <Users className="h-8 w-8" />
+          </div>
+        )}
+        <h1 className="mt-4 font-[var(--font-serif)] text-3xl">{conversationName}</h1>
+        <p className="mt-1 text-sm text-[var(--foreground)]/60">{conversationSubtitle}</p>
 
         <div className="mt-8 flex items-center justify-between">
           <h2 className="font-semibold uppercase tracking-widest text-xs text-[var(--foreground)]/45">
@@ -198,13 +217,17 @@ export function GroupDetail({ groupId }: { groupId: string }) {
       <section className="glass-panel relative flex flex-col rounded-[2rem] overflow-hidden">
         {/* Mobile Header */}
         <div className="flex items-center gap-3 border-b border-black/5 bg-white/40 p-4 xl:hidden">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent)]/10 text-[var(--accent)]">
-            <Users className="h-5 w-5" />
-          </div>
+          {group.isDirect && group.directUser ? (
+            <Avatar name={group.directUser.name} src={group.directUser.avatarUrl} className="h-10 w-10 shrink-0" />
+          ) : (
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent)]/10 text-[var(--accent)]">
+              <Users className="h-5 w-5" />
+            </div>
+          )}
           <div>
-            <h2 className="font-semibold">{group.name}</h2>
+            <h2 className="font-semibold">{conversationName}</h2>
             <p className="text-xs text-[var(--foreground)]/50">
-              {group.isDirect ? "Direct share" : `${group.members.length} members`}
+              {group.isDirect ? conversationSubtitle : `${group.members.length} members`}
             </p>
           </div>
         </div>
@@ -213,7 +236,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 ? (
             <div className="flex h-full items-center justify-center text-sm text-[var(--foreground)]/50">
-              No messages here yet. Say hi!
+              {group.isDirect ? "No messages yet. Start the conversation." : "No messages here yet. Say hi!"}
             </div>
           ) : (
             messages.map((msg) => (
@@ -283,7 +306,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
             <Input
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Type a message..."
+              placeholder={group.isDirect ? `Message ${conversationName}...` : "Type a message..."}
               className="pr-12 rounded-full bg-white border-none shadow-sm h-12"
             />
             <Button

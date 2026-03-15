@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MessageFriendButton } from "@/components/messages/message-friend-button";
 
 type SearchResult = {
   id: string;
@@ -232,15 +233,23 @@ export function FriendsManager() {
           <h2 className="text-xl font-semibold">Your friends</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {state.friends.map((friend) => (
-              <Link key={friend.id} href={`/profile/${friend.username}`} className="block rounded-3xl border bg-[var(--surface-soft)] p-3 transition hover:bg-[var(--surface-strong)]">
+              <div key={friend.id} className="rounded-3xl border bg-[var(--surface-soft)] p-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <Avatar name={friend.name} src={friend.avatarUrl} className="shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate">{friend.name}</p>
-                    <p className="text-sm text-[var(--foreground)]/58 truncate">@{friend.username}</p>
-                  </div>
+                  <Link href={`/profile/${friend.username}`} className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl transition hover:bg-[var(--surface-strong)]">
+                    <Avatar name={friend.name} src={friend.avatarUrl} className="shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">{friend.name}</p>
+                      <p className="text-sm text-[var(--foreground)]/58 truncate">@{friend.username}</p>
+                    </div>
+                  </Link>
+                  <MessageFriendButton
+                    friendId={friend.id}
+                    label="Message"
+                    variant="secondary"
+                    className="h-10 shrink-0 px-3"
+                  />
                 </div>
-              </Link>
+              </div>
             ))}
             {!state.friends.length && (
               <div className="rounded-3xl border border-dashed bg-[var(--surface-soft)] p-6 text-sm text-[var(--foreground)]/60">

@@ -4,6 +4,7 @@ import type { PostSummary } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
 import { PostCard } from "@/components/post/post-card";
 import { EditProfile } from "@/components/profile/edit-profile";
+import { MessageFriendButton } from "@/components/messages/message-friend-button";
 
 export function ProfileView({
   profile,
@@ -58,6 +59,14 @@ export function ProfileView({
                 </p>
                 <h1 className="mt-1 font-[var(--font-serif)] text-3xl md:text-4xl truncate">{profile.user.name}</h1>
                 <p className="text-sm text-[var(--foreground)]/62 truncate">@{profile.user.username}</p>
+                <div className="mt-3">
+                  <MessageFriendButton
+                    friendId={profile.user.id}
+                    label="Message"
+                    variant="secondary"
+                    className="h-10 px-4"
+                  />
+                </div>
               </div>
             </div>
           )}

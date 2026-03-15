@@ -1,6 +1,6 @@
-import { GroupDetail } from "@/components/groups/group-detail";
+import { redirect } from "next/navigation";
 
 export default async function GroupDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return <GroupDetail groupId={id} />;
+  redirect(`/messages/${id}`);
 }

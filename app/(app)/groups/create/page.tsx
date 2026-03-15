@@ -1,5 +1,5 @@
-import { GroupCreate } from "@/components/groups/group-create";
+import { redirect } from "next/navigation";
 
 export default function GroupCreatePage() {
-  return <GroupCreate />;
+  redirect("/messages/create");
 }

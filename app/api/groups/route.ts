@@ -42,12 +42,46 @@ export async function GET() {
       },
       _count: {
         select: { members: true, messages: true }
+      },
+      messages: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        }
       }
     },
     orderBy: { updatedAt: "desc" },
   });
 
-  return Response.json({ groups });
+  return Response.json({
+    groups: groups.map((group) => {
+      const directUser = group.isDirect
+        ? group.members.find((member) => member.user.id !== userId)?.user ?? null
+        : null;
+      const latestMessage = group.messages[0] ?? null;
+
+      return {
+        ...group,
+        directUser,
+        lastMessage: latestMessage
+          ? {
+              id: latestMessage.id,
+              createdAt: latestMessage.createdAt,
+              senderName: latestMessage.user.id === userId ? "You" : latestMessage.user.name,
+              content: latestMessage.content.startsWith("[SHARED_POST]:")
+                ? "Shared a post"
+                : latestMessage.content
+            }
+          : null
+      };
+    })
+  });
 }
 
 export async function POST(request: Request) {
