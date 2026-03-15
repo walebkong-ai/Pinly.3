@@ -28,10 +28,20 @@ export default async function ProfilePage({ params }: Props) {
   }
 
   const profile = await getProfileData(resolvedUsername, session.user.id);
+  const settings = await prisma.userSettings.findUnique({
+    where: { userId: session.user.id },
+    select: { showLikeCounts: true }
+  });
 
   if (!profile) {
     notFound();
   }
 
-  return <ProfileView profile={profile} isOwnProfile={profile.user.id === session.user.id} />;
+  return (
+    <ProfileView
+      profile={profile}
+      isOwnProfile={profile.user.id === session.user.id}
+      showLikeCounts={settings?.showLikeCounts ?? true}
+    />
+  );
 }

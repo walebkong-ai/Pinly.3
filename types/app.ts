@@ -3,6 +3,9 @@ export type UserSummary = {
   name: string;
   username: string;
   avatarUrl: string | null;
+  settings?: {
+    commentsEnabled: boolean;
+  } | null;
 };
 
 export type PostSummary = {

@@ -36,7 +36,6 @@ export default async function PostDetailPage({ params }: Props) {
   let liked = false;
   let likeCount = 0;
   let showLikeCounts = true;
-  let showCommentCounts = true;
 
   try {
     const [likeRow, count, settings] = await Promise.all([
@@ -47,10 +46,11 @@ export default async function PostDetailPage({ params }: Props) {
     liked = !!likeRow;
     likeCount = count;
     showLikeCounts = settings?.showLikeCounts ?? true;
-    showCommentCounts = settings?.showCommentCounts ?? true;
   } catch {
     // Tables don't exist yet — use safe defaults
   }
+
+  const commentsEnabled = post.user.settings?.commentsEnabled ?? true;
 
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
@@ -119,7 +119,13 @@ export default async function PostDetailPage({ params }: Props) {
             <div className="border-t pt-4">
               <div className="flex flex-wrap items-center gap-1">
                 <LikeButton postId={post.id} initialLiked={liked} initialCount={likeCount} showCount={showLikeCounts} />
-                <CommentSection postId={post.id} showCount={showCommentCounts} />
+                {commentsEnabled ? (
+                  <CommentSection postId={post.id} />
+                ) : (
+                  <span className="inline-flex items-center rounded-full bg-[var(--surface-soft)] px-3 py-1.5 text-sm font-medium text-[var(--foreground)]/50">
+                    Comments off
+                  </span>
+                )}
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 <DirectionsSheet post={post} label="Directions" triggerStyle="emphasis" />

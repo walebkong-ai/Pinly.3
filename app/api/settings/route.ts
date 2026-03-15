@@ -7,7 +7,8 @@ export const runtime = "nodejs";
 
 const updateSchema = z.object({
   showLikeCounts: z.boolean().optional(),
-  showCommentCounts: z.boolean().optional()
+  showCommentCounts: z.boolean().optional(),
+  commentsEnabled: z.boolean().optional()
 });
 
 // GET = read current settings
@@ -21,7 +22,8 @@ export async function GET() {
 
   return Response.json({
     showLikeCounts: settings?.showLikeCounts ?? true,
-    showCommentCounts: settings?.showCommentCounts ?? true
+    showCommentCounts: settings?.showCommentCounts ?? true,
+    commentsEnabled: settings?.commentsEnabled ?? true
   });
 }
 
@@ -53,6 +55,7 @@ export async function PUT(request: Request) {
 
   return Response.json({
     showLikeCounts: settings.showLikeCounts,
-    showCommentCounts: settings.showCommentCounts
+    showCommentCounts: settings.showCommentCounts,
+    commentsEnabled: settings.commentsEnabled
   });
 }

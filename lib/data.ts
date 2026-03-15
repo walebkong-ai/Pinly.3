@@ -13,7 +13,12 @@ export const postSummaryInclude = Prisma.validator<Prisma.PostInclude>()({
       id: true,
       name: true,
       username: true,
-      avatarUrl: true
+      avatarUrl: true,
+      settings: {
+        select: {
+          commentsEnabled: true
+        }
+      }
     }
   }
 });

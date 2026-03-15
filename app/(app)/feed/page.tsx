@@ -14,12 +14,10 @@ export default async function FeedPage() {
   const posts = await getRecentFeedPosts(session.user.id, 24);
 
   let showLikeCounts = true;
-  let showCommentCounts = true;
 
   try {
     const settings = await prisma.userSettings.findUnique({ where: { userId: session.user.id } });
     showLikeCounts = settings?.showLikeCounts ?? true;
-    showCommentCounts = settings?.showCommentCounts ?? true;
   } catch {
     // Table doesn't exist yet — use safe defaults
   }
@@ -40,7 +38,6 @@ export default async function FeedPage() {
             key={post.id}
             post={post}
             showLikeCounts={showLikeCounts}
-            showCommentCounts={showCommentCounts}
           />
         ))}
         {posts.length === 0 && (

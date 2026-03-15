@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { getVisiblePostById } from "@/lib/data";
 import { prisma } from "@/lib/prisma";
 import { apiError } from "@/lib/api";
 import { z } from "zod";
@@ -15,6 +16,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ post
   if (!session?.user?.id) return apiError("Unauthorized", 401);
 
   const { postId } = await params;
+  const post = await getVisiblePostById(session.user.id, postId);
+
+  if (!post) {
+    return apiError("Post not found", 404);
+  }
+
+  if (post.user.settings?.commentsEnabled === false) {
+    return apiError("Comments are turned off for this post", 403, {
+      code: "COMMENTS_DISABLED"
+    });
+  }
 
   const comments = await prisma.comment.findMany({
     where: { postId },
@@ -36,6 +48,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ pos
   if (!session?.user?.id) return apiError("Unauthorized", 401);
 
   const { postId } = await params;
+  const post = await getVisiblePostById(session.user.id, postId);
+
+  if (!post) {
+    return apiError("Post not found", 404);
+  }
+
+  if (post.user.settings?.commentsEnabled === false) {
+    return apiError("Comments are turned off for this post", 403, {
+      code: "COMMENTS_DISABLED"
+    });
+  }
 
   let body: unknown;
   try {

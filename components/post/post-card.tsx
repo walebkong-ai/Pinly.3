@@ -11,14 +11,14 @@ import { ShareSheet } from "@/components/post/share-sheet";
 export function PostCard({
   post,
   compact = false,
-  showLikeCounts = true,
-  showCommentCounts = true
+  showLikeCounts = true
 }: {
   post: PostSummary;
   compact?: boolean;
   showLikeCounts?: boolean;
-  showCommentCounts?: boolean;
 }) {
+  const commentsEnabled = post.user.settings?.commentsEnabled ?? true;
+
   return (
     <article className="overflow-hidden rounded-[1.75rem] border bg-[var(--surface-strong)] shadow-sm">
       <div className={compact ? "aspect-[4/3]" : "aspect-[4/3]"}>
@@ -56,7 +56,13 @@ export function PostCard({
         {/* Like + Comment + Share + Open */}
         <div className="flex flex-wrap items-center gap-1 border-t pt-2">
           <LikeButton postId={post.id} showCount={showLikeCounts} />
-          <CommentSection postId={post.id} showCount={showCommentCounts} />
+          {commentsEnabled ? (
+            <CommentSection postId={post.id} />
+          ) : (
+            <span className="inline-flex items-center rounded-full bg-[var(--surface-soft)] px-3 py-1.5 text-sm font-medium text-[var(--foreground)]/50">
+              Comments off
+            </span>
+          )}
           <ShareSheet postId={post.id} />
           <Link href={`/posts/${post.id}`} className="ml-auto text-xs font-medium text-[var(--foreground)]/72 transition hover:text-[var(--foreground)]">
             Open

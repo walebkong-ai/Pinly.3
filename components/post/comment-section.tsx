@@ -21,6 +21,7 @@ export function CommentSection({
 }) {
   const [comments, setComments] = useState<CommentData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [commentsDisabled, setCommentsDisabled] = useState(false);
   const [input, setInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -31,12 +32,21 @@ export function CommentSection({
     async function load() {
       try {
         const res = await fetch(`/api/posts/${postId}/comments`);
+        if (res.status === 403) {
+          if (!ignore) {
+            setCommentsDisabled(true);
+            setComments([]);
+          }
+          return;
+        }
         if (res.ok) {
           const data = await res.json();
           if (!ignore) setComments(data.comments ?? []);
         }
       } catch { /* ignore */ }
-      if (!ignore) setLoading(false);
+      finally {
+        if (!ignore) setLoading(false);
+      }
     }
     void load();
     return () => { ignore = true; };
@@ -51,6 +61,11 @@ export function CommentSection({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: input.trim() })
       });
+      if (res.status === 403) {
+        setCommentsDisabled(true);
+        setExpanded(false);
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setComments((prev) => [...prev, data.comment]);
@@ -61,10 +76,20 @@ export function CommentSection({
         });
       }
     } catch { /* ignore */ }
-    setSubmitting(false);
+    finally {
+      setSubmitting(false);
+    }
   }
 
   const commentCount = comments.length;
+
+  if (commentsDisabled) {
+    return (
+      <span className="inline-flex items-center rounded-full bg-[var(--surface-soft)] px-3 py-1.5 text-sm font-medium text-[var(--foreground)]/50">
+        Comments off
+      </span>
+    );
+  }
 
   return (
     <div>

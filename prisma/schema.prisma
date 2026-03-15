@@ -126,6 +126,7 @@ model UserSettings {
   userId            String  @unique
   showLikeCounts    Boolean @default(true)
   showCommentCounts Boolean @default(true)
+  commentsEnabled   Boolean @default(true)
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 

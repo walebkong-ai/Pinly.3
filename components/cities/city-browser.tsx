@@ -19,7 +19,7 @@ type CityResult = {
   posts: PostSummary[];
 };
 
-export function CityBrowser() {
+export function CityBrowser({ showLikeCounts = true }: { showLikeCounts?: boolean }) {
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("");
   const [result, setResult] = useState<CityResult | null>(null);
@@ -87,9 +87,9 @@ export function CityBrowser() {
               <p className="text-sm font-semibold">Who visited</p>
               <div className="mt-3 space-y-2">
                 {result.visitors.map((visitor) => (
-                  <div key={visitor.id} className="text-sm text-[var(--foreground)]/68 flex items-center gap-1 min-w-0">
+                  <div key={visitor.id} className="flex min-w-0 items-center gap-1 text-sm text-[var(--foreground)]/68">
                     <span className="truncate">{visitor.name}</span>
-                    <span className="text-[var(--foreground)]/45 shrink-0 truncate max-w-[50%]">@{visitor.username}</span>
+                    <span className="max-w-[50%] shrink-0 truncate text-[var(--foreground)]/45">@{visitor.username}</span>
                   </div>
                 ))}
               </div>
@@ -98,14 +98,14 @@ export function CityBrowser() {
               <p className="text-sm font-semibold">Recent trips</p>
               <div className="mt-3 grid gap-3 md:grid-cols-2">
                 {result.recentTrips.map((trip) => (
-                  <PostCard key={trip.id} post={trip} compact />
+                  <PostCard key={trip.id} post={trip} compact showLikeCounts={showLikeCounts} />
                 ))}
               </div>
             </div>
           </div>
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {result.posts.map((post) => (
-              <PostCard key={post.id} post={post} />
+              <PostCard key={post.id} post={post} showLikeCounts={showLikeCounts} />
             ))}
           </div>
         </section>

@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { Settings2 } from "lucide-react";
 import type { PostSummary } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
 import { PostCard } from "@/components/post/post-card";
@@ -5,7 +7,8 @@ import { EditProfile } from "@/components/profile/edit-profile";
 
 export function ProfileView({
   profile,
-  isOwnProfile
+  isOwnProfile,
+  showLikeCounts = true
 }: {
   profile: {
     user: {
@@ -19,6 +22,7 @@ export function ProfileView({
     places: string[];
   };
   isOwnProfile: boolean;
+  showLikeCounts?: boolean;
 }) {
   return (
     <div className="grid gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
@@ -34,6 +38,16 @@ export function ProfileView({
                 initialUsername={profile.user.username}
                 initialAvatarUrl={profile.user.avatarUrl}
               />
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <Link
+                  href="/settings"
+                  className="inline-flex items-center gap-2 rounded-full border bg-[var(--surface-strong)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--muted)]"
+                >
+                  <Settings2 className="h-4 w-4" />
+                  Settings
+                </Link>
+                <p className="text-xs text-[var(--foreground)]/55">Likes, comments, and profile photo.</p>
+              </div>
             </div>
           ) : (
             <div className="flex items-center gap-4 min-w-0">
@@ -76,7 +90,7 @@ export function ProfileView({
         <h2 className="text-2xl font-semibold">Pinned moments</h2>
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {profile.posts.map((post) => (
-            <PostCard key={post.id} post={post} />
+            <PostCard key={post.id} post={post} showLikeCounts={showLikeCounts} />
           ))}
         </div>
       </section>
