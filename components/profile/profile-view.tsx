@@ -151,11 +151,39 @@ export function ProfileView({
 
       <section className="glass-panel rounded-[2rem] p-5">
         <h2 className="text-2xl font-semibold">Pinned moments</h2>
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {profile.posts.map((post) => (
-            <PostCard key={post.id} post={post} showLikeCounts={showLikeCounts} />
-          ))}
-        </div>
+        {profile.posts.length > 0 ? (
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {profile.posts.map((post) => (
+              <PostCard key={post.id} post={post} showLikeCounts={showLikeCounts} />
+            ))}
+          </div>
+        ) : isOwnProfile ? (
+          <div className="mt-5 rounded-[1.75rem] border bg-[var(--surface-soft)] p-5">
+            <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Start here</p>
+            <h3 className="mt-1.5 font-[var(--font-serif)] text-2xl">Your first memory will show up here.</h3>
+            <p className="mt-2 text-sm leading-6 text-[var(--foreground)]/62">
+              Create one post to start shaping your personal map, then add friends so your circle can see it too.
+            </p>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <Link
+                href="/create"
+                className="inline-flex items-center justify-center rounded-full bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-95"
+              >
+                Create your first memory
+              </Link>
+              <Link
+                href="/friends"
+                className="inline-flex items-center justify-center rounded-full border bg-[var(--surface-strong)] px-4 py-2.5 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--muted)]"
+              >
+                Add friends
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-5 rounded-[1.75rem] border bg-[var(--surface-soft)] p-5 text-sm text-[var(--foreground)]/60">
+            No pinned moments here yet.
+          </div>
+        )}
       </section>
     </div>
   );

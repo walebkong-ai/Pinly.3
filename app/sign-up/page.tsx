@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Globe2, PlusCircle, UserPlus } from "lucide-react";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { Brand } from "@/components/brand";
@@ -21,6 +22,38 @@ export default async function SignUpPage() {
             <p className="mt-4 text-sm leading-6 text-[var(--foreground)]/68">
               Pinly keeps your posts intentional, place-based, and private to accepted friends.
             </p>
+            <div className="mt-6 space-y-3">
+              {[
+                {
+                  icon: PlusCircle,
+                  label: "Create your first memory",
+                  description: "Upload one place that already means something to you."
+                },
+                {
+                  icon: UserPlus,
+                  label: "Add a few real friends",
+                  description: "Unlock the social map, sharing, and direct messages."
+                },
+                {
+                  icon: Globe2,
+                  label: "Land on your map right away",
+                  description: "Your account opens into a lightweight first-run map intro."
+                }
+              ].map(({ icon: Icon, label, description }) => (
+                <div
+                  key={label}
+                  className="flex items-start gap-3 rounded-[1.5rem] border bg-[var(--surface-soft)] px-4 py-3"
+                >
+                  <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[var(--surface-strong)] text-[var(--foreground)]">
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-[var(--foreground)]">{label}</p>
+                    <p className="mt-1 text-xs leading-5 text-[var(--foreground)]/58">{description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
         <div className="rounded-[1.75rem] border bg-[var(--card-strong)] p-6">

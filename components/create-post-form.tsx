@@ -49,6 +49,13 @@ export function CreatePostForm() {
   const abortRef = useRef<AbortController | null>(null);
   const locationAbortRef = useRef<AbortController | null>(null);
   const ignoreNextSearchRef = useRef(false);
+  const showFirstMemoryGuide =
+    !uploadState &&
+    !caption.trim() &&
+    !placeName.trim() &&
+    !visitedAt &&
+    taggedUserIds.length === 0 &&
+    collectionIds.length === 0;
 
   useEffect(() => {
     return () => {
@@ -273,153 +280,180 @@ export function CreatePostForm() {
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr] animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
-      <section className="glass-panel rounded-[2rem] p-5">
-        <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Step 1</p>
-        <h1 className="mt-2 font-[var(--font-serif)] text-4xl">Upload your moment</h1>
-        <p className="mt-3 text-sm leading-6 text-[var(--foreground)]/66">
-          Add a photo or video from a place you intentionally want to remember. No background tracking, ever.
-        </p>
-        {/* Hidden file input — always mounted so fileRef.current.click() works from both the dashed area and the Replace button */}
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*,video/*"
-          className="hidden"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file) {
-              void uploadFile(file);
-            }
-            // Reset input so re-selecting same file triggers onChange again
-            event.target.value = "";
-          }}
-        />
-        {/* Upload / Preview area */}
-        {uploading ? (
-          <div className="mt-6 flex h-64 w-full flex-col items-center justify-center rounded-[2rem] border border-dashed bg-[var(--surface-soft)]">
-            <LoaderCircle className="h-8 w-8 animate-spin text-[var(--accent)]" />
-            <p className="mt-3 text-sm text-[var(--foreground)]/55">Uploading…</p>
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
+      {showFirstMemoryGuide ? (
+        <section className="glass-panel rounded-[2rem] p-5">
+          <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">First memory</p>
+          <h2 className="mt-2 font-[var(--font-serif)] text-3xl md:text-4xl">Start with one place you want to remember.</h2>
+          <p className="mt-3 text-sm leading-6 text-[var(--foreground)]/66">
+            You only need three things to make your first Pinly post feel right: a photo or video, the place, and a short memory caption.
+          </p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-[1.5rem] border bg-[var(--surface-soft)] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--foreground)]/45">1. Upload</p>
+              <p className="mt-2 text-sm text-[var(--foreground)]/68">Choose one photo or short video from the moment.</p>
+            </div>
+            <div className="rounded-[1.5rem] border bg-[var(--surface-soft)] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--foreground)]/45">2. Place it</p>
+              <p className="mt-2 text-sm text-[var(--foreground)]/68">Search for the place or tap the map exactly where it happened.</p>
+            </div>
+            <div className="rounded-[1.5rem] border bg-[var(--surface-soft)] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--foreground)]/45">3. Publish</p>
+              <p className="mt-2 text-sm text-[var(--foreground)]/68">Add a caption and date, then pin it to your map.</p>
+            </div>
           </div>
-        ) : uploadState ? (
-          <div className="relative mt-6 overflow-hidden rounded-[2rem]">
-            {uploadState.mediaType === "VIDEO" ? (
-              <video
-                src={uploadState.mediaUrl}
-                poster={uploadState.thumbnailUrl ?? undefined}
-                controls
-                playsInline
-                className="max-h-72 w-full rounded-[2rem] object-cover"
-              />
-            ) : (
-              <img
-                src={uploadState.mediaUrl}
-                alt="Upload preview"
-                className="max-h-72 w-full rounded-[2rem] object-cover"
-              />
-            )}
-            {/* Remove button — clears preview and returns to upload picker */}
-            <button
-              type="button"
-              onClick={() => setUploadState(null)}
-              className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition hover:bg-black/80"
-              aria-label="Remove media"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            {/* Replace button — opens file picker to swap media */}
+        </section>
+      ) : null}
+
+      <div className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
+        <section className="glass-panel rounded-[2rem] p-5">
+          <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Step 1</p>
+          <h1 className="mt-2 font-[var(--font-serif)] text-4xl">Upload your moment</h1>
+          <p className="mt-3 text-sm leading-6 text-[var(--foreground)]/66">
+            Add a photo or video from a place you intentionally want to remember. No background tracking, ever.
+          </p>
+          {/* Hidden file input — always mounted so fileRef.current.click() works from both the dashed area and the Replace button */}
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*,video/*"
+            className="hidden"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) {
+                void uploadFile(file);
+              }
+              // Reset input so re-selecting same file triggers onChange again
+              event.target.value = "";
+            }}
+          />
+          {/* Upload / Preview area */}
+          {uploading ? (
+            <div className="mt-6 flex h-64 w-full flex-col items-center justify-center rounded-[2rem] border border-dashed bg-[var(--surface-soft)]">
+              <LoaderCircle className="h-8 w-8 animate-spin text-[var(--accent)]" />
+              <p className="mt-3 text-sm text-[var(--foreground)]/55">Uploading…</p>
+            </div>
+          ) : uploadState ? (
+            <div className="relative mt-6 overflow-hidden rounded-[2rem]">
+              {uploadState.mediaType === "VIDEO" ? (
+                <video
+                  src={uploadState.mediaUrl}
+                  poster={uploadState.thumbnailUrl ?? undefined}
+                  controls
+                  playsInline
+                  className="max-h-72 w-full rounded-[2rem] object-cover"
+                />
+              ) : (
+                <img
+                  src={uploadState.mediaUrl}
+                  alt="Upload preview"
+                  className="max-h-72 w-full rounded-[2rem] object-cover"
+                />
+              )}
+              {/* Remove button — clears preview and returns to upload picker */}
+              <button
+                type="button"
+                onClick={() => setUploadState(null)}
+                className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition hover:bg-black/80"
+                aria-label="Remove media"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              {/* Replace button — opens file picker to swap media */}
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm transition hover:bg-black/80"
+              >
+                <Upload className="h-3.5 w-3.5" />
+                Replace
+              </button>
+            </div>
+          ) : (
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm transition hover:bg-black/80"
+              className="mt-6 flex h-64 w-full flex-col items-center justify-center rounded-[2rem] border border-dashed bg-[var(--surface-soft)] text-center transition hover:bg-[var(--surface-strong)]"
             >
-              <Upload className="h-3.5 w-3.5" />
-              Replace
+              <Upload className="h-8 w-8 text-[var(--accent)]" />
+              <p className="mt-4 font-medium">Choose image or video</p>
+              <p className="mt-2 max-w-xs text-sm text-[var(--foreground)]/55">
+                Upload a photo or a short video for this memory moment.
+              </p>
             </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            className="mt-6 flex h-64 w-full flex-col items-center justify-center rounded-[2rem] border border-dashed bg-[var(--surface-soft)] text-center transition hover:bg-[var(--surface-strong)]"
-          >
-            <Upload className="h-8 w-8 text-[var(--accent)]" />
-            <p className="mt-4 font-medium">Choose image or video</p>
-            <p className="mt-2 max-w-xs text-sm text-[var(--foreground)]/55">Upload a photo or a short video for this memory moment.</p>
-          </button>
-        )}
-      </section>
+          )}
+        </section>
 
-      <section className="glass-panel rounded-[2rem] p-5">
-        <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Step 2</p>
-        <h2 className="mt-2 font-[var(--font-serif)] text-4xl">Choose the place</h2>
-        <div className="mt-6 space-y-4">
-          <div className="rounded-[1.75rem] border bg-[var(--surface-soft)] p-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-[var(--foreground)]">
-              <Search className="h-4 w-4 text-[var(--map-accent)]" />
-              Search for a place
-            </div>
-            <div className="relative mt-3">
-              <Input
-                value={locationQuery}
-                onChange={(event) => setLocationQuery(event.target.value)}
-                placeholder="Search cities, landmarks, neighborhoods"
-              />
-              {searchingPlaces && <LoaderCircle className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[var(--map-accent)]" />}
-            </div>
-            {!!placeResults.length && (
-              <div className="mt-3 max-h-52 space-y-2 overflow-y-auto">
-                {placeResults.map((place) => (
-                  <button
-                    key={place.id}
-                    type="button"
-                    onClick={() => applyPlaceResult(place)}
-                    className="block w-full rounded-3xl border bg-[var(--surface-strong)] px-4 py-3 text-left transition hover:bg-[var(--card-strong)]"
-                  >
-                    <p className="text-sm font-medium">{place.placeName}</p>
-                    <p className="mt-1 text-xs text-[var(--foreground)]/55">{place.displayName}</p>
-                  </button>
-                ))}
+        <section className="glass-panel rounded-[2rem] p-5">
+          <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Step 2</p>
+          <h2 className="mt-2 font-[var(--font-serif)] text-4xl">Choose the place</h2>
+          <div className="mt-6 space-y-4">
+            <div className="rounded-[1.75rem] border bg-[var(--surface-soft)] p-4">
+              <div className="flex items-center gap-2 text-sm font-medium text-[var(--foreground)]">
+                <Search className="h-4 w-4 text-[var(--map-accent)]" />
+                Search for a place
               </div>
-            )}
-            {!placeResults.length && !searchingPlaces && locationQuery.trim().length >= 2 && (
-              <p className="mt-3 text-xs text-[var(--foreground)]/45">No places found. Try a different name or spelling.</p>
-            )}
-          </div>
+              <div className="relative mt-3">
+                <Input
+                  value={locationQuery}
+                  onChange={(event) => setLocationQuery(event.target.value)}
+                  placeholder="Search cities, landmarks, neighborhoods"
+                />
+                {searchingPlaces && <LoaderCircle className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[var(--map-accent)]" />}
+              </div>
+              {!!placeResults.length && (
+                <div className="mt-3 max-h-52 space-y-2 overflow-y-auto">
+                  {placeResults.map((place) => (
+                    <button
+                      key={place.id}
+                      type="button"
+                      onClick={() => applyPlaceResult(place)}
+                      className="block w-full rounded-3xl border bg-[var(--surface-strong)] px-4 py-3 text-left transition hover:bg-[var(--card-strong)]"
+                    >
+                      <p className="text-sm font-medium">{place.placeName}</p>
+                      <p className="mt-1 text-xs text-[var(--foreground)]/55">{place.displayName}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {!placeResults.length && !searchingPlaces && locationQuery.trim().length >= 2 && (
+                <p className="mt-3 text-xs text-[var(--foreground)]/45">No places found. Try a different name or spelling.</p>
+              )}
+            </div>
 
-          <div className="rounded-[1.75rem] border bg-[var(--surface-soft)] p-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-[var(--foreground)]">
-              <Crosshair className="h-4 w-4 text-[var(--map-accent)]" />
-              Or tap the map to drop the memory exactly where it happened
-            </div>
-            
-            <div className="mt-3 flex items-center gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                className="rounded-full bg-[var(--surface-strong)] text-xs font-medium hover:bg-[var(--card-strong)]"
-                onClick={getCurrentLocation}
-                disabled={gettingLocation}
-              >
-                {gettingLocation ? (
-                  <LoaderCircle className="h-3.5 w-3.5 mr-2 animate-spin" />
-                ) : (
-                  <MapPin className="h-3.5 w-3.5 mr-2" />
-                )}
-                {gettingLocation ? "Locating..." : "Use my current location"}
-              </Button>
-            </div>
+            <div className="rounded-[1.75rem] border bg-[var(--surface-soft)] p-4">
+              <div className="flex items-center gap-2 text-sm font-medium text-[var(--foreground)]">
+                <Crosshair className="h-4 w-4 text-[var(--map-accent)]" />
+                Or tap the map to drop the memory exactly where it happened
+              </div>
 
-            <div className="mt-4 overflow-hidden rounded-[1.75rem]">
-              <DynamicLocationPicker
-                position={latitude !== null && longitude !== null ? { latitude, longitude } : null}
-                onSelect={(coordinates) => {
-                  setLatitude(coordinates.latitude);
-                  setLongitude(coordinates.longitude);
-                }}
-              />
+              <div className="mt-3 flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="rounded-full bg-[var(--surface-strong)] text-xs font-medium hover:bg-[var(--card-strong)]"
+                  onClick={getCurrentLocation}
+                  disabled={gettingLocation}
+                >
+                  {gettingLocation ? (
+                    <LoaderCircle className="mr-2 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <MapPin className="mr-2 h-3.5 w-3.5" />
+                  )}
+                  {gettingLocation ? "Locating..." : "Use my current location"}
+                </Button>
+              </div>
+
+              <div className="mt-4 overflow-hidden rounded-[1.75rem]">
+                <DynamicLocationPicker
+                  position={latitude !== null && longitude !== null ? { latitude, longitude } : null}
+                  onSelect={(coordinates) => {
+                    setLatitude(coordinates.latitude);
+                    setLongitude(coordinates.longitude);
+                  }}
+                />
+              </div>
             </div>
-          </div>
 
           <Textarea
             value={caption}
@@ -473,8 +507,9 @@ export function CreatePostForm() {
           <Button type="button" onClick={onSubmit} className="w-full" disabled={submitting || uploading}>
             {submitting ? "Saving pin..." : "Publish memory"}
           </Button>
-        </div>
-      </section>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

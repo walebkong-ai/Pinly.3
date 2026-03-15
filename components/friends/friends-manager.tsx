@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Check, Clock3, Search, UserPlus, X, Link as LinkIcon, Copy } from "lucide-react";
+import { Check, Clock3, Search, UserPlus, X, Link as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -121,6 +121,23 @@ export function FriendsManager() {
             className="pl-11"
           />
         </div>
+        {!state.friends.length && !state.incomingRequests.length && !state.outgoingRequests.length && query.trim().length < 2 ? (
+          <div className="mt-5 rounded-[1.75rem] border bg-[var(--surface-soft)] p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">First friends</p>
+            <h2 className="mt-1.5 text-lg font-semibold">Start with the people you actually travel with.</h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--foreground)]/62">
+              Once a friend accepts, you can see each other&apos;s memories on the map, share posts, and message directly.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="rounded-full border bg-[var(--surface-strong)] px-3 py-1 text-xs text-[var(--foreground)]/62">
+                1. Search by username above
+              </span>
+              <span className="rounded-full border bg-[var(--surface-strong)] px-3 py-1 text-xs text-[var(--foreground)]/62">
+                2. Or copy an invite link below
+              </span>
+            </div>
+          </div>
+        ) : null}
         <div className="mt-5 space-y-3">
           {searchResults.map((user) => (
             <div key={user.id} className="flex items-center justify-between rounded-3xl border bg-[var(--surface-soft)] p-3">
@@ -223,7 +240,7 @@ export function FriendsManager() {
             ))}
             {!state.incomingRequests.length && (
               <div className="rounded-3xl border border-dashed bg-[var(--surface-soft)] p-6 text-sm text-[var(--foreground)]/60">
-                No pending requests right now.
+                No pending requests right now. New requests will show up here as your circle grows.
               </div>
             )}
           </div>
@@ -253,7 +270,7 @@ export function FriendsManager() {
             ))}
             {!state.friends.length && (
               <div className="rounded-3xl border border-dashed bg-[var(--surface-soft)] p-6 text-sm text-[var(--foreground)]/60">
-                Add your first friend to unlock the social map.
+                Add your first friend to unlock the social map, sharing, and direct messages.
               </div>
             )}
           </div>

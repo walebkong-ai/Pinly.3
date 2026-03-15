@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { startTransition, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Filter, LoaderCircle, Plus, Search } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import { CityContextPanel } from "@/components/map/city-context-panel";
 import { FilterSidebar } from "@/components/map/filter-sidebar";
 import { FriendActivityPanel } from "@/components/map/friend-activity-panel";
 import { LayerToggle } from "@/components/map/layer-toggle";
+import { WelcomeCard } from "@/components/map/welcome-card";
 import { buildLightweightMapGroups } from "@/lib/map-groups";
 import { canonicalizeViewportForDataQuery, createViewportFingerprint, FULL_WORLD_BOUNDS, type MapViewport } from "@/lib/map-viewport";
 import type { LayerMode, MapCategory, MapGroupOption, MapResponse, PostSummary, TimeFilter } from "@/types/app";
@@ -33,6 +35,7 @@ const emptyMap: MapResponse = {
 };
 
 export function MapPageClient() {
+  const searchParams = useSearchParams();
   const [mapData, setMapData] = useState<MapResponse>(emptyMap);
   const [groupOptions, setGroupOptions] = useState<MapGroupOption[]>([]);
   const [query, setQuery] = useState("");
@@ -158,6 +161,8 @@ export function MapPageClient() {
   }, [mapData, selectedPost]);
 
   const showControls = mapData.stage !== "world";
+  const showWelcomeCard = mapData.stage === "world" || !mapData.cityContext;
+  const forceWelcomeOpen = searchParams.get("welcome") === "1";
   const activeFilterCount = (time !== "all" ? 1 : 0) + selectedGroupIds.length + selectedCategories.length;
   const minimalCopy = useMemo(
     () =>
@@ -251,16 +256,22 @@ export function MapPageClient() {
 
         </div>
 
-        {showControls && (
+        {(showControls || showWelcomeCard) && (
           <div className="pointer-events-none absolute inset-x-4 bottom-20 grid gap-4 md:bottom-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-end xl:px-1 animate-in fade-in duration-500 ease-out">
             <div className="pointer-events-none flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
               <div className="pointer-events-auto max-w-md">
-                <CityContextPanel cityContext={mapData.cityContext} />
+                {mapData.cityContext ? (
+                  <CityContextPanel cityContext={mapData.cityContext} />
+                ) : (
+                  <WelcomeCard forceOpen={forceWelcomeOpen} />
+                )}
               </div>
             </div>
-            <div className="pointer-events-auto justify-self-end">
-              <FriendActivityPanel items={mapData.friendActivity} layer={layer} />
-            </div>
+            {showControls ? (
+              <div className="pointer-events-auto justify-self-end">
+                <FriendActivityPanel items={mapData.friendActivity} layer={layer} />
+              </div>
+            ) : null}
           </div>
         )}
 

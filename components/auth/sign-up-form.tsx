@@ -114,8 +114,8 @@ export function SignUpForm() {
       redirect: false
     });
 
-    toast.success("Your Pinly account is ready.");
-    router.push("/map");
+    toast.success("Your map is ready. Add a memory or friend to get started.");
+    router.push("/map?welcome=1");
     router.refresh();
   }
 
@@ -152,6 +152,9 @@ export function SignUpForm() {
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Creating account..." : "Create account"}
         </Button>
+        <p className="text-center text-xs text-[var(--foreground)]/48">
+          After sign-up, you&apos;ll land on your map with a quick first-run guide.
+        </p>
       </form>
       {googleEnabled && (
         <>
