@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getProviders, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { GoogleAuthButton } from "@/components/auth/google-auth-button";
@@ -78,6 +79,11 @@ export function SignInForm() {
           title="Password must be at least 8 characters."
           required
         />
+        <div className="flex items-center justify-between mt-2">
+          <Link href="/forgot-password" className="text-sm font-medium text-[var(--accent)] hover:underline ml-auto block">
+            Forgot password?
+          </Link>
+        </div>
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Signing in..." : "Sign in"}
         </Button>
