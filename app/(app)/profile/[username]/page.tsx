@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getProfileData } from "@/lib/data";
+import { getOwnedCollections, getProfileData } from "@/lib/data";
 import { ProfileView } from "@/components/profile/profile-view";
 
 type Props = {
@@ -27,21 +27,27 @@ export default async function ProfilePage({ params }: Props) {
     resolvedUsername = dbUser.username;
   }
 
-  const profile = await getProfileData(resolvedUsername, session.user.id);
-  const settings = await prisma.userSettings.findUnique({
-    where: { userId: session.user.id },
-    select: { showLikeCounts: true }
-  });
+  const [profile, settings] = await Promise.all([
+    getProfileData(resolvedUsername, session.user.id),
+    prisma.userSettings.findUnique({
+      where: { userId: session.user.id },
+      select: { showLikeCounts: true }
+    })
+  ]);
 
   if (!profile) {
     notFound();
   }
 
+  const isOwnProfile = profile.user.id === session.user.id;
+  const collections = isOwnProfile ? await getOwnedCollections(session.user.id, 6) : [];
+
   return (
     <ProfileView
       profile={profile}
-      isOwnProfile={profile.user.id === session.user.id}
+      isOwnProfile={isOwnProfile}
       showLikeCounts={settings?.showLikeCounts ?? true}
+      collections={collections}
     />
   );
 }

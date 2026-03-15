@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { CalendarDays, Crosshair, MapPin } from "lucide-react";
 import { auth } from "@/lib/auth";
-import { getVisiblePostById } from "@/lib/data";
+import { getOwnedCollectionsForPost, getVisiblePostById } from "@/lib/data";
 import { prisma } from "@/lib/prisma";
 import { Avatar } from "@/components/ui/avatar";
 import { MediaView } from "@/components/post/media-view";
@@ -14,6 +14,7 @@ import { DirectionsSheet } from "@/components/post/directions-sheet";
 import { SaveButton } from "@/components/post/save-button";
 import { ShareSheet } from "@/components/post/share-sheet";
 import { VisitedWithList } from "@/components/post/visited-with-list";
+import { ManagePostCollectionsCard } from "@/components/collections/collection-picker";
 
 type Props = {
   params: Promise<{ postId: string }>;
@@ -32,6 +33,9 @@ export default async function PostDetailPage({ params }: Props) {
   if (!post) {
     notFound();
   }
+
+  const isOwnPost = session.user.id === post.userId;
+  const postCollections = isOwnPost ? await getOwnedCollectionsForPost(session.user.id, post.id) : [];
 
   // Fetch like state and settings — wrapped in try-catch because the Like/UserSettings tables
   // may not exist in production yet if the migration hasn't been applied.
@@ -80,7 +84,7 @@ export default async function PostDetailPage({ params }: Props) {
                   <p className="text-sm text-[var(--foreground)]/58">@{post.user.username}</p>
                 </div>
               </div>
-              {session.user.id === post.userId && (
+              {isOwnPost && (
                 <DeletePostButton postId={post.id} redirectToMap />
               )}
             </div>
@@ -115,6 +119,8 @@ export default async function PostDetailPage({ params }: Props) {
             </div>
 
             <VisitedWithList friends={post.visitedWith} />
+
+            {isOwnPost ? <ManagePostCollectionsCard postId={post.id} initialCollections={postCollections} /> : null}
 
             {/* Caption */}
             <p className="text-sm leading-7 text-[var(--foreground)]/76 md:text-base md:leading-8">{post.caption}</p>

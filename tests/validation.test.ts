@@ -26,12 +26,13 @@ describe("schema validation", () => {
         latitude: 45.5,
         longitude: -73.55,
         visitedAt: new Date().toISOString(),
-        taggedUserIds: ["cjf6x6q7m0000z6m5b3h9l3k1"]
+        taggedUserIds: ["cjf6x6q7m0000z6m5b3h9l3k1"],
+        collectionIds: ["cjf6x6q7m0001z6m5b3h9l3k2"]
       }).success
     ).toBe(true);
   });
 
-  test("posts default visited-with tags to an empty array", () => {
+  test("posts default visited-with tags and collections to empty arrays", () => {
     const result = postSchema.safeParse({
       mediaType: "IMAGE",
       mediaUrl: "/uploads/example.jpg",
@@ -49,6 +50,7 @@ describe("schema validation", () => {
 
     if (result.success) {
       expect(result.data.taggedUserIds).toEqual([]);
+      expect(result.data.collectionIds).toEqual([]);
     }
   });
 

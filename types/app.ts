@@ -8,6 +8,27 @@ export type UserSummary = {
   } | null;
 };
 
+export type CollectionSummary = {
+  id: string;
+  name: string;
+  postCount: number;
+  updatedAt: string | Date;
+  previewPost: {
+    id: string;
+    mediaType: "IMAGE" | "VIDEO";
+    mediaUrl: string;
+    thumbnailUrl: string | null;
+    placeName: string;
+    city: string;
+    country: string;
+  } | null;
+};
+
+export type CollectionChip = {
+  id: string;
+  name: string;
+};
+
 export type PostSummary = {
   id: string;
   userId: string;

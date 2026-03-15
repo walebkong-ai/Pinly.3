@@ -5,7 +5,7 @@ import { Prisma } from "@prisma/client";
 import { getMapStage, getTimeFilterStart, buildLayerUserIds, buildMapPayload } from "@/lib/map-data";
 import { prisma } from "@/lib/prisma";
 import { buildVisibleUserIds } from "@/lib/permissions";
-import type { LayerMode, MapCategory, TimeFilter } from "@/types/app";
+import type { CollectionChip, CollectionSummary, LayerMode, MapCategory, TimeFilter } from "@/types/app";
 
 export const postSummaryInclude = Prisma.validator<Prisma.PostInclude>()({
   user: {
@@ -38,6 +38,45 @@ export const postSummaryInclude = Prisma.validator<Prisma.PostInclude>()({
 type IncludedPost = Prisma.PostGetPayload<{
   include: typeof postSummaryInclude;
 }>;
+
+const collectionSummaryInclude = Prisma.validator<Prisma.PostCollectionInclude>()({
+  _count: {
+    select: {
+      posts: true
+    }
+  },
+  posts: {
+    orderBy: { createdAt: "desc" },
+    take: 1,
+    include: {
+      post: {
+        select: {
+          id: true,
+          mediaType: true,
+          mediaUrl: true,
+          thumbnailUrl: true,
+          placeName: true,
+          city: true,
+          country: true
+        }
+      }
+    }
+  }
+});
+
+type IncludedCollection = Prisma.PostCollectionGetPayload<{
+  include: typeof collectionSummaryInclude;
+}>;
+
+function normalizeCollectionSummary(collection: IncludedCollection): CollectionSummary {
+  return {
+    id: collection.id,
+    name: collection.name,
+    postCount: collection._count.posts,
+    updatedAt: collection.updatedAt,
+    previewPost: collection.posts[0]?.post ?? null
+  };
+}
 
 async function getSavedPostIdSet(viewerId: string, postIds: string[]) {
   if (postIds.length === 0) {
@@ -297,6 +336,69 @@ export async function getProfileData(profileUsername: string, viewerId: string) 
   const places = Array.from(new Set(postsWithSavedState.map((post) => `${post.city}, ${post.country}`)));
 
   return { user, posts: postsWithSavedState, places };
+}
+
+export async function getOwnedCollections(userId: string, limit = 24) {
+  const collections = await prisma.postCollection.findMany({
+    where: { userId },
+    include: collectionSummaryInclude,
+    orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+    take: limit
+  });
+
+  return collections.map(normalizeCollectionSummary);
+}
+
+export async function getOwnedCollectionById(userId: string, collectionId: string) {
+  const collection = await prisma.postCollection.findFirst({
+    where: {
+      id: collectionId,
+      userId
+    },
+    include: collectionSummaryInclude
+  });
+
+  if (!collection) {
+    return null;
+  }
+
+  const posts = await prisma.post.findMany({
+    where: {
+      userId,
+      collectionEntries: {
+        some: {
+          collectionId
+        }
+      }
+    },
+    include: postSummaryInclude,
+    orderBy: [{ visitedAt: "desc" }, { createdAt: "desc" }]
+  });
+
+  return {
+    collection: normalizeCollectionSummary(collection),
+    posts: await attachSavedState(userId, posts)
+  };
+}
+
+export async function getOwnedCollectionsForPost(userId: string, postId: string): Promise<CollectionChip[]> {
+  const collections = await prisma.postCollection.findMany({
+    where: {
+      userId,
+      posts: {
+        some: {
+          postId
+        }
+      }
+    },
+    select: {
+      id: true,
+      name: true
+    },
+    orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }]
+  });
+
+  return collections;
 }
 
 export async function getRecentFeedPosts(viewerId: string, limit = 24) {

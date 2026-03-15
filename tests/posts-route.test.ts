@@ -4,6 +4,8 @@ const authMock = vi.fn();
 const getFriendIdsMock = vi.fn();
 const getMapDataMock = vi.fn();
 const postCreateMock = vi.fn();
+const postCollectionFindManyMock = vi.fn();
+const postCollectionUpdateManyMock = vi.fn();
 
 vi.mock("@/lib/auth", () => ({
   auth: authMock
@@ -18,6 +20,10 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     post: {
       create: postCreateMock
+    },
+    postCollection: {
+      findMany: postCollectionFindManyMock,
+      updateMany: postCollectionUpdateManyMock
     }
   }
 }));
@@ -31,6 +37,8 @@ describe("posts route", () => {
     getFriendIdsMock.mockReset();
     getMapDataMock.mockReset();
     postCreateMock.mockReset();
+    postCollectionFindManyMock.mockReset();
+    postCollectionUpdateManyMock.mockReset();
 
     authMock.mockResolvedValue({
       user: {
@@ -41,6 +49,7 @@ describe("posts route", () => {
 
   test("POST creates a post with deduped visited-with friends", async () => {
     getFriendIdsMock.mockResolvedValue([friendId]);
+    postCollectionFindManyMock.mockResolvedValue([]);
     postCreateMock.mockResolvedValue({
       id: "post_1",
       visitedWith: [
@@ -91,6 +100,7 @@ describe("posts route", () => {
 
   test("POST rejects tagging non-friends", async () => {
     getFriendIdsMock.mockResolvedValue([]);
+    postCollectionFindManyMock.mockResolvedValue([]);
 
     const { POST } = await import("@/app/api/posts/route");
     const response = await POST(
@@ -109,6 +119,88 @@ describe("posts route", () => {
           longitude: -73.55,
           visitedAt: new Date().toISOString(),
           taggedUserIds: [friendId]
+        })
+      })
+    );
+
+    expect(response.status).toBe(403);
+    expect(postCreateMock).not.toHaveBeenCalled();
+  });
+
+  test("POST adds a new memory to selected collections", async () => {
+    const collectionId = "ck77777777777777777777777";
+    getFriendIdsMock.mockResolvedValue([]);
+    postCollectionFindManyMock.mockResolvedValue([{ id: collectionId }]);
+    postCreateMock.mockResolvedValue({
+      id: "post_1",
+      visitedWith: []
+    });
+    postCollectionUpdateManyMock.mockResolvedValue({ count: 1 });
+
+    const { POST } = await import("@/app/api/posts/route");
+    const response = await POST(
+      new Request("http://localhost/api/posts", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          mediaType: "IMAGE",
+          mediaUrl: "/uploads/example.jpg",
+          thumbnailUrl: null,
+          caption: "A full day in the city.",
+          placeName: "Old Port",
+          city: "Montreal",
+          country: "Canada",
+          latitude: 45.5,
+          longitude: -73.55,
+          visitedAt: new Date().toISOString(),
+          taggedUserIds: [],
+          collectionIds: [collectionId, collectionId]
+        })
+      })
+    );
+
+    expect(response.status).toBe(201);
+    expect(postCollectionFindManyMock).toHaveBeenCalledWith({
+      where: {
+        userId: viewerId,
+        id: { in: [collectionId] }
+      },
+      select: { id: true }
+    });
+    expect(postCreateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          collectionEntries: {
+            create: [{ collectionId }]
+          }
+        })
+      })
+    );
+    expect(postCollectionUpdateManyMock).toHaveBeenCalled();
+  });
+
+  test("POST rejects using someone else's collection", async () => {
+    const collectionId = "ck77777777777777777777777";
+    getFriendIdsMock.mockResolvedValue([]);
+    postCollectionFindManyMock.mockResolvedValue([]);
+
+    const { POST } = await import("@/app/api/posts/route");
+    const response = await POST(
+      new Request("http://localhost/api/posts", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          mediaType: "IMAGE",
+          mediaUrl: "/uploads/example.jpg",
+          thumbnailUrl: null,
+          caption: "A full day in the city.",
+          placeName: "Old Port",
+          city: "Montreal",
+          country: "Canada",
+          latitude: 45.5,
+          longitude: -73.55,
+          visitedAt: new Date().toISOString(),
+          collectionIds: [collectionId]
         })
       })
     );

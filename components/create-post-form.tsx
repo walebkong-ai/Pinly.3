@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { VisitedWithPicker } from "@/components/create/visited-with-picker";
+import { CollectionPicker } from "@/components/collections/collection-picker";
 import type { PlaceSearchResult } from "@/types/app";
 
 type UploadState = {
@@ -43,6 +44,7 @@ export function CreatePostForm() {
   const [gettingLocation, setGettingLocation] = useState(false);
   const [placeResults, setPlaceResults] = useState<PlaceSearchResult[]>([]);
   const [taggedUserIds, setTaggedUserIds] = useState<string[]>([]);
+  const [collectionIds, setCollectionIds] = useState<string[]>([]);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const locationAbortRef = useRef<AbortController | null>(null);
@@ -247,7 +249,8 @@ export function CreatePostForm() {
       latitude,
       longitude,
       visitedAt: new Date(visitedAt).toISOString(),
-      taggedUserIds
+      taggedUserIds,
+      collectionIds
     };
 
     const response = await fetch("/api/posts", {
@@ -437,6 +440,8 @@ export function CreatePostForm() {
           </div>
 
           <VisitedWithPicker selectedFriendIds={taggedUserIds} onChange={setTaggedUserIds} />
+
+          <CollectionPicker selectedCollectionIds={collectionIds} onChange={setCollectionIds} />
 
           <details className="rounded-3xl border bg-[var(--surface-soft)] p-4 text-sm text-[var(--foreground)]/65">
             <summary className="cursor-pointer font-medium text-[var(--foreground)]">Advanced coordinates</summary>

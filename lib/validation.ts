@@ -62,7 +62,16 @@ export const postSchema = z.object({
   latitude: z.coerce.number().min(-90).max(90),
   longitude: z.coerce.number().min(-180).max(180),
   visitedAt: z.string().datetime(),
-  taggedUserIds: z.array(z.string().cuid()).max(24).default([])
+  taggedUserIds: z.array(z.string().cuid()).max(24).default([]),
+  collectionIds: z.array(z.string().cuid()).max(24).default([])
+});
+
+export const collectionSchema = z.object({
+  name: z.string().trim().min(2).max(60)
+});
+
+export const collectionAssignmentSchema = z.object({
+  collectionIds: z.array(z.string().cuid()).max(24).default([])
 });
 
 export const mapQuerySchema = z.object({

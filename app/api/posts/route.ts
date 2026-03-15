@@ -71,9 +71,24 @@ export async function POST(request: Request) {
     const taggedUserIds = Array.from(new Set(parsed.data.taggedUserIds)).filter(
       (taggedUserId) => taggedUserId !== session.user.id
     );
+    const collectionIds = Array.from(new Set(parsed.data.collectionIds));
 
     if (taggedUserIds.some((taggedUserId) => !validFriendIds.includes(taggedUserId))) {
       return apiError("You can only tag friends who were with you.", 403);
+    }
+
+    if (collectionIds.length > 0) {
+      const collections = await prisma.postCollection.findMany({
+        where: {
+          userId: session.user.id,
+          id: { in: collectionIds }
+        },
+        select: { id: true }
+      });
+
+      if (collections.length !== collectionIds.length) {
+        return apiError("You can only add memories to your own collections.", 403);
+      }
     }
 
     const post = await prisma.post.create({
@@ -89,6 +104,15 @@ export async function POST(request: Request) {
         longitude: parsed.data.longitude,
         visitedAt: new Date(parsed.data.visitedAt),
         userId: session.user.id,
+        ...(collectionIds.length > 0
+          ? {
+              collectionEntries: {
+                create: collectionIds.map((collectionId) => ({
+                  collectionId
+                }))
+              }
+            }
+          : {}),
         ...(taggedUserIds.length > 0
           ? {
               visitedWith: {
@@ -122,6 +146,19 @@ export async function POST(request: Request) {
         }
       }
     });
+
+    if (collectionIds.length > 0) {
+      await prisma.postCollection.updateMany({
+        where: {
+          userId: session.user.id,
+          id: { in: collectionIds }
+        },
+        data: {
+          updatedAt: new Date()
+        }
+      });
+    }
+
     return Response.json(
       {
         post: {
