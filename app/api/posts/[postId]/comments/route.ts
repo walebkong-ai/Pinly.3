@@ -7,7 +7,8 @@ import { z } from "zod";
 export const runtime = "nodejs";
 
 const commentSchema = z.object({
-  content: z.string().min(1).max(1000)
+  content: z.string().min(1).max(1000),
+  parentId: z.string().cuid().optional()
 });
 
 // GET = list comments for a post
@@ -29,10 +30,21 @@ export async function GET(request: Request, { params }: { params: Promise<{ post
   }
 
   const comments = await prisma.comment.findMany({
-    where: { postId },
+    where: {
+      postId,
+      parentId: null
+    },
     include: {
       user: {
         select: { id: true, name: true, username: true, avatarUrl: true }
+      },
+      replies: {
+        include: {
+          user: {
+            select: { id: true, name: true, username: true, avatarUrl: true }
+          }
+        },
+        orderBy: { createdAt: "asc" }
       }
     },
     orderBy: { createdAt: "asc" },
@@ -72,11 +84,37 @@ export async function POST(request: Request, { params }: { params: Promise<{ pos
     return apiError("Comment must be 1-1000 characters", 400);
   }
 
+  let parentId: string | null = null;
+
+  if (parsed.data.parentId) {
+    const parentComment = await prisma.comment.findFirst({
+      where: {
+        id: parsed.data.parentId,
+        postId
+      },
+      select: {
+        id: true,
+        parentId: true
+      }
+    });
+
+    if (!parentComment) {
+      return apiError("Parent comment not found", 404);
+    }
+
+    if (parentComment.parentId) {
+      return apiError("Replies can only go one level deep", 400);
+    }
+
+    parentId = parentComment.id;
+  }
+
   const comment = await prisma.comment.create({
     data: {
       postId,
       userId: session.user.id,
-      content: parsed.data.content
+      content: parsed.data.content,
+      parentId
     },
     include: {
       user: {
@@ -85,5 +123,5 @@ export async function POST(request: Request, { params }: { params: Promise<{ pos
     }
   });
 
-  return Response.json({ comment }, { status: 201 });
+  return Response.json({ comment: { ...comment, replies: [] } }, { status: 201 });
 }

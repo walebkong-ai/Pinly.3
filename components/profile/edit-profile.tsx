@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AvatarPhotoEditor } from "@/components/profile/avatar-photo-editor";
 
 export function EditProfile({
   initialName,
@@ -26,6 +27,7 @@ export function EditProfile({
   
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
 
   const [usernameError, setUsernameError] = useState<string | null>(null);
 
@@ -34,22 +36,27 @@ export function EditProfile({
     formData.set("file", file);
     setUploading(true);
 
-    const response = await fetch("/api/uploads", {
-      method: "POST",
-      body: formData
-    });
+    try {
+      const response = await fetch("/api/uploads", {
+        method: "POST",
+        body: formData
+      });
 
-    setUploading(false);
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        toast.error(data?.error ?? "Avatar upload failed.");
+        return;
+      }
 
-    if (!response.ok) {
       const data = await response.json();
-      toast.error(data.error ?? "Avatar upload failed.");
-      return;
+      setAvatarUrl(data.mediaUrl);
+      setPendingAvatarFile(null);
+      toast.success("Avatar uploaded! Save profile to apply.");
+    } catch {
+      toast.error("Avatar upload failed.");
+    } finally {
+      setUploading(false);
     }
-
-    const data = await response.json();
-    setAvatarUrl(data.mediaUrl);
-    toast.success("Avatar uploaded! Save profile to apply.");
   }
 
   async function handleSave() {
@@ -119,7 +126,7 @@ export function EditProfile({
         <Avatar name={initialName} src={avatarUrl} className="h-16 w-16 transition-opacity group-hover:opacity-60" />
         <button
           type="button"
-          disabled={uploading}
+          disabled={uploading || !!pendingAvatarFile}
           onClick={() => fileRef.current?.click()}
           className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 disabled:opacity-100"
         >
@@ -136,7 +143,8 @@ export function EditProfile({
           className="hidden"
           onChange={(event) => {
              const file = event.target.files?.[0];
-             if (file) void uploadFile(file);
+             if (file) setPendingAvatarFile(file);
+             event.target.value = "";
           }}
         />
       </div>
@@ -155,7 +163,7 @@ export function EditProfile({
           {usernameError && <p className="mt-1 text-xs text-red-500">{usernameError}</p>}
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleSave} disabled={saving || uploading} className="gap-2 px-3 py-1 h-8 text-xs">
+          <Button onClick={handleSave} disabled={saving || uploading || !!pendingAvatarFile} className="gap-2 px-3 py-1 h-8 text-xs">
             {saving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
             Save
           </Button>
@@ -163,12 +171,21 @@ export function EditProfile({
             setIsEditing(false);
             setUsername(initialUsername);
             setAvatarUrl(initialAvatarUrl);
+            setPendingAvatarFile(null);
             setUsernameError(null);
           }} disabled={saving}>
             <X className="h-4 w-4 mr-1" />
             Cancel
           </Button>
         </div>
+        {pendingAvatarFile ? (
+          <AvatarPhotoEditor
+            file={pendingAvatarFile}
+            name={initialName}
+            onCancel={() => setPendingAvatarFile(null)}
+            onSave={uploadFile}
+          />
+        ) : null}
       </div>
     </div>
   );

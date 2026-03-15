@@ -11,22 +11,23 @@ import { ShareSheet } from "@/components/post/share-sheet";
 export function PostCard({
   post,
   compact = false,
-  showLikeCounts = true
+  showLikeCounts = true,
+  openOnBodyTap = false
 }: {
   post: PostSummary;
   compact?: boolean;
   showLikeCounts?: boolean;
+  openOnBodyTap?: boolean;
 }) {
   const commentsEnabled = post.user.settings?.commentsEnabled ?? true;
-
-  return (
-    <article className="overflow-hidden rounded-[1.75rem] border bg-[var(--surface-strong)] shadow-sm">
+  const body = (
+    <>
       <div className={compact ? "aspect-[4/3]" : "aspect-[4/3]"}>
         <MediaView
           mediaType={post.mediaType}
           mediaUrl={post.mediaUrl}
           thumbnailUrl={post.thumbnailUrl}
-          postId={post.id}
+          postId={openOnBodyTap ? undefined : post.id}
         />
       </div>
       <div className="space-y-3 p-4">
@@ -52,22 +53,40 @@ export function PostCard({
             Visited {formatVisitDate(post.visitedAt)}
           </p>
         </div>
+      </div>
+    </>
+  );
 
-        {/* Like + Comment + Share + Open */}
-        <div className="flex flex-wrap items-center gap-1 border-t pt-2">
-          <LikeButton postId={post.id} showCount={showLikeCounts} />
-          {commentsEnabled ? (
-            <CommentSection postId={post.id} />
-          ) : (
-            <span className="inline-flex items-center rounded-full bg-[var(--surface-soft)] px-3 py-1.5 text-sm font-medium text-[var(--foreground)]/50">
-              Comments off
-            </span>
-          )}
-          <ShareSheet postId={post.id} />
+  return (
+    <article className="overflow-hidden rounded-[1.75rem] border bg-[var(--surface-strong)] shadow-sm">
+      {openOnBodyTap ? (
+        <Link
+          href={`/posts/${post.id}`}
+          className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/50"
+          aria-label={`Open ${post.placeName}`}
+        >
+          {body}
+        </Link>
+      ) : (
+        body
+      )}
+
+      {/* Like + Comment + Share + Open */}
+      <div className="flex flex-wrap items-center gap-1 border-t px-4 pb-4 pt-2">
+        <LikeButton postId={post.id} showCount={showLikeCounts} />
+        {commentsEnabled ? (
+          <CommentSection postId={post.id} />
+        ) : (
+          <span className="inline-flex items-center rounded-full bg-[var(--surface-soft)] px-3 py-1.5 text-sm font-medium text-[var(--foreground)]/50">
+            Comments off
+          </span>
+        )}
+        <ShareSheet postId={post.id} />
+        {!openOnBodyTap ? (
           <Link href={`/posts/${post.id}`} className="ml-auto text-xs font-medium text-[var(--foreground)]/72 transition hover:text-[var(--foreground)]">
             Open
           </Link>
-        </div>
+        ) : null}
       </div>
     </article>
   );

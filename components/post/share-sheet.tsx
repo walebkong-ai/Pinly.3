@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { CheckCircle2, Clock3, LoaderCircle, Search, Send, Share2, UserPlus, Users } from "lucide-react";
 import { Drawer } from "vaul";
-import { Share2, Search, Users, CheckCircle2, LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -12,6 +13,14 @@ type GroupOption = {
   id: string;
   name: string;
   memberCount: number;
+};
+
+type PersonOption = {
+  id: string;
+  name: string;
+  username: string;
+  avatarUrl: string | null;
+  requestStatus: "friends" | "pending_sent" | "pending_received" | "none";
 };
 
 interface ShareSheetProps {
@@ -29,71 +38,199 @@ export function ShareSheet({
 }: ShareSheetProps) {
   const [open, setOpen] = useState(false);
   const [groups, setGroups] = useState<GroupOption[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [friends, setFriends] = useState<PersonOption[]>([]);
+  const [searchResults, setSearchResults] = useState<PersonOption[]>([]);
+  const [loadingInitial, setLoadingInitial] = useState(false);
+  const [loadingPeople, setLoadingPeople] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set());
-  const [sending, setSending] = useState(false);
+  const [sendingGroups, setSendingGroups] = useState(false);
+  const [sendingUserId, setSendingUserId] = useState<string | null>(null);
+  const [requestingUserId, setRequestingUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (open && groups.length === 0) {
-      loadGroups();
+    if (open && groups.length === 0 && friends.length === 0) {
+      void loadInitialData();
     }
-  }, [open]);
+  }, [open, groups.length, friends.length]);
 
-  async function loadGroups() {
-    setLoading(true);
-    try {
-      const response = await fetch("/api/groups");
-      if (response.ok) {
-        const data = await response.json();
-        const mapped = data.groups.map((g: any) => ({
-          id: g.id,
-          name: g.name,
-          memberCount: g._count.members,
-        }));
-        setGroups(mapped);
+  useEffect(() => {
+    if (!open) {
+      setSearch("");
+      setSelectedGroups(new Set());
+      setSearchResults([]);
+      return;
+    }
+
+    let ignore = false;
+
+    async function loadPeopleSearch() {
+      const query = search.trim();
+      if (query.length < 2) {
+        setSearchResults([]);
+        return;
       }
+
+      setLoadingPeople(true);
+
+      try {
+        const response = await fetch(`/api/friends/search?q=${encodeURIComponent(query)}`);
+        if (!response.ok) {
+          throw new Error("Could not search people.");
+        }
+
+        const data = await response.json();
+        if (!ignore) {
+          setSearchResults(data.users ?? []);
+        }
+      } catch {
+        if (!ignore) {
+          toast.error("Could not search people right now.");
+        }
+      } finally {
+        if (!ignore) {
+          setLoadingPeople(false);
+        }
+      }
+    }
+
+    void loadPeopleSearch();
+
+    return () => {
+      ignore = true;
+    };
+  }, [open, search]);
+
+  async function loadInitialData() {
+    setLoadingInitial(true);
+    try {
+      const [groupsResponse, friendsResponse] = await Promise.all([
+        fetch("/api/groups"),
+        fetch("/api/friends/list")
+      ]);
+
+      if (!groupsResponse.ok || !friendsResponse.ok) {
+        throw new Error("Could not load share options.");
+      }
+
+      const [groupsData, friendsData] = await Promise.all([
+        groupsResponse.json(),
+        friendsResponse.json()
+      ]);
+
+      setGroups(
+        (groupsData.groups ?? [])
+          .filter((group: any) => !group.isDirect)
+          .map((group: any) => ({
+            id: group.id,
+            name: group.name,
+            memberCount: group._count.members
+          }))
+      );
+      setFriends(
+        (friendsData.friends ?? []).map((friend: any) => ({
+          ...friend,
+          requestStatus: "friends" as const
+        }))
+      );
     } catch {
-      toast.error("Failed to load groups for sharing.");
+      toast.error("Failed to load share options.");
     } finally {
-      setLoading(false);
+      setLoadingInitial(false);
     }
   }
 
-  const filteredGroups = groups.filter((g) =>
-    g.name.toLowerCase().includes(search.toLowerCase())
-  );
+  async function handleGroupShare() {
+    if (selectedGroups.size === 0) {
+      return;
+    }
 
-  async function handleShare() {
-    if (selectedGroups.size === 0) return;
+    setSendingGroups(true);
 
-    setSending(true);
     try {
       const response = await fetch(`/api/posts/${postId}/share`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ groupIds: Array.from(selectedGroups) }),
+        body: JSON.stringify({ groupIds: Array.from(selectedGroups) })
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to share post");
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || "Failed to share post");
       }
 
       toast.success("Post shared successfully!");
       setOpen(false);
-      
-      // Reset selected
-      setTimeout(() => setSelectedGroups(new Set()), 400);
-      
-    } catch (error: any) {
-      toast.error(error.message || "An error occurred while sharing.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "An error occurred while sharing.");
     } finally {
-      setSending(false);
+      setSendingGroups(false);
     }
   }
 
-  const toggleGroup = (id: string) => {
+  async function handleDirectShare(person: PersonOption) {
+    if (person.requestStatus !== "friends") {
+      return;
+    }
+
+    setSendingUserId(person.id);
+
+    try {
+      const response = await fetch(`/api/posts/${postId}/share`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userIds: [person.id] })
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || "Failed to share post");
+      }
+
+      toast.success(`Sent to ${person.name}`);
+      setOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not send this post.");
+    } finally {
+      setSendingUserId(null);
+    }
+  }
+
+  async function handleFriendRequest(person: PersonOption) {
+    if (person.requestStatus !== "none") {
+      return;
+    }
+
+    setRequestingUserId(person.id);
+
+    try {
+      const response = await fetch("/api/friends/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: person.username })
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || "Could not send friend request.");
+      }
+
+      setSearchResults((prev) =>
+        prev.map((result) =>
+          result.id === person.id
+            ? { ...result, requestStatus: "pending_sent" }
+            : result
+        )
+      );
+      toast.success(`Friend request sent to @${person.username}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not send friend request.");
+    } finally {
+      setRequestingUserId(null);
+    }
+  }
+
+  function toggleGroup(id: string) {
     const next = new Set(selectedGroups);
     if (next.has(id)) {
       next.delete(id);
@@ -101,7 +238,25 @@ export function ShareSheet({
       next.add(id);
     }
     setSelectedGroups(next);
-  };
+  }
+
+  const filteredGroups = groups.filter((group) =>
+    group.name.toLowerCase().includes(search.toLowerCase())
+  );
+  const visiblePeople =
+    search.trim().length >= 2
+      ? searchResults
+      : friends.filter((friend) => {
+          const query = search.trim().toLowerCase();
+          if (!query) {
+            return true;
+          }
+
+          return (
+            friend.name.toLowerCase().includes(query) ||
+            friend.username.toLowerCase().includes(query)
+          );
+        });
 
   return (
     <Drawer.Root open={open} onOpenChange={setOpen}>
@@ -131,68 +286,168 @@ export function ShareSheet({
         <Drawer.Content className="fixed inset-x-0 bottom-0 z-[200] mt-24 flex h-[85vh] flex-col rounded-t-[2.5rem] bg-[var(--surface-strong)] pb-safe after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)] md:h-[75vh]">
           <div className="mx-auto mt-4 h-1.5 w-12 shrink-0 rounded-full bg-[var(--foreground)]/15" />
           <div className="flex flex-1 flex-col overflow-hidden p-6">
-            <h2 className="font-[var(--font-serif)] text-2xl font-semibold">Share to Group</h2>
-            
-            <div className="mt-4 relative">
+            <h2 className="font-[var(--font-serif)] text-2xl font-semibold">Share memory</h2>
+            <p className="mt-1 text-sm text-[var(--foreground)]/58">
+              Send it to a friend directly or drop it into one of your groups.
+            </p>
+
+            <div className="relative mt-4">
               <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--foreground)]/40" />
               <Input
-                placeholder="Search groups..."
+                placeholder="Search people or groups..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(event) => setSearch(event.target.value)}
                 className="h-12 rounded-2xl border-none bg-[var(--surface-soft)] pl-10"
               />
             </div>
 
-            <div className="mt-4 flex-1 overflow-y-auto space-y-2 pb-6">
-              {loading ? (
-                <div className="flex justify-center py-8">
+            <div className="mt-4 flex-1 overflow-y-auto pb-6">
+              {loadingInitial ? (
+                <div className="flex justify-center py-10">
                   <LoaderCircle className="h-6 w-6 animate-spin text-[var(--accent)]" />
                 </div>
-              ) : filteredGroups.length === 0 ? (
-                <p className="text-center text-sm text-[var(--foreground)]/50 py-8">
-                  No groups found.
-                </p>
               ) : (
-                filteredGroups.map((group) => {
-                  const isSelected = selectedGroups.has(group.id);
-                  return (
-                    <div
-                      key={group.id}
-                      onClick={() => toggleGroup(group.id)}
-                      className={`flex cursor-pointer items-center gap-4 rounded-2xl p-3 transition-colors border ${
-                        isSelected
-                          ? "border-[var(--social-accent)] bg-[var(--social-accent-soft)]"
-                          : "border-transparent hover:bg-[var(--foreground)]/5"
-                      }`}
-                    >
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--social-accent-soft)] text-[var(--social-accent)]">
-                        <Users className="h-6 w-6" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{group.name}</p>
-                        <p className="text-xs text-[var(--foreground)]/60">
-                          {group.memberCount} member{group.memberCount !== 1 && "s"}
-                        </p>
-                      </div>
-                      <div className="shrink-0 px-2 text-[var(--social-accent)]">
-                        {isSelected && <CheckCircle2 className="h-6 w-6" />}
-                      </div>
+                <div className="space-y-6">
+                  <section>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--foreground)]/45">
+                        People
+                      </h3>
+                      {search.trim().length >= 2 ? (
+                        <span className="text-xs text-[var(--foreground)]/45">
+                          {loadingPeople ? "Searching…" : `${visiblePeople.length} result${visiblePeople.length === 1 ? "" : "s"}`}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-[var(--foreground)]/45">
+                          {friends.length} friend{friends.length === 1 ? "" : "s"}
+                        </span>
+                      )}
                     </div>
-                  );
-                })
+                    <div className="mt-3 space-y-2">
+                      {visiblePeople.map((person) => (
+                        <div
+                          key={person.id}
+                          className="flex items-center gap-3 rounded-2xl border bg-[var(--surface-soft)] p-3"
+                        >
+                          <Avatar name={person.name} src={person.avatarUrl} className="h-10 w-10 shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">{person.name}</p>
+                            <p className="truncate text-xs text-[var(--foreground)]/58">@{person.username}</p>
+                          </div>
+                          {person.requestStatus === "friends" ? (
+                            <Button
+                              type="button"
+                              className="h-9 gap-2 rounded-full px-3"
+                              disabled={sendingUserId === person.id}
+                              onClick={() => void handleDirectShare(person)}
+                            >
+                              {sendingUserId === person.id ? (
+                                <LoaderCircle className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Send className="h-4 w-4" />
+                              )}
+                              Send
+                            </Button>
+                          ) : null}
+                          {person.requestStatus === "none" ? (
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              className="h-9 gap-2 rounded-full px-3"
+                              disabled={requestingUserId === person.id}
+                              onClick={() => void handleFriendRequest(person)}
+                            >
+                              {requestingUserId === person.id ? (
+                                <LoaderCircle className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <UserPlus className="h-4 w-4" />
+                              )}
+                              Add friend
+                            </Button>
+                          ) : null}
+                          {person.requestStatus === "pending_sent" ? (
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-strong)] px-3 py-2 text-xs font-medium text-[var(--foreground)]/55">
+                              <Clock3 className="h-3.5 w-3.5" />
+                              Requested
+                            </span>
+                          ) : null}
+                          {person.requestStatus === "pending_received" ? (
+                            <span className="inline-flex items-center rounded-full bg-[var(--surface-strong)] px-3 py-2 text-xs font-medium text-[var(--highlight)]">
+                              Respond in Friends
+                            </span>
+                          ) : null}
+                        </div>
+                      ))}
+                      {!loadingPeople && visiblePeople.length === 0 ? (
+                        <p className="rounded-2xl border border-dashed bg-[var(--surface-soft)] px-4 py-5 text-sm text-[var(--foreground)]/55">
+                          {search.trim().length >= 2
+                            ? "No people matched that search."
+                            : "Your friends will show up here for one-tap sharing."}
+                        </p>
+                      ) : null}
+                    </div>
+                  </section>
+
+                  <section>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--foreground)]/45">
+                        Groups
+                      </h3>
+                      <span className="text-xs text-[var(--foreground)]/45">
+                        {selectedGroups.size} selected
+                      </span>
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      {filteredGroups.map((group) => {
+                        const isSelected = selectedGroups.has(group.id);
+                        return (
+                          <button
+                            key={group.id}
+                            type="button"
+                            onClick={() => toggleGroup(group.id)}
+                            className={cn(
+                              "flex w-full items-center gap-4 rounded-2xl border p-3 text-left transition-colors",
+                              isSelected
+                                ? "border-[var(--social-accent)] bg-[var(--social-accent-soft)]"
+                                : "border-transparent bg-[var(--surface-soft)] hover:bg-[var(--foreground)]/5"
+                            )}
+                          >
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--social-accent-soft)] text-[var(--social-accent)]">
+                              <Users className="h-6 w-6" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate font-medium">{group.name}</p>
+                              <p className="text-xs text-[var(--foreground)]/60">
+                                {group.memberCount} member{group.memberCount !== 1 ? "s" : ""}
+                              </p>
+                            </div>
+                            <div className="shrink-0 px-2 text-[var(--social-accent)]">
+                              {isSelected ? <CheckCircle2 className="h-6 w-6" /> : null}
+                            </div>
+                          </button>
+                        );
+                      })}
+                      {filteredGroups.length === 0 ? (
+                        <p className="rounded-2xl border border-dashed bg-[var(--surface-soft)] px-4 py-5 text-sm text-[var(--foreground)]/55">
+                          No groups matched that search.
+                        </p>
+                      ) : null}
+                    </div>
+                  </section>
+                </div>
               )}
             </div>
 
-            <div className="pt-4 mt-auto">
-              <Button 
-                onClick={handleShare} 
-                disabled={selectedGroups.size === 0 || sending}
-                className="w-full h-14 rounded-2xl text-[15px] font-semibold"
+            <div className="mt-auto border-t pt-4">
+              <Button
+                onClick={() => void handleGroupShare()}
+                disabled={selectedGroups.size === 0 || sendingGroups}
+                className="h-14 w-full rounded-2xl text-[15px] font-semibold"
               >
-                {sending ? (
-                  <LoaderCircle className="h-5 w-5 animate-spin mx-auto" />
+                {sendingGroups ? (
+                  <LoaderCircle className="h-5 w-5 animate-spin" />
                 ) : (
-                  `Send to ${selectedGroups.size} group${selectedGroups.size !== 1 ? "s" : ""}`
+                  `Send to ${selectedGroups.size} group${selectedGroups.size === 1 ? "" : "s"}`
                 )}
               </Button>
             </div>

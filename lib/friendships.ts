@@ -4,6 +4,11 @@ export function normalizeFriendPair(firstUserId: string, secondUserId: string) {
     : { userAId: secondUserId, userBId: firstUserId };
 }
 
+export function buildDirectPairKey(firstUserId: string, secondUserId: string) {
+  const { userAId, userBId } = normalizeFriendPair(firstUserId, secondUserId);
+  return `${userAId}:${userBId}`;
+}
+
 export function isSameNormalizedPair(
   userAId: string,
   userBId: string,

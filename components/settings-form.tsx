@@ -6,6 +6,7 @@ import { LoaderCircle, Settings2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { AvatarPhotoEditor } from "@/components/profile/avatar-photo-editor";
 
 type SettingsFormProps = {
   initialProfile: {
@@ -27,6 +28,7 @@ export function SettingsForm({ initialProfile, initialSettings }: SettingsFormPr
   const [commentsEnabled, setCommentsEnabled] = useState(initialSettings.commentsEnabled);
   const [savingKey, setSavingKey] = useState<"likes" | "comments" | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
 
   async function saveSettings(
     updates: { showLikeCounts?: boolean; commentsEnabled?: boolean },
@@ -107,6 +109,7 @@ export function SettingsForm({ initialProfile, initialSettings }: SettingsFormPr
       setAvatarUrl(uploadData.mediaUrl);
       router.refresh();
       toast.success("Profile photo updated");
+      setPendingAvatarFile(null);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not update profile photo.");
     } finally {
@@ -137,7 +140,7 @@ export function SettingsForm({ initialProfile, initialSettings }: SettingsFormPr
                 variant="secondary"
                 className="gap-2"
                 onClick={() => fileRef.current?.click()}
-                disabled={uploadingAvatar}
+                disabled={uploadingAvatar || !!pendingAvatarFile}
               >
                 {uploadingAvatar ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                 {avatarUrl ? "Change photo" : "Upload photo"}
@@ -149,6 +152,15 @@ export function SettingsForm({ initialProfile, initialSettings }: SettingsFormPr
           </div>
         </div>
 
+        {pendingAvatarFile ? (
+          <AvatarPhotoEditor
+            file={pendingAvatarFile}
+            name={initialProfile.name}
+            onCancel={() => setPendingAvatarFile(null)}
+            onSave={updateProfilePhoto}
+          />
+        ) : null}
+
         <input
           ref={fileRef}
           type="file"
@@ -157,7 +169,7 @@ export function SettingsForm({ initialProfile, initialSettings }: SettingsFormPr
           onChange={(event) => {
             const file = event.target.files?.[0];
             if (file) {
-              void updateProfilePhoto(file);
+              setPendingAvatarFile(file);
             }
             event.target.value = "";
           }}

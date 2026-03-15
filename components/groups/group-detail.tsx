@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 type GroupDetails = {
   id: string;
   name: string;
+  isDirect?: boolean;
   members: Array<{
     user: {
       id: string;
@@ -83,6 +84,10 @@ export function GroupDetail({ groupId }: { groupId: string }) {
   };
 
   const openAddModal = async () => {
+    if (group?.isDirect) {
+      return;
+    }
+
     setShowAddModal(true);
     setSelectedFriendIds(new Set());
     
@@ -163,14 +168,18 @@ export function GroupDetail({ groupId }: { groupId: string }) {
         </div>
         <h1 className="mt-4 font-[var(--font-serif)] text-3xl">{group.name}</h1>
         <p className="mt-1 text-sm text-[var(--foreground)]/60">
-          Persistent Trip History & Messages
+          {group.isDirect ? "Direct shares & messages" : "Persistent Trip History & Messages"}
         </p>
 
         <div className="mt-8 flex items-center justify-between">
-          <h2 className="font-semibold uppercase tracking-widest text-xs text-[var(--foreground)]/45">Members ({group.members.length})</h2>
-          <Button variant="ghost" onClick={openAddModal} className="h-7 gap-1 px-2 text-xs text-[var(--accent)] hover:bg-[var(--accent)]/10">
-            <UserPlus className="h-3 w-3" /> Add
-          </Button>
+          <h2 className="font-semibold uppercase tracking-widest text-xs text-[var(--foreground)]/45">
+            {group.isDirect ? `People (${group.members.length})` : `Members (${group.members.length})`}
+          </h2>
+          {!group.isDirect ? (
+            <Button variant="ghost" onClick={openAddModal} className="h-7 gap-1 px-2 text-xs text-[var(--accent)] hover:bg-[var(--accent)]/10">
+              <UserPlus className="h-3 w-3" /> Add
+            </Button>
+          ) : null}
         </div>
         <div className="mt-4 flex-1 space-y-3 overflow-y-auto">
           {group.members.map((member) => (
@@ -192,7 +201,12 @@ export function GroupDetail({ groupId }: { groupId: string }) {
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent)]/10 text-[var(--accent)]">
             <Users className="h-5 w-5" />
           </div>
-          <h2 className="font-semibold">{group.name}</h2>
+          <div>
+            <h2 className="font-semibold">{group.name}</h2>
+            <p className="text-xs text-[var(--foreground)]/50">
+              {group.isDirect ? "Direct share" : `${group.members.length} members`}
+            </p>
+          </div>
         </div>
 
         {/* Messages */}
@@ -284,7 +298,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
       </section>
 
       {/* Add Member Modal */}
-      {showAddModal && (
+      {showAddModal && !group.isDirect ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-sm rounded-[2rem] bg-white p-6 shadow-xl">
             <div className="flex items-center justify-between mb-4">
@@ -334,7 +348,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
             </Button>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 const authMock = vi.fn();
 const getVisiblePostByIdMock = vi.fn();
 const findManyMock = vi.fn();
+const findFirstMock = vi.fn();
 const createMock = vi.fn();
 
 vi.mock("@/lib/auth", () => ({
@@ -17,6 +18,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     comment: {
       findMany: findManyMock,
+      findFirst: findFirstMock,
       create: createMock
     }
   }
@@ -27,6 +29,7 @@ describe("post comments route", () => {
     authMock.mockReset();
     getVisiblePostByIdMock.mockReset();
     findManyMock.mockReset();
+    findFirstMock.mockReset();
     createMock.mockReset();
 
     authMock.mockResolvedValue({ user: { id: "viewer_1" } });
@@ -91,7 +94,67 @@ describe("post comments route", () => {
         data: {
           postId: "post_2",
           userId: "viewer_1",
-          content: "Looks amazing"
+          content: "Looks amazing",
+          parentId: null
+        }
+      })
+    );
+  });
+
+  test("POST creates a reply when the parent comment is top-level", async () => {
+    getVisiblePostByIdMock.mockResolvedValue({
+      id: "post_3",
+      user: {
+        settings: {
+          commentsEnabled: true
+        }
+      }
+    });
+    findFirstMock.mockResolvedValue({
+      id: "comment_parent",
+      parentId: null
+    });
+    createMock.mockResolvedValue({
+      id: "comment_reply",
+      content: "Same here",
+      createdAt: new Date().toISOString(),
+      parentId: "comment_parent",
+      user: {
+        id: "viewer_1",
+        name: "Avery Chen",
+        username: "avery",
+        avatarUrl: null
+      }
+    });
+
+    const { POST } = await import("@/app/api/posts/[postId]/comments/route");
+    const response = await POST(
+      new Request("http://localhost/api/posts/post_3/comments", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ content: "Same here", parentId: "comment_parent" })
+      }),
+      {
+        params: Promise.resolve({ postId: "post_3" })
+      }
+    );
+
+    expect(response.status).toBe(201);
+    expect(findFirstMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: "comment_parent",
+          postId: "post_3"
+        }
+      })
+    );
+    expect(createMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {
+          postId: "post_3",
+          userId: "viewer_1",
+          content: "Same here",
+          parentId: "comment_parent"
         }
       })
     );

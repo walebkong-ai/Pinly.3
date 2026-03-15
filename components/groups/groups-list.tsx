@@ -8,6 +8,15 @@ import { Button } from "@/components/ui/button";
 type Group = {
   id: string;
   name: string;
+  isDirect?: boolean;
+  members: Array<{
+    user: {
+      id: string;
+      name: string;
+      username: string;
+      avatarUrl: string | null;
+    };
+  }>;
   _count: {
     members: number;
     messages: number;
@@ -65,13 +74,13 @@ export function GroupsList() {
                 className="flex items-center justify-between rounded-3xl border bg-[var(--surface-soft)] p-4 transition-colors hover:bg-[var(--surface-strong)]"
               >
                 <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--accent)]/10 text-[var(--accent)]">
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-full ${group.isDirect ? "bg-[var(--map-accent-soft)] text-[var(--map-accent)]" : "bg-[var(--accent)]/10 text-[var(--accent)]"}`}>
                     <Users className="h-6 w-6" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-lg">{group.name}</h3>
                     <p className="text-sm text-[var(--foreground)]/60">
-                      {group._count.members} members • {group._count.messages} messages
+                      {group.isDirect ? "Direct share" : `${group._count.members} members`} • {group._count.messages} messages
                     </p>
                   </div>
                 </div>

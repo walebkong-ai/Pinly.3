@@ -39,6 +39,10 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
     return apiError("Forbidden", 403);
   }
 
+  if (group.isDirect) {
+    return apiError("Direct conversations cannot be expanded into groups.", 400);
+  }
+
   const existingMemberIds = new Set(group.members.map((m: { userId: string }) => m.userId));
   const newMembers = parsed.data.userIds.filter(id => !existingMemberIds.has(id));
 

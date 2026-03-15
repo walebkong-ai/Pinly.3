@@ -38,6 +38,7 @@ export default async function FeedPage() {
             key={post.id}
             post={post}
             showLikeCounts={showLikeCounts}
+            openOnBodyTap
           />
         ))}
         {posts.length === 0 && (
