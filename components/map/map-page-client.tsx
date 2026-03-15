@@ -13,6 +13,7 @@ import { FilterSidebar } from "@/components/map/filter-sidebar";
 import { FriendActivityPanel } from "@/components/map/friend-activity-panel";
 import { LayerToggle } from "@/components/map/layer-toggle";
 import { buildLightweightMapGroups } from "@/lib/map-groups";
+import { canonicalizeViewportForDataQuery, createViewportFingerprint, FULL_WORLD_BOUNDS, type MapViewport } from "@/lib/map-viewport";
 import type { LayerMode, MapCategory, MapGroupOption, MapResponse, PostSummary, TimeFilter } from "@/types/app";
 
 const DynamicMapCanvas = dynamic(() => import("@/components/map/map-canvas").then((mod) => mod.MapCanvas), {
@@ -23,13 +24,6 @@ const DynamicMapCanvas = dynamic(() => import("@/components/map/map-canvas").the
     </div>
   )
 });
-
-const initialBounds = {
-  north: 85,
-  south: -85,
-  east: 180,
-  west: -180
-};
 
 const emptyMap: MapResponse = {
   stage: "world",
@@ -48,11 +42,12 @@ export function MapPageClient() {
   const [selectedCategories, setSelectedCategories] = useState<MapCategory[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<PostSummary | null>(null);
-  const [viewport, setViewport] = useState({
-    zoom: 2,
-    bounds: initialBounds
-  });
-  const [loading, setLoading] = useState(true);
+  const [viewport, setViewport] = useState<MapViewport>(() =>
+    canonicalizeViewportForDataQuery({
+      zoom: 2,
+      bounds: FULL_WORLD_BOUNDS
+    })
+  );
   const deferredQuery = useDeferredValue(query);
 
   useEffect(() => {
@@ -80,11 +75,10 @@ export function MapPageClient() {
   }, []);
 
   useEffect(() => {
+    const abortController = new AbortController();
     let ignore = false;
 
     async function loadMap() {
-      setLoading(true);
-
       const params = new URLSearchParams({
         north: String(viewport.bounds.north),
         south: String(viewport.bounds.south),
@@ -107,13 +101,26 @@ export function MapPageClient() {
         params.set("q", deferredQuery.trim());
       }
 
-      const response = await fetch(`/api/posts?${params.toString()}`);
+      let response: Response;
+
+      try {
+        response = await fetch(`/api/posts?${params.toString()}`, {
+          signal: abortController.signal
+        });
+      } catch (error) {
+        if (ignore || (error instanceof DOMException && error.name === "AbortError")) {
+          return;
+        }
+
+        setMapData(emptyMap);
+        return;
+      }
+
       const data = (await response.json()) as Partial<MapResponse>;
 
       if (!response.ok) {
         if (!ignore) {
           setMapData(emptyMap);
-          setLoading(false);
         }
         return;
       }
@@ -128,13 +135,13 @@ export function MapPageClient() {
         cityContext: data.cityContext ?? null,
         friendActivity: data.friendActivity ?? []
       });
-      setLoading(false);
     }
 
     void loadMap();
 
     return () => {
       ignore = true;
+      abortController.abort();
     };
   }, [viewport, deferredQuery, layer, time, selectedGroupIds, selectedCategories]);
 
@@ -160,9 +167,14 @@ export function MapPageClient() {
     [mapData.stage]
   );
 
-  function onViewportChange(nextViewport: { zoom: number; bounds: typeof initialBounds }) {
+  function onViewportChange(nextViewport: MapViewport) {
+    const nextQueryViewport = canonicalizeViewportForDataQuery(nextViewport);
+    const nextFingerprint = createViewportFingerprint(nextQueryViewport);
+
     startTransition(() => {
-      setViewport(nextViewport);
+      setViewport((currentViewport) =>
+        createViewportFingerprint(currentViewport) === nextFingerprint ? currentViewport : nextQueryViewport
+      );
     });
   }
 

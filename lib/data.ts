@@ -1,7 +1,8 @@
 import { filterPostsByCategories } from "@/lib/map-filters";
 import { resolveLayerUserIds } from "@/lib/map-groups";
+import { FULL_WORLD_BOUNDS, getBoundsCenter, getLongitudeFilter, normalizeMapBounds } from "@/lib/map-viewport";
 import { Prisma } from "@prisma/client";
-import { getTimeFilterStart, buildLayerUserIds, buildMapPayload } from "@/lib/map-data";
+import { getMapStage, getTimeFilterStart, buildLayerUserIds, buildMapPayload } from "@/lib/map-data";
 import { prisma } from "@/lib/prisma";
 import { buildVisibleUserIds } from "@/lib/permissions";
 import type { LayerMode, MapCategory, TimeFilter } from "@/types/app";
@@ -70,25 +71,53 @@ export async function getMapData({
     layer
   });
   const visitedAfter = getTimeFilterStart(time);
+  const normalizedBounds = normalizeMapBounds(bounds);
+  const queryBounds = getMapStage(zoom) === "world" ? FULL_WORLD_BOUNDS : normalizedBounds;
+  const longitudeFilter = getLongitudeFilter(queryBounds);
+  const whereClauses: Prisma.PostWhereInput[] = [
+    {
+      userId: { in: scopedUserIds }
+    },
+    {
+      latitude: { lte: queryBounds.north, gte: queryBounds.south }
+    }
+  ];
+
+  if (longitudeFilter.kind === "between") {
+    whereClauses.push({
+      longitude: { lte: longitudeFilter.east, gte: longitudeFilter.west }
+    });
+  } else if (longitudeFilter.kind === "wrapped") {
+    whereClauses.push({
+      OR: [
+        { longitude: { gte: longitudeFilter.west } },
+        { longitude: { lte: longitudeFilter.east } }
+      ]
+    });
+  }
+
+  if (visitedAfter) {
+    whereClauses.push({
+      visitedAt: { gte: visitedAfter }
+    });
+  }
+
+  if (query) {
+    whereClauses.push({
+      OR: [
+        { placeName: { contains: query, mode: "insensitive" } },
+        { city: { contains: query, mode: "insensitive" } },
+        { country: { contains: query, mode: "insensitive" } },
+        { caption: { contains: query, mode: "insensitive" } },
+        { user: { name: { contains: query, mode: "insensitive" } } },
+        { user: { username: { contains: query, mode: "insensitive" } } }
+      ]
+    });
+  }
 
   const posts = await prisma.post.findMany({
     where: {
-      userId: { in: scopedUserIds },
-      latitude: { lte: bounds.north, gte: bounds.south },
-      longitude: { lte: bounds.east, gte: bounds.west },
-      ...(visitedAfter ? { visitedAt: { gte: visitedAfter } } : {}),
-      ...(query
-        ? {
-            OR: [
-              { placeName: { contains: query, mode: "insensitive" } },
-              { city: { contains: query, mode: "insensitive" } },
-              { country: { contains: query, mode: "insensitive" } },
-              { caption: { contains: query, mode: "insensitive" } },
-              { user: { name: { contains: query, mode: "insensitive" } } },
-              { user: { username: { contains: query, mode: "insensitive" } } }
-            ]
-          }
-        : {})
+      AND: whereClauses
     },
     include: postSummaryInclude,
     orderBy: [{ visitedAt: "desc" }],
@@ -100,10 +129,7 @@ export async function getMapData({
   return buildMapPayload({
     posts: filteredPosts,
     zoom,
-    center: {
-      latitude: (bounds.north + bounds.south) / 2,
-      longitude: (bounds.east + bounds.west) / 2
-    },
+    center: getBoundsCenter(normalizedBounds),
     viewerId
   });
 }

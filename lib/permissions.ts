@@ -1,4 +1,5 @@
 import type { Friendship, Post } from "@prisma/client";
+import { postIsWithinWrappedBounds } from "@/lib/map-viewport";
 
 export function buildVisibleUserIds(viewerId: string, friendships: Friendship[]) {
   const ids = new Set<string>([viewerId]);
@@ -25,8 +26,5 @@ export function postIsWithinBounds(
   longitude: number,
   bounds: { north: number; south: number; east: number; west: number }
 ) {
-  return latitude <= bounds.north &&
-    latitude >= bounds.south &&
-    longitude <= bounds.east &&
-    longitude >= bounds.west;
+  return postIsWithinWrappedBounds(latitude, longitude, bounds);
 }

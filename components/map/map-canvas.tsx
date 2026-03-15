@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Map, { Marker, Popup, MapRef, ViewStateChangeEvent } from "react-map-gl/maplibre";
+import Map, { Marker, Popup, MapRef } from "react-map-gl/maplibre";
 import type { MapMarker, PostSummary } from "@/types/app";
 import { MarkerPreview } from "@/components/map/marker-preview";
 
@@ -104,6 +104,18 @@ export function MapCanvas({
     }
   }, [selectedPostId]);
 
+  useEffect(() => {
+    if (!popupInfo) {
+      return;
+    }
+
+    const stillVisible = markers.some((marker) => marker.id === popupInfo.id);
+
+    if (!stillVisible) {
+      setPopupInfo(null);
+    }
+  }, [markers, popupInfo]);
+
   const handleMoveEnd = useCallback(() => {
     reportViewport();
   }, [reportViewport]);
@@ -161,6 +173,8 @@ export function MapCanvas({
               longitude={marker.longitude}
               latitude={marker.latitude}
               anchor="center"
+              opacityWhenCovered="0"
+              subpixelPositioning
               onClick={(e) => {
                 e.originalEvent.stopPropagation();
                 
@@ -193,6 +207,7 @@ export function MapCanvas({
             latitude={popupInfo.latitude}
             anchor="bottom"
             offset={20}
+            subpixelPositioning
             onClose={() => setPopupInfo(null)}
             closeOnClick={false}
             className="pinly-popup-container"

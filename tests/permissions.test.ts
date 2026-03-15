@@ -32,6 +32,26 @@ describe("map bounds", () => {
     ).toBe(true);
   });
 
+  test("returns true when the viewport crosses the antimeridian", () => {
+    expect(
+      postIsWithinBounds(37.77, 179.6, {
+        north: 60,
+        south: 20,
+        east: -170,
+        west: 170
+      })
+    ).toBe(true);
+
+    expect(
+      postIsWithinBounds(37.77, -175.2, {
+        north: 60,
+        south: 20,
+        east: -170,
+        west: 170
+      })
+    ).toBe(true);
+  });
+
   test("returns false for records outside viewport", () => {
     expect(
       postIsWithinBounds(48.85, 2.35, {
@@ -39,6 +59,17 @@ describe("map bounds", () => {
         south: 40,
         east: -73,
         west: -74.2
+      })
+    ).toBe(false);
+  });
+
+  test("returns false for records outside an antimeridian viewport", () => {
+    expect(
+      postIsWithinBounds(37.77, -140, {
+        north: 60,
+        south: 20,
+        east: -170,
+        west: 170
       })
     ).toBe(false);
   });
