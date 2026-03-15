@@ -46,6 +46,17 @@ export function LikeButton({
     });
   }
 
+  useEffect(() => {
+    function handleDoubleTapLike() {
+      if (!liked) {
+        toggleLike();
+      }
+    }
+    const eventName = `like-post-${postId}`;
+    window.addEventListener(eventName, handleDoubleTapLike);
+    return () => window.removeEventListener(eventName, handleDoubleTapLike);
+  }, [postId, liked]);
+
   return (
     <button
       type="button"

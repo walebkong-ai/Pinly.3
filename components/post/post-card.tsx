@@ -21,7 +21,12 @@ export function PostCard({
   return (
     <article className="overflow-hidden rounded-[1.75rem] border bg-white/80 shadow-sm">
       <div className={compact ? "aspect-[4/3]" : "aspect-[4/3]"}>
-        <MediaView mediaType={post.mediaType} mediaUrl={post.mediaUrl} thumbnailUrl={post.thumbnailUrl} />
+        <MediaView
+          mediaType={post.mediaType}
+          mediaUrl={post.mediaUrl}
+          thumbnailUrl={post.thumbnailUrl}
+          postId={post.id}
+        />
       </div>
       <div className="space-y-3 p-4">
         <div className="flex items-center gap-3">

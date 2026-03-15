@@ -57,7 +57,12 @@ export default async function PostDetailPage({ params }: Props) {
         <article className="overflow-hidden rounded-[1.75rem] border bg-white/80 shadow-sm">
           {/* Media */}
           <div className="aspect-[4/3] md:aspect-[16/10]">
-            <MediaView mediaType={post.mediaType} mediaUrl={post.mediaUrl} thumbnailUrl={post.thumbnailUrl} />
+            <MediaView
+              mediaType={post.mediaType}
+              mediaUrl={post.mediaUrl}
+              thumbnailUrl={post.thumbnailUrl}
+              postId={post.id}
+            />
           </div>
 
           {/* Content */}
