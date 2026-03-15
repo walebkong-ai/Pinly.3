@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { rankBySearch } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
 type Friend = {
@@ -72,15 +73,19 @@ export function VisitedWithPicker({
     [friends, selectedSet]
   );
   const visibleFriends = useMemo(() => {
-    const trimmedQuery = query.trim().toLowerCase();
+    const trimmedQuery = query.trim();
 
     if (!trimmedQuery) {
       return friends;
     }
 
-    return friends.filter((friend) =>
-      friend.name.toLowerCase().includes(trimmedQuery) ||
-      friend.username.toLowerCase().includes(trimmedQuery)
+    return rankBySearch(
+      friends,
+      trimmedQuery,
+      (friend) => [
+        { value: friend.name, weight: 3.8 },
+        { value: friend.username, weight: 4.4 }
+      ]
     );
   }, [friends, query]);
 

@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getVisibleUserIds } from "@/lib/data";
 import { apiError } from "@/lib/api";
+import { getSearchTerms, rankBySearch } from "@/lib/search";
 
 export const runtime = "nodejs";
 
@@ -13,9 +14,10 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const query = (searchParams.get("q") ?? "").trim().toLowerCase();
+  const query = (searchParams.get("q") ?? "").trim();
+  const searchTerms = getSearchTerms(query);
 
-  if (query.length < 2) {
+  if (searchTerms.length === 0 || query.trim().length < 2) {
     return Response.json({ users: [] });
   }
 
@@ -36,10 +38,12 @@ export async function GET(request: Request) {
   const users = await prisma.user.findMany({
     where: {
       id: { not: currentUserId },
-      OR: [
-        { username: { contains: query, mode: "insensitive" } },
-        { name: { contains: query, mode: "insensitive" } }
-      ]
+      AND: searchTerms.map((term) => ({
+        OR: [
+          { username: { contains: term, mode: "insensitive" } },
+          { name: { contains: term, mode: "insensitive" } }
+        ]
+      }))
     },
     select: {
       id: true,
@@ -47,8 +51,7 @@ export async function GET(request: Request) {
       username: true,
       avatarUrl: true
     },
-    orderBy: { username: "asc" },
-    take: 10
+    take: 24
   });
 
   const mapped = users.map((user) => {
@@ -72,5 +75,22 @@ export async function GET(request: Request) {
     };
   });
 
-  return Response.json({ users: mapped });
+  const requestStatusWeight: Record<(typeof mapped)[number]["requestStatus"], number> = {
+    friends: 18,
+    pending_received: 12,
+    pending_sent: 8,
+    none: 0
+  };
+
+  const rankedUsers = rankBySearch(
+    mapped,
+    query,
+    (user) => [
+      { value: user.username, weight: 4.5 },
+      { value: user.name, weight: 3.6 }
+    ],
+    (user) => requestStatusWeight[user.requestStatus]
+  ).slice(0, 12);
+
+  return Response.json({ users: rankedUsers });
 }

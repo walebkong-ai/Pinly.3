@@ -6,6 +6,7 @@ import { getMapStage, getTimeFilterStart, buildLayerUserIds, buildMapPayload } f
 import { prisma } from "@/lib/prisma";
 import { buildVisibleUserIds } from "@/lib/permissions";
 import { buildProfileTravelSummary } from "@/lib/profile-summary";
+import { getSearchTerms, rankBySearch } from "@/lib/search";
 import { buildWantToGoPlaceKey, type WantToGoLocation } from "@/lib/want-to-go";
 import { notificationInclude } from "@/lib/notifications";
 import type { CollectionChip, CollectionSummary, LayerMode, MapCategory, NotificationSummary, TimeFilter, WantToGoPlaceSummary } from "@/types/app";
@@ -184,6 +185,7 @@ export async function getMapData({
   const normalizedBounds = normalizeMapBounds(bounds);
   const queryBounds = getMapStage(zoom) === "world" ? FULL_WORLD_BOUNDS : normalizedBounds;
   const longitudeFilter = getLongitudeFilter(queryBounds);
+  const searchTerms = query ? getSearchTerms(query) : [];
   const whereClauses: Prisma.PostWhereInput[] = [
     {
       userId: { in: scopedUserIds }
@@ -212,16 +214,18 @@ export async function getMapData({
     });
   }
 
-  if (query) {
+  if (searchTerms.length > 0) {
     whereClauses.push({
-      OR: [
-        { placeName: { contains: query, mode: "insensitive" } },
-        { city: { contains: query, mode: "insensitive" } },
-        { country: { contains: query, mode: "insensitive" } },
-        { caption: { contains: query, mode: "insensitive" } },
-        { user: { name: { contains: query, mode: "insensitive" } } },
-        { user: { username: { contains: query, mode: "insensitive" } } }
-      ]
+      AND: searchTerms.map((term) => ({
+        OR: [
+          { placeName: { contains: term, mode: "insensitive" } },
+          { city: { contains: term, mode: "insensitive" } },
+          { country: { contains: term, mode: "insensitive" } },
+          { caption: { contains: term, mode: "insensitive" } },
+          { user: { name: { contains: term, mode: "insensitive" } } },
+          { user: { username: { contains: term, mode: "insensitive" } } }
+        ]
+      }))
     });
   }
 
@@ -234,7 +238,24 @@ export async function getMapData({
     take: 500
   });
 
-  const filteredPosts = filterPostsByCategories(normalizePostSummaries(posts), categories);
+  const rankedPosts =
+    searchTerms.length > 0
+      ? rankBySearch(
+          normalizePostSummaries(posts),
+          query ?? "",
+          (post) => [
+            { value: post.placeName, weight: 4.5 },
+            { value: post.city, weight: 4 },
+            { value: post.country, weight: 3.4 },
+            { value: post.user.username, weight: 3.1 },
+            { value: post.user.name, weight: 2.8 },
+            { value: post.caption, weight: 1.8 }
+          ],
+          (post) => new Date(post.visitedAt).getTime()
+        )
+      : normalizePostSummaries(posts);
+
+  const filteredPosts = filterPostsByCategories(rankedPosts, categories);
 
   return buildMapPayload({
     posts: filteredPosts,
@@ -258,22 +279,69 @@ export async function getCityData({
   pageSize?: number;
 }) {
   const visibleUserIds = await getVisibleUserIds(viewerId);
+  const cityTerms = getSearchTerms(city);
+  const countryTerms = country ? getSearchTerms(country) : [];
+  const searchClauses: Prisma.PostWhereInput[] = [
+    {
+      userId: { in: visibleUserIds }
+    }
+  ];
+
+  if (cityTerms.length > 0) {
+    searchClauses.push(
+      ...cityTerms.map((term): Prisma.PostWhereInput => ({
+        OR: [
+          { city: { contains: term, mode: "insensitive" } },
+          { country: { contains: term, mode: "insensitive" } }
+        ]
+      }))
+    );
+  }
+
+  if (countryTerms.length > 0) {
+    searchClauses.push(
+      ...countryTerms.map((term): Prisma.PostWhereInput => ({
+        country: { contains: term, mode: "insensitive" }
+      }))
+    );
+  }
 
   const posts = await prisma.post.findMany({
     where: {
-      userId: { in: visibleUserIds },
-      city: { equals: city, mode: "insensitive" },
-      ...(country ? { country: { equals: country, mode: "insensitive" } } : {})
+      AND: searchClauses
     },
     include: postSummaryInclude,
     orderBy: { visitedAt: "desc" },
-    skip: (page - 1) * pageSize,
-    take: pageSize
+    take: 200
   });
 
   const savedPosts = await attachSavedState(viewerId, posts);
+  const groupedByCity = new Map<string, typeof savedPosts>();
 
-  const center = savedPosts.reduce(
+  for (const post of savedPosts) {
+    const key = `${post.city.toLowerCase()}::${post.country.toLowerCase()}`;
+    const existing = groupedByCity.get(key);
+
+    if (existing) {
+      existing.push(post);
+    } else {
+      groupedByCity.set(key, [post]);
+    }
+  }
+
+  const rankedGroups = rankBySearch(
+    Array.from(groupedByCity.values()),
+    [city, country].filter(Boolean).join(" "),
+    (groupPosts) => [
+      { value: groupPosts[0]?.city, weight: 4.2 },
+      { value: groupPosts[0]?.country, weight: 3.4 }
+    ],
+    (groupPosts) => new Date(groupPosts[0]?.visitedAt ?? 0).getTime()
+  );
+  const activePosts = rankedGroups[0] ?? [];
+  const pagedPosts = activePosts.slice((page - 1) * pageSize, page * pageSize);
+
+  const center = pagedPosts.reduce(
     (acc, post, index) => ({
       latitude: acc.latitude + (post.latitude - acc.latitude) / (index + 1),
       longitude: acc.longitude + (post.longitude - acc.longitude) / (index + 1)
@@ -282,13 +350,16 @@ export async function getCityData({
   );
 
   return {
-    posts: savedPosts,
-    friendCount: new Set(savedPosts.filter((post) => post.userId !== viewerId).map((post) => post.userId)).size,
+    city: activePosts[0]?.city ?? city,
+    country: activePosts[0]?.country ?? country ?? "",
+    postCount: activePosts.length,
+    posts: pagedPosts,
+    friendCount: new Set(activePosts.filter((post) => post.userId !== viewerId).map((post) => post.userId)).size,
     center,
     visitors: Array.from(
-      new Map(savedPosts.map((post) => [post.user.id, post.user])).values()
+      new Map(activePosts.map((post) => [post.user.id, post.user])).values()
     ),
-    recentTrips: savedPosts.slice(0, 4)
+    recentTrips: activePosts.slice(0, 4)
   };
 }
 

@@ -33,10 +33,10 @@ export async function GET(request: Request) {
   });
 
   return Response.json({
-    city: parsed.data.city,
-    country: parsed.data.country ?? result.posts[0]?.country ?? "",
+    city: result.city,
+    country: result.country,
     friendCount: result.friendCount,
-    postCount: result.posts.length,
+    postCount: result.postCount,
     center: result.center,
     visitors: result.visitors,
     recentTrips: result.recentTrips,

@@ -37,6 +37,7 @@ const emptyMap: MapResponse = {
 export function MapPageClient() {
   const searchParams = useSearchParams();
   const [mapData, setMapData] = useState<MapResponse>(emptyMap);
+  const [loadingMap, setLoadingMap] = useState(true);
   const [groupOptions, setGroupOptions] = useState<MapGroupOption[]>([]);
   const [query, setQuery] = useState("");
   const [layer, setLayer] = useState<LayerMode>("both");
@@ -82,6 +83,7 @@ export function MapPageClient() {
     let ignore = false;
 
     async function loadMap() {
+      setLoadingMap(true);
       const params = new URLSearchParams({
         north: String(viewport.bounds.north),
         south: String(viewport.bounds.south),
@@ -116,6 +118,7 @@ export function MapPageClient() {
         }
 
         setMapData(emptyMap);
+        setLoadingMap(false);
         return;
       }
 
@@ -124,6 +127,7 @@ export function MapPageClient() {
       if (!response.ok) {
         if (!ignore) {
           setMapData(emptyMap);
+          setLoadingMap(false);
         }
         return;
       }
@@ -138,6 +142,7 @@ export function MapPageClient() {
         cityContext: data.cityContext ?? null,
         friendActivity: data.friendActivity ?? []
       });
+      setLoadingMap(false);
     }
 
     void loadMap();
@@ -164,6 +169,8 @@ export function MapPageClient() {
   const showWelcomeCard = mapData.stage === "world" || !mapData.cityContext;
   const forceWelcomeOpen = searchParams.get("welcome") === "1";
   const activeFilterCount = (time !== "all" ? 1 : 0) + selectedGroupIds.length + selectedCategories.length;
+  const activeSearchQuery = deferredQuery.trim();
+  const showEmptySearchState = activeSearchQuery.length > 0 && !loadingMap && mapData.markers.length === 0;
   const minimalCopy = useMemo(
     () =>
       mapData.stage === "world"
@@ -218,18 +225,23 @@ export function MapPageClient() {
               <p className="text-sm text-[var(--foreground)]/62">{minimalCopy}</p>
             </div>
 
-            {showControls && (
-              <div className="pointer-events-auto flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between animate-in fade-in slide-in-from-top-4 duration-500 ease-out">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <div className="relative min-w-[280px]">
-                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--foreground)]/40" />
-                    <Input
-                      value={query}
-                      onChange={(event) => setQuery(event.target.value)}
-                      placeholder="Search cities, places, people, captions"
-                      className="bg-[var(--surface-strong)] pl-11 shadow-sm"
-                    />
-                  </div>
+            <div className="pointer-events-auto flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between animate-in fade-in slide-in-from-top-4 duration-500 ease-out">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <div className="relative w-full sm:min-w-[280px] sm:max-w-xl">
+                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--foreground)]/40" />
+                  <Input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="Search places, cities, countries, people, captions"
+                    className="bg-[var(--surface-strong)] pl-11 pr-11 shadow-sm"
+                  />
+                  {activeSearchQuery ? (
+                    <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[var(--foreground)]/40">
+                      {loadingMap ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
+                    </span>
+                  ) : null}
+                </div>
+                {showControls ? (
                   <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
                     <button
                       type="button"
@@ -243,15 +255,23 @@ export function MapPageClient() {
                     <div className="mx-1 h-4 w-[1px] bg-[var(--foreground)]/10" />
                     <LayerToggle value={layer} onChange={setLayer} />
                   </div>
-                </div>
+                ) : null}
+              </div>
+              {showControls ? (
                 <Link href="/create" className="pointer-events-auto">
                   <Button className="gap-2">
                     <Plus className="h-4 w-4" />
                     Add memory
                   </Button>
                 </Link>
+              ) : null}
+            </div>
+            {showEmptySearchState ? (
+              <div className="pointer-events-auto inline-flex max-w-lg items-center gap-2 rounded-2xl border bg-[var(--surface-strong)] px-4 py-2 text-sm text-[var(--foreground)]/68 shadow-sm">
+                <Search className="h-4 w-4 text-[var(--map-accent)]" />
+                <span>No places, people, countries, or captions matched that search.</span>
               </div>
-            )}
+            ) : null}
           </div>
 
         </div>

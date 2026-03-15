@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Clock3, LoaderCircle, Search, Send, Share2, UserPlus, Users } from "lucide-react";
 import { Drawer } from "vaul";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { rankBySearch } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
 type GroupOption = {
@@ -240,23 +241,40 @@ export function ShareSheet({
     setSelectedGroups(next);
   }
 
-  const filteredGroups = groups.filter((group) =>
-    group.name.toLowerCase().includes(search.toLowerCase())
-  );
-  const visiblePeople =
-    search.trim().length >= 2
-      ? searchResults
-      : friends.filter((friend) => {
-          const query = search.trim().toLowerCase();
-          if (!query) {
-            return true;
-          }
+  const filteredGroups = useMemo(() => {
+    const trimmedSearch = search.trim();
 
-          return (
-            friend.name.toLowerCase().includes(query) ||
-            friend.username.toLowerCase().includes(query)
-          );
-        });
+    if (!trimmedSearch) {
+      return groups;
+    }
+
+    return rankBySearch(
+      groups,
+      trimmedSearch,
+      (group) => [{ value: group.name, weight: 4.4 }],
+      (group) => group.memberCount
+    );
+  }, [groups, search]);
+  const visiblePeople = useMemo(() => {
+    const trimmedSearch = search.trim();
+
+    if (trimmedSearch.length >= 2) {
+      return searchResults;
+    }
+
+    if (!trimmedSearch) {
+      return friends;
+    }
+
+    return rankBySearch(
+      friends,
+      trimmedSearch,
+      (friend) => [
+        { value: friend.name, weight: 3.8 },
+        { value: friend.username, weight: 4.4 }
+      ]
+    );
+  }, [friends, search, searchResults]);
 
   return (
     <Drawer.Root open={open} onOpenChange={setOpen}>

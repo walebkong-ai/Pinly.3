@@ -1,5 +1,9 @@
+import { auth } from "@/lib/auth";
 import { apiError, apiValidationError } from "@/lib/api";
+import { prisma } from "@/lib/prisma";
+import { getSearchTerms, rankBySearch } from "@/lib/search";
 import { placeSearchSchema } from "@/lib/validation";
+import { buildWantToGoPlaceKey } from "@/lib/want-to-go";
 import type { PlaceSearchResult } from "@/types/app";
 
 export const runtime = "nodejs";
@@ -43,7 +47,12 @@ function normalizePlace(result: NominatimResult): PlaceSearchResult {
   };
 }
 
+function placeDisplayName(place: Pick<PlaceSearchResult, "placeName" | "city" | "country">) {
+  return [place.placeName, place.city, place.country].filter(Boolean).join(", ");
+}
+
 export async function GET(request: Request) {
+  const session = await auth();
   const { searchParams } = new URL(request.url);
   const parsed = placeSearchSchema.safeParse({
     q: searchParams.get("q")
@@ -53,10 +62,46 @@ export async function GET(request: Request) {
     return apiValidationError(parsed.error);
   }
 
+  const searchTerms = getSearchTerms(parsed.data.q);
+  const wantToGoPlaces = session?.user?.id
+    ? await prisma.wantToGoPlace.findMany({
+        where: {
+          userId: session.user.id,
+          AND: searchTerms.map((term) => ({
+            OR: [
+              { placeName: { contains: term, mode: "insensitive" } },
+              { city: { contains: term, mode: "insensitive" } },
+              { country: { contains: term, mode: "insensitive" } }
+            ]
+          }))
+        },
+        select: {
+          id: true,
+          placeName: true,
+          city: true,
+          country: true,
+          latitude: true,
+          longitude: true,
+          updatedAt: true
+        },
+        take: 8,
+        orderBy: { updatedAt: "desc" }
+      })
+    : [];
+  const localPlaces: PlaceSearchResult[] = wantToGoPlaces.map((place) => ({
+    id: `want-to-go:${place.id}`,
+    placeName: place.placeName,
+    displayName: placeDisplayName(place),
+    city: place.city,
+    country: place.country,
+    latitude: place.latitude,
+    longitude: place.longitude
+  }));
+
   const nominatimUrl = new URL("https://nominatim.openstreetmap.org/search");
   nominatimUrl.searchParams.set("format", "jsonv2");
   nominatimUrl.searchParams.set("addressdetails", "1");
-  nominatimUrl.searchParams.set("limit", "8");
+  nominatimUrl.searchParams.set("limit", "12");
   nominatimUrl.searchParams.set("q", parsed.data.q);
 
   try {
@@ -77,12 +122,44 @@ export async function GET(request: Request) {
     }
 
     const results = (await response.json()) as NominatimResult[];
+    const dedupedPlaces = new Map<string, PlaceSearchResult>();
+
+    for (const place of [...localPlaces, ...results.map(normalizePlace)]) {
+      const key = buildWantToGoPlaceKey(place);
+      if (!dedupedPlaces.has(key)) {
+        dedupedPlaces.set(key, place);
+      }
+    }
 
     return Response.json({
-      places: results.map(normalizePlace)
+      places: rankBySearch(
+        Array.from(dedupedPlaces.values()),
+        parsed.data.q,
+        (place) => [
+          { value: place.placeName, weight: 4.6 },
+          { value: place.city, weight: 3.7 },
+          { value: place.country, weight: 3.2 },
+          { value: place.displayName, weight: 2.4 }
+        ]
+      ).slice(0, 10)
     });
   } catch (error) {
     const timedOut = error instanceof Error && error.name === "TimeoutError";
+
+    if (localPlaces.length > 0) {
+      return Response.json({
+        places: rankBySearch(
+          localPlaces,
+          parsed.data.q,
+          (place) => [
+            { value: place.placeName, weight: 4.6 },
+            { value: place.city, weight: 3.7 },
+            { value: place.country, weight: 3.2 },
+            { value: place.displayName, weight: 2.4 }
+          ]
+        ).slice(0, 10)
+      });
+    }
 
     return apiError(
       timedOut ? "Place search timed out. Try a shorter query or try again." : "Place search is temporarily unavailable.",

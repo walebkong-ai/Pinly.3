@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
-import { MessageCircle, Plus, Users } from "lucide-react";
+import { MessageCircle, Plus, Search, Users } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { StartDirectMessageSheet } from "@/components/messages/start-direct-message-sheet";
+import { Input } from "@/components/ui/input";
+import { rankBySearch } from "@/lib/search";
 
 type Group = {
   id: string;
@@ -42,6 +44,7 @@ type Group = {
 export function GroupsList() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -57,6 +60,26 @@ export function GroupsList() {
     }
     void load();
   }, []);
+
+  const visibleGroups = useMemo(() => {
+    const trimmedQuery = query.trim();
+
+    if (!trimmedQuery) {
+      return groups;
+    }
+
+    return rankBySearch(
+      groups,
+      trimmedQuery,
+      (group) => [
+        { value: group.isDirect ? group.directUser?.name : group.name, weight: 4.6 },
+        { value: group.directUser?.username, weight: 4.1 },
+        { value: group.name, weight: 3.8 },
+        { value: group.lastMessage?.content, weight: 1.6 }
+      ],
+      (group) => new Date(group.lastMessage?.createdAt ?? group.updatedAt).getTime()
+    );
+  }, [groups, query]);
 
   return (
     <div className="grid gap-4 xl:grid-cols-[1fr_1fr] animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
@@ -81,6 +104,16 @@ export function GroupsList() {
           </div>
         </div>
 
+        <div className="relative mt-5">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--foreground)]/40" />
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search conversations, people, or message text"
+            className="h-12 rounded-2xl bg-[var(--surface-soft)] pl-11"
+          />
+        </div>
+
         <div className="mt-6 space-y-3">
           {loading ? (
             <div className="text-sm text-[var(--foreground)]/60">Loading conversations...</div>
@@ -88,8 +121,12 @@ export function GroupsList() {
             <div className="rounded-3xl border border-dashed bg-[var(--surface-soft)] p-6 text-sm text-[var(--foreground)]/60">
               No conversations yet. Start a group here or open a friend chat from the Friends section.
             </div>
+          ) : visibleGroups.length === 0 ? (
+            <div className="rounded-3xl border border-dashed bg-[var(--surface-soft)] p-6 text-sm text-[var(--foreground)]/60">
+              No conversations matched that search.
+            </div>
           ) : (
-            groups.map((group) => (
+            visibleGroups.map((group) => (
               <Link
                 key={group.id}
                 href={`/messages/${group.id}`}
