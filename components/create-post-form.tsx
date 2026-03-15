@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Crosshair, LoaderCircle, MapPin, Search, Upload } from "lucide-react";
+import { Crosshair, LoaderCircle, MapPin, Search, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -278,7 +278,16 @@ export function CreatePostForm() {
                 className="max-h-72 w-full rounded-[2rem] object-cover"
               />
             )}
-            {/* Replace button — floated over the bottom-right of the preview */}
+            {/* Remove button — clears preview and returns to upload picker */}
+            <button
+              type="button"
+              onClick={() => setUploadState(null)}
+              className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition hover:bg-black/80"
+              aria-label="Remove media"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            {/* Replace button — opens file picker to swap media */}
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
@@ -380,7 +389,10 @@ export function CreatePostForm() {
           />
           <div className="grid gap-4 sm:grid-cols-2">
             <Input value={placeName} onChange={(event) => setPlaceName(event.target.value)} placeholder="Place name" required />
-            <Input value={visitedAt} onChange={(event) => setVisitedAt(event.target.value)} type="date" required />
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-[var(--foreground)]/65">Date visited</label>
+              <Input value={visitedAt} onChange={(event) => setVisitedAt(event.target.value)} type="date" required />
+            </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Input value={city} onChange={(event) => setCity(event.target.value)} placeholder="City" required />
