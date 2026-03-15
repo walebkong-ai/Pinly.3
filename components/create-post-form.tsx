@@ -43,6 +43,16 @@ export function CreatePostForm() {
   const [placeResults, setPlaceResults] = useState<PlaceSearchResult[]>([]);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const locationAbortRef = useRef<AbortController | null>(null);
+  const ignoreNextSearchRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (locationAbortRef.current) {
+        locationAbortRef.current.abort();
+      }
+    };
+  }, []);
 
   // Debounced place search — 300ms delay, cancels in-flight requests
   const searchPlaces = useCallback(async (q: string, signal: AbortSignal) => {
@@ -82,6 +92,13 @@ export function CreatePostForm() {
     }
 
     if (locationQuery.trim().length < 2) {
+      setPlaceResults([]);
+      setSearchingPlaces(false);
+      return;
+    }
+
+    if (ignoreNextSearchRef.current) {
+      ignoreNextSearchRef.current = false;
       setPlaceResults([]);
       setSearchingPlaces(false);
       return;
@@ -132,6 +149,7 @@ export function CreatePostForm() {
     setCountry(place.country);
     setLatitude(place.latitude);
     setLongitude(place.longitude);
+    ignoreNextSearchRef.current = true;
     setLocationQuery(place.displayName);
     setPlaceResults([]);
   }
@@ -142,44 +160,60 @@ export function CreatePostForm() {
       return;
     }
 
+    if (locationAbortRef.current) {
+      locationAbortRef.current.abort();
+    }
+    const controller = new AbortController();
+    locationAbortRef.current = controller;
+
     setGettingLocation(true);
     navigator.geolocation.getCurrentPosition(
       async (position) => {
+        if (controller.signal.aborted) return;
+        
         const { latitude, longitude } = position.coords;
         setLatitude(latitude);
         setLongitude(longitude);
         
         try {
-          const res = await fetch(`/api/places/reverse?lat=${latitude}&lon=${longitude}`);
-          if (res.ok) {
+          const res = await fetch(`/api/places/reverse?lat=${latitude}&lon=${longitude}`, {
+            signal: controller.signal
+          });
+          if (res.ok && !controller.signal.aborted) {
             const data = await res.json();
-            if (data.place) {
+            if (data.place && !controller.signal.aborted) {
               setPlaceName(data.place.placeName);
               setCity(data.place.city);
               setCountry(data.place.country);
+              ignoreNextSearchRef.current = true;
               setLocationQuery(data.place.placeName);
             }
           }
         } catch (e) {
+          if (e instanceof DOMException && e.name === "AbortError") return;
           // Fall back gracefully if reverse geocoding fails
         }
         
-        toast.success("Location acquired");
-        setGettingLocation(false);
+        if (!controller.signal.aborted) {
+          toast.success("Location acquired");
+          setGettingLocation(false);
+        }
       },
       (error) => {
+        if (controller.signal.aborted) return;
+        
         setGettingLocation(false);
         if (error.code === error.PERMISSION_DENIED) {
           toast.error("Location permission was denied");
         } else if (error.code === error.POSITION_UNAVAILABLE) {
           toast.error("Could not get your current location");
         } else if (error.code === error.TIMEOUT) {
-          toast.error("Location request timed out");
+          toast.error("Location request timed out. Please try again.");
         } else {
           toast.error("An unknown error occurred getting location");
         }
       },
-      { enableHighAccuracy: true, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   }
 
