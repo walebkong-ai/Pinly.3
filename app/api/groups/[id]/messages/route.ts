@@ -67,6 +67,7 @@ export async function GET(request: Request, props: { params: Promise<{ id: strin
         ...msg,
         sharedPost: post ? {
           id: post.id,
+          caption: post.caption,
           placeName: post.placeName,
           city: post.city,
           country: post.country,

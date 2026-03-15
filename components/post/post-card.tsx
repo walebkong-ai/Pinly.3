@@ -22,6 +22,7 @@ export function PostCard({
   openOnBodyTap?: boolean;
 }) {
   const commentsEnabled = post.user.settings?.commentsEnabled ?? true;
+  const primaryCaption = post.caption.trim() || `Memory from ${post.placeName}`;
   const body = (
     <>
       <div className={compact ? "aspect-[4/3]" : "aspect-[4/3]"}>
@@ -36,23 +37,31 @@ export function PostCard({
         <div className="flex items-center gap-3">
           <Avatar name={post.user.name} src={post.user.avatarUrl} className="h-9 w-9 shrink-0" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">{post.user.name}</p>
-            <p className="truncate text-xs text-[var(--foreground)]/55">@{post.user.username}</p>
+            <p className="truncate text-sm font-medium text-[var(--foreground)]/84">{post.user.name}</p>
+            <p className="truncate text-[11px] text-[var(--foreground)]/50">@{post.user.username}</p>
           </div>
         </div>
-        <div>
-          <div className="flex items-start gap-2 text-sm text-[var(--foreground)]/68 min-w-0">
-            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[var(--map-accent)]" />
+        <div className="space-y-2.5">
+          <p
+            className={
+              compact
+                ? "line-clamp-3 font-[var(--font-serif)] text-base leading-snug text-[var(--foreground)]"
+                : "line-clamp-3 font-[var(--font-serif)] text-[1.08rem] leading-snug text-[var(--foreground)]"
+            }
+          >
+            {primaryCaption}
+          </p>
+          <div className="flex items-start gap-2 text-xs text-[var(--foreground)]/58 min-w-0">
+            <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--map-accent)]" />
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-[var(--foreground)] truncate">{post.placeName}</p>
+              <p className="truncate font-medium text-[var(--foreground)]/66">{post.placeName}</p>
               <p className="truncate">
                 {post.city}, {post.country}
               </p>
             </div>
           </div>
-          <p className="mt-2 line-clamp-2 text-sm leading-6 text-[var(--foreground)]/72">{post.caption}</p>
           <VisitedWithList friends={post.visitedWith} compact />
-          <p className="mt-2 text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--foreground)]/42">
             Visited {formatVisitDate(post.visitedAt)}
           </p>
         </div>

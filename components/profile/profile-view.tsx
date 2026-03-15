@@ -197,13 +197,13 @@ export function ProfileView({
                     />
                   </div>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-[var(--foreground)]">
+                    <p className="truncate font-[var(--font-serif)] text-[0.98rem] leading-snug text-[var(--foreground)]">
                       {memory.caption.trim() || `Memory from ${memory.placeName}`}
                     </p>
-                    <p className="mt-1 truncate text-xs text-[var(--foreground)]/58">
+                    <p className="mt-1 truncate text-xs text-[var(--foreground)]/56">
                       {memory.placeName}, {memory.city}, {memory.country}
                     </p>
-                    <p className="mt-1 text-xs text-[var(--foreground)]/45">
+                    <p className="mt-1 text-[11px] text-[var(--foreground)]/43">
                       {summaryDateFormatter.format(new Date(memory.visitedAt))}
                     </p>
                   </div>

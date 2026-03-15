@@ -45,6 +45,7 @@ type Message = {
   };
   sharedPost?: {
     id: string;
+    caption: string;
     placeName: string;
     city: string;
     country: string;
@@ -283,7 +284,7 @@ export function GroupDetail({ groupId, viewerId }: { groupId: string; viewerId: 
                             {msg.sharedPost.thumbnailUrl ? (
                               <img 
                                 src={msg.sharedPost.thumbnailUrl} 
-                                alt={msg.sharedPost.placeName || "Shared post"}
+                                alt={msg.sharedPost.caption?.trim() || msg.sharedPost.placeName || "Shared post"}
                                 className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                               />
                             ) : (
@@ -293,12 +294,16 @@ export function GroupDetail({ groupId, viewerId }: { groupId: string; viewerId: 
                             )}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                             <div className="absolute bottom-3 left-3 right-3 text-white">
-                              <p className="font-semibold text-sm line-clamp-1">{msg.sharedPost.placeName}</p>
-                              <p className="text-xs text-white/80 line-clamp-1">{msg.sharedPost.city}, {msg.sharedPost.country}</p>
+                              <p className="line-clamp-2 font-[var(--font-serif)] text-base leading-tight drop-shadow-sm">
+                                {msg.sharedPost.caption?.trim() || `Memory from ${msg.sharedPost.placeName}`}
+                              </p>
+                              <p className="mt-1 text-xs text-white/80 line-clamp-1">
+                                {msg.sharedPost.placeName}, {msg.sharedPost.city}, {msg.sharedPost.country}
+                              </p>
                             </div>
                           </div>
                           <div className="p-3 bg-white text-center text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent)]/5 transition-colors">
-                            Open Post
+                            Open memory
                           </div>
                         </Link>
                       ) : (

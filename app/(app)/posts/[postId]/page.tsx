@@ -59,6 +59,7 @@ export default async function PostDetailPage({ params }: Props) {
   }
 
   const commentsEnabled = post.user.settings?.commentsEnabled ?? true;
+  const primaryCaption = post.caption.trim() || `Memory from ${post.placeName}`;
 
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
@@ -91,10 +92,16 @@ export default async function PostDetailPage({ params }: Props) {
               )}
             </div>
 
+            <div className="space-y-2">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--foreground)]/42">Memory</p>
+              <h1 className="font-[var(--font-serif)] text-[2rem] leading-[1.12] text-[var(--foreground)] md:text-[2.7rem] md:leading-[1.08]">
+                {primaryCaption}
+              </h1>
+            </div>
+
             {/* Place info */}
             <div>
-              <h1 className="font-[var(--font-serif)] text-2xl md:text-3xl">{post.placeName}</h1>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <div className="grid gap-2 sm:grid-cols-2">
                 <div className="rounded-[1.4rem] border border-[rgba(56,182,201,0.2)] bg-[rgba(56,182,201,0.1)] px-3.5 py-3">
                   <div className="flex items-start gap-3">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[var(--map-accent)] text-white shadow-sm">
@@ -102,7 +109,8 @@ export default async function PostDetailPage({ params }: Props) {
                     </div>
                     <div className="min-w-0">
                       <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--foreground)]/45">Location</p>
-                      <p className="mt-1 text-sm font-medium text-[var(--foreground)]">{post.city}, {post.country}</p>
+                      <p className="mt-1 truncate text-sm font-medium text-[var(--foreground)]">{post.placeName}</p>
+                      <p className="mt-1 text-xs text-[var(--foreground)]/62">{post.city}, {post.country}</p>
                     </div>
                   </div>
                 </div>
@@ -123,9 +131,6 @@ export default async function PostDetailPage({ params }: Props) {
             <VisitedWithList friends={post.visitedWith} />
 
             {isOwnPost ? <ManagePostCollectionsCard postId={post.id} initialCollections={postCollections} /> : null}
-
-            {/* Caption */}
-            <p className="text-sm leading-7 text-[var(--foreground)]/76 md:text-base md:leading-8">{post.caption}</p>
 
             {/* Like + Comment actions */}
             <div className="border-t pt-4">

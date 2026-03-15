@@ -22,7 +22,7 @@ export function BottomSheet({
   const primaryCopy = caption?.length
     ? caption
     : post
-      ? `Memory from ${post.city}, ${post.country}`
+      ? `Memory from ${post.placeName}`
       : "";
 
   function consumeInteraction(event: SyntheticEvent) {
@@ -66,8 +66,8 @@ export function BottomSheet({
                 <div className="flex items-center gap-3">
                   <Avatar name={post.user.name} src={post.user.avatarUrl} />
                   <div>
-                    <p className="font-medium">{post.user.name}</p>
-                    <p className="text-sm text-[var(--foreground)]/58">@{post.user.username}</p>
+                    <p className="text-sm font-medium text-[var(--foreground)]/84">{post.user.name}</p>
+                    <p className="text-xs text-[var(--foreground)]/54">@{post.user.username}</p>
                   </div>
                 </div>
                 <Button
@@ -82,11 +82,11 @@ export function BottomSheet({
               </div>
 
               <div className="mt-5 space-y-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Expanded memory</p>
-                <p className="font-[var(--font-serif)] text-[1.7rem] leading-tight text-[var(--foreground)] md:text-[2.25rem] md:leading-[1.15]">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--foreground)]/42">Expanded memory</p>
+                <p className="font-[var(--font-serif)] text-[1.8rem] leading-[1.14] text-[var(--foreground)] md:text-[2.35rem] md:leading-[1.1]">
                   {primaryCopy}
                 </p>
-                <div className="flex flex-wrap gap-2 text-sm text-[var(--foreground)]/68">
+                <div className="flex flex-wrap gap-2 text-xs text-[var(--foreground)]/62">
                   <span className="inline-flex items-center gap-2 rounded-full border bg-[var(--surface-soft)] px-3 py-1.5">
                     <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--map-accent)]" />
                     <span className="min-w-0 truncate">
