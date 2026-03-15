@@ -6,7 +6,6 @@ import { MediaView } from "@/components/post/media-view";
 import { formatVisitDate } from "@/lib/utils";
 import { LikeButton } from "@/components/post/like-button";
 import { CommentSection } from "@/components/post/comment-section";
-import { DirectionsSheet } from "@/components/post/directions-sheet";
 import { ShareSheet } from "@/components/post/share-sheet";
 
 export function PostCard({
@@ -58,7 +57,6 @@ export function PostCard({
         <div className="flex flex-wrap items-center gap-1 border-t pt-2">
           <LikeButton postId={post.id} showCount={showLikeCounts} />
           <CommentSection postId={post.id} showCount={showCommentCounts} />
-          <DirectionsSheet post={post} />
           <ShareSheet postId={post.id} />
           <Link href={`/posts/${post.id}`} className="ml-auto text-xs font-medium text-[var(--accent)]">
             Open

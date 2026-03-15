@@ -6,7 +6,6 @@ import type { PostSummary } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { MediaView } from "@/components/post/media-view";
-import { DirectionsSheet } from "@/components/post/directions-sheet";
 import { formatVisitDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -57,7 +56,6 @@ export function BottomSheet({
                 <Link href={`/posts/${post.id}`} className="w-full sm:w-auto">
                   <Button className="w-full">Open full post</Button>
                 </Link>
-                <DirectionsSheet post={post} triggerStyle="secondary" className="w-full sm:w-auto" />
                 <Button variant="secondary" className="w-full sm:w-auto" onClick={onClose}>
                   Close
                 </Button>
