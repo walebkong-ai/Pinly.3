@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { Marker, Popup, MapRef } from "react-map-gl/maplibre";
-import type { MapMarker, MapVisualMode, PostSummary } from "@/types/app";
+import type { MapMarker, MapVisualMode, PlaceClusterMarker, PostSummary } from "@/types/app";
 import { MarkerPreview } from "@/components/map/marker-preview";
 import {
   getMarkerAnchor,
@@ -24,10 +24,12 @@ const defaultCenter = {
 
 export function MapCanvas({
   selectedPostId,
+  selectedLocationMarkerId,
   markers,
   mapMode,
   mapStyle,
   onExpandPost,
+  onOpenLocationCluster,
   onMapError,
   onViewportChange
 }: {
@@ -35,7 +37,9 @@ export function MapCanvas({
   mapMode: MapVisualMode;
   mapStyle: MapStyleValue;
   selectedPostId: string | null;
+  selectedLocationMarkerId: string | null;
   onExpandPost: (post: PostSummary) => void;
+  onOpenLocationCluster: (marker: PlaceClusterMarker) => void;
   onMapError: (error: Error) => void;
   onViewportChange: (viewport: {
     bounds: { north: number; south: number; east: number; west: number };
@@ -70,10 +74,10 @@ export function MapCanvas({
   }, [reportViewport]);
 
   useEffect(() => {
-    if (selectedPostId) {
+    if (selectedPostId || selectedLocationMarkerId) {
       setPopupInfo(null);
     }
-  }, [selectedPostId]);
+  }, [selectedLocationMarkerId, selectedPostId]);
 
   useEffect(() => {
     if (!popupInfo) {
@@ -91,7 +95,11 @@ export function MapCanvas({
     reportViewport();
   }, [reportViewport]);
 
-  const selectedMarkerId = popupInfo?.id ?? markers.find((marker) => "post" in marker && marker.post.id === selectedPostId)?.id ?? null;
+  const selectedMarkerId =
+    selectedLocationMarkerId ??
+    popupInfo?.id ??
+    markers.find((marker) => "post" in marker && marker.post.id === selectedPostId)?.id ??
+    null;
   const orderedMarkers = useMemo(
     () => sortMarkersForRender(markers, selectedMarkerId),
     [markers, selectedMarkerId]
@@ -139,7 +147,10 @@ export function MapCanvas({
         projection="globe"
       >
         {orderedMarkers.map((marker) => {
-          const isSelected = marker.id === popupInfo?.id || ("post" in marker && marker.post.id === selectedPostId);
+          const isSelected =
+            marker.id === selectedLocationMarkerId ||
+            marker.id === popupInfo?.id ||
+            ("post" in marker && marker.post.id === selectedPostId);
 
           return (
             <Marker
@@ -153,12 +164,17 @@ export function MapCanvas({
               onClick={(e) => {
                 e.originalEvent.stopPropagation();
 
+                if (marker.type === "placeCluster") {
+                  setPopupInfo(null);
+                  onOpenLocationCluster(marker);
+                  return;
+                }
+
                 if (mapRef.current) {
                   const currentZoom = mapRef.current.getZoom();
                   let targetZoom = currentZoom;
 
                   if (marker.type === "cityCluster") targetZoom = Math.max(currentZoom + 2, 6);
-                  else if (marker.type === "placeCluster") targetZoom = Math.max(currentZoom + 2, 12);
                   else targetZoom = Math.max(currentZoom + 1, 14);
 
                   mapRef.current.easeTo({

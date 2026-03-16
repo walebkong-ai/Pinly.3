@@ -177,6 +177,7 @@ export type PlaceClusterMarker = {
   postCount: number;
   visitors: UserSummary[];
   previewPost: MarkerPreviewPost;
+  posts: PostSummary[];
 };
 
 export type PinMarker = {

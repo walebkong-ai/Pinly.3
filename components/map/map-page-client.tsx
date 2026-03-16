@@ -15,11 +15,12 @@ import { FilterSidebar } from "@/components/map/filter-sidebar";
 import { FriendActivityPanel } from "@/components/map/friend-activity-panel";
 import { LayerToggle } from "@/components/map/layer-toggle";
 import { MapModeToggle } from "@/components/map/map-mode-toggle";
+import { SameLocationSheet } from "@/components/map/same-location-sheet";
 import { WelcomeCard } from "@/components/map/welcome-card";
 import { buildLightweightMapGroups } from "@/lib/map-groups";
 import { MAP_MODE_STORAGE_KEY, getMapStyle, isSatelliteModeAvailable, parseStoredMapMode } from "@/lib/map-style";
 import { canonicalizeViewportForDataQuery, createViewportFingerprint, FULL_WORLD_BOUNDS, type MapViewport } from "@/lib/map-viewport";
-import type { LayerMode, MapCategory, MapGroupOption, MapResponse, MapVisualMode, PostSummary, TimeFilter } from "@/types/app";
+import type { LayerMode, MapCategory, MapGroupOption, MapResponse, MapVisualMode, PlaceClusterMarker, PostSummary, TimeFilter } from "@/types/app";
 
 const DynamicMapCanvas = dynamic(() => import("@/components/map/map-canvas").then((mod) => mod.MapCanvas), {
   ssr: false,
@@ -54,6 +55,7 @@ export function MapPageClient() {
   const [selectedCategories, setSelectedCategories] = useState<MapCategory[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<PostSummary | null>(null);
+  const [selectedLocationCluster, setSelectedLocationCluster] = useState<PlaceClusterMarker | null>(null);
   const [viewport, setViewport] = useState<MapViewport>(() =>
     canonicalizeViewportForDataQuery({
       zoom: 2,
@@ -211,6 +213,20 @@ export function MapPageClient() {
     }
   }, [mapData, selectedPost]);
 
+  useEffect(() => {
+    if (!selectedLocationCluster) {
+      return;
+    }
+
+    const stillVisible = mapData.markers.some(
+      (marker) => marker.type === "placeCluster" && marker.id === selectedLocationCluster.id
+    );
+
+    if (!stillVisible) {
+      setSelectedLocationCluster(null);
+    }
+  }, [mapData, selectedLocationCluster]);
+
   const showControls = mapData.stage !== "world";
   const showWelcomeCard = mapData.stage === "world" || !mapData.cityContext;
   const forceWelcomeOpen = searchParams.get("welcome") === "1";
@@ -289,6 +305,16 @@ export function MapPageClient() {
     [activeMapMode]
   );
 
+  const handleOpenLocationCluster = useCallback((marker: PlaceClusterMarker) => {
+    setSelectedPost(null);
+    setSelectedLocationCluster(marker);
+  }, []);
+
+  const handleSelectLocationPost = useCallback((post: PostSummary) => {
+    setSelectedLocationCluster(null);
+    setSelectedPost(post);
+  }, []);
+
   return (
     <section className="relative min-h-[calc(100vh-7.5rem)] overflow-hidden rounded-[2.2rem] border bg-[var(--surface-soft)] shadow-2xl shadow-black/5">
       <DynamicMapCanvas
@@ -296,7 +322,9 @@ export function MapPageClient() {
         mapMode={activeMapMode}
         mapStyle={mapStyle}
         selectedPostId={selectedPost?.id ?? null}
+        selectedLocationMarkerId={selectedLocationCluster?.id ?? null}
         onExpandPost={setSelectedPost}
+        onOpenLocationCluster={handleOpenLocationCluster}
         onMapError={handleMapError}
         onViewportChange={onViewportChange}
       />
@@ -407,6 +435,11 @@ export function MapPageClient() {
         />
       </div>
 
+      <SameLocationSheet
+        marker={selectedLocationCluster}
+        onClose={() => setSelectedLocationCluster(null)}
+        onSelectPost={handleSelectLocationPost}
+      />
       <BottomSheet post={selectedPost} onClose={() => setSelectedPost(null)} />
     </section>
   );

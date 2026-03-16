@@ -71,6 +71,13 @@ function makeCityClusterMarker(postCount = 14): MapMarker {
 }
 
 function makePlaceClusterMarker(postCount = 7): MapMarker {
+  const posts = Array.from({ length: postCount }, (_, index) =>
+    makePost({
+      id: `place-post-${index + 1}`,
+      visitedAt: new Date(`2025-01-${String(index + 1).padStart(2, "0")}T12:00:00.000Z`)
+    })
+  );
+
   return {
     type: "placeCluster",
     id: "place-cafe-example",
@@ -92,7 +99,8 @@ function makePlaceClusterMarker(postCount = 7): MapMarker {
       country: "France",
       visitedAt: new Date("2025-01-10T12:00:00.000Z"),
       user: makePost().user
-    }
+    },
+    posts
   };
 }
 

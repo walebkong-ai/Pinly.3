@@ -215,7 +215,8 @@ function createPlaceCluster(group: PlaceGroup): MapMarker {
     country: group.country,
     postCount: group.posts.length,
     visitors: uniqueUsers(group.posts).slice(0, 4),
-    previewPost: toPreviewPost(group.posts[0])
+    previewPost: toPreviewPost(group.posts[0]),
+    posts: group.posts
   };
 }
 
@@ -271,16 +272,12 @@ function buildPlaceAndPinMarkers(posts: PostSummary[]) {
   return groupPlaces(posts).flatMap((group) => (group.posts.length > 1 ? [createPlaceCluster(group)] : [createPin(group.posts[0])]));
 }
 
-function buildBubbleMarkers(posts: PostSummary[], zoom: number) {
+function buildBubbleMarkers(posts: PostSummary[]) {
   const placeGroups = groupPlaces(posts);
 
-  if (zoom < 13) {
-    return placeGroups.flatMap((group) =>
-      group.posts.length > 1 ? [createPlaceCluster(group)] : [createProfileBubble(group.posts[0])]
-    );
-  }
-
-  return sortPostsDescending(posts).map(createProfileBubble);
+  return placeGroups.flatMap((group) =>
+    group.posts.length > 1 ? [createPlaceCluster(group)] : [createProfileBubble(group.posts[0])]
+  );
 }
 
 function buildFriendActivity(posts: PostSummary[], viewerId: string): FriendActivityItem[] {
@@ -331,7 +328,7 @@ export function buildMapPayload({
   } else if (stage === "pin") {
     markers = buildPlaceAndPinMarkers(sortedPosts);
   } else {
-    markers = buildBubbleMarkers(sortedPosts, zoom);
+    markers = buildBubbleMarkers(sortedPosts);
   }
 
   return {

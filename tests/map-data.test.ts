@@ -99,7 +99,7 @@ describe("map payload aggregation", () => {
     expect(result.markers.some((marker) => marker.type === "placeCluster" || marker.type === "pin")).toBe(true);
   });
 
-  test("same-place posts stay clustered until highest zoom", () => {
+  test("same-location multi-memory markers stay grouped even at the highest zoom", () => {
     const bubbleStage = buildMapPayload({
       posts,
       zoom: 12,
@@ -116,7 +116,14 @@ describe("map payload aggregation", () => {
       viewerId: "viewer"
     });
 
-    expect(splitStage.markers.every((marker) => marker.type === "profileBubble")).toBe(true);
-    expect(splitStage.markers).toHaveLength(posts.length);
+    const sameLocationMarker = splitStage.markers.find((marker) => marker.type === "placeCluster");
+
+    expect(sameLocationMarker?.type).toBe("placeCluster");
+    if (!sameLocationMarker || sameLocationMarker.type !== "placeCluster") {
+      throw new Error("Expected same-location marker to stay grouped.");
+    }
+
+    expect(sameLocationMarker.posts).toHaveLength(2);
+    expect(splitStage.markers.filter((marker) => marker.type === "profileBubble")).toHaveLength(2);
   });
 });
