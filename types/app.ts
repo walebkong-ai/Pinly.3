@@ -38,6 +38,14 @@ export type CollectionRoutePoint = {
   visitedAt: string | Date;
 };
 
+export type MapCollectionFilter = {
+  collectionId: string;
+  name: string;
+  color: string;
+  postIds: Set<string>;
+  routePoints: CollectionRoutePoint[];
+};
+
 export type WantToGoPlaceSummary = {
   id: string;
   placeName: string;

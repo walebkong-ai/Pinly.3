@@ -1,8 +1,8 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Map, { Marker, Popup, MapRef } from "react-map-gl/maplibre";
-import type { MapMarker, MapVisualMode, PlaceClusterMarker, PostSummary } from "@/types/app";
+import Map, { Layer, Marker, Popup, Source, type MapRef } from "react-map-gl/maplibre";
+import type { MapCollectionFilter, MapMarker, MapVisualMode, PlaceClusterMarker, PostSummary } from "@/types/app";
 import { MarkerPreview } from "@/components/map/marker-preview";
 import {
   getMarkerAnchor,
@@ -23,18 +23,43 @@ const defaultCenter = {
   bearing: 0
 };
 
+// Tiny golden-angle spiral jitter to prevent zero-length route segments
+const JITTER = 0.000035;
+function jitterRoutePoints(points: { latitude: number; longitude: number }[]) {
+  const seen: Record<string, number> = {};
+  return points.map((pt) => {
+    const key = `${pt.latitude.toFixed(6)},${pt.longitude.toFixed(6)}`;
+    const count = seen[key] ?? 0;
+    seen[key] = count + 1;
+    if (count === 0) return pt;
+    const angle = (count * 137.5 * Math.PI) / 180;
+    return {
+      latitude: pt.latitude + Math.sin(angle) * JITTER * count,
+      longitude: pt.longitude + Math.cos(angle) * JITTER * count
+    };
+  });
+}
+
 const MapMarkerNode = memo(
   function MapMarkerNode({
     marker,
     isSelected,
     mapMode,
+    colorOverride,
+    dimmed,
     onSelect
   }: {
     marker: MapMarker;
     isSelected: boolean;
     mapMode: MapVisualMode;
+    colorOverride?: string | null;
+    dimmed?: boolean;
     onSelect: (marker: MapMarker, event: { originalEvent: MouseEvent }) => void;
   }) {
+    const html = useMemo(() => {
+      return getMarkerHtml(marker, isSelected, mapMode, colorOverride ?? null);
+    }, [marker, isSelected, mapMode, colorOverride]);
+
     return (
       <Marker
         longitude={marker.longitude}
@@ -42,12 +67,12 @@ const MapMarkerNode = memo(
         anchor={getMarkerAnchor(marker)}
         opacityWhenCovered="0"
         subpixelPositioning
-        style={{ zIndex: getMarkerRenderPriority(marker, isSelected) }}
+        style={{ zIndex: getMarkerRenderPriority(marker, isSelected), opacity: dimmed ? 0.32 : 1 }}
         onClick={(event) => onSelect(marker, event)}
       >
         <div
-          dangerouslySetInnerHTML={{ __html: getMarkerHtml(marker, isSelected, mapMode) }}
-          className="cursor-pointer leading-none"
+          dangerouslySetInnerHTML={{ __html: html }}
+          className="cursor-pointer leading-none transition-opacity"
         />
       </Marker>
     );
@@ -55,8 +80,21 @@ const MapMarkerNode = memo(
   (prevProps, nextProps) =>
     prevProps.marker === nextProps.marker &&
     prevProps.isSelected === nextProps.isSelected &&
-    prevProps.mapMode === nextProps.mapMode
+    prevProps.mapMode === nextProps.mapMode &&
+    prevProps.colorOverride === nextProps.colorOverride &&
+    prevProps.dimmed === nextProps.dimmed
 );
+
+/** Extract postIds from a marker to check collection membership */
+function getMarkerPostIds(marker: MapMarker): string[] {
+  if (marker.type === "pin" || marker.type === "profileBubble") {
+    return [marker.post.id];
+  }
+  if (marker.type === "placeCluster") {
+    return marker.posts.map((p) => p.id);
+  }
+  return [];
+}
 
 export function MapCanvas({
   expandedPostId,
@@ -66,6 +104,7 @@ export function MapCanvas({
   markers,
   mapMode,
   mapStyle,
+  collectionFilter,
   onExpandPost,
   onFocusedCoordinatesApplied,
   onOpenLocationCluster,
@@ -85,6 +124,7 @@ export function MapCanvas({
     bearing?: number;
   };
   selectedLocationMarkerId: string | null;
+  collectionFilter: MapCollectionFilter | null;
   onExpandPost: (post: PostSummary) => void;
   onFocusedCoordinatesApplied?: (focusKey: string) => void;
   onOpenLocationCluster: (marker: PlaceClusterMarker) => void;
@@ -238,6 +278,36 @@ export function MapCanvas({
     [onOpenLocationCluster]
   );
 
+  // Build route geojson and jitter guard
+  const routeGeojson = useMemo(() => {
+    if (!collectionFilter || collectionFilter.routePoints.length < 2) return null;
+    const jittered = jitterRoutePoints(collectionFilter.routePoints);
+    return {
+      type: "FeatureCollection" as const,
+      features: [
+        {
+          type: "Feature" as const,
+          geometry: {
+            type: "LineString" as const,
+            coordinates: jittered.map((p) => [p.longitude, p.latitude])
+          },
+          properties: {}
+        }
+      ]
+    };
+  }, [collectionFilter]);
+
+  // Determine per-marker color override and dim state when collection filter is active
+  function getMarkerCollectionState(marker: MapMarker): { colorOverride: string | null; dimmed: boolean } {
+    if (!collectionFilter) return { colorOverride: null, dimmed: false };
+    const postIds = getMarkerPostIds(marker);
+    const isInCollection = postIds.some((id) => collectionFilter.postIds.has(id));
+    return {
+      colorOverride: isInCollection ? collectionFilter.color : null,
+      dimmed: !isInCollection
+    };
+  }
+
   return (
     <div
       className={cn(
@@ -256,7 +326,6 @@ export function MapCanvas({
         }}
         onMoveEnd={handleMoveEnd}
         onClick={(e) => {
-          // Explicitly prevent bubbling to ensure blank map taps never trigger undocumented layout/global hooks
           e.originalEvent.stopPropagation();
           setPopupInfo(null);
         }}
@@ -266,24 +335,57 @@ export function MapCanvas({
         maxPitch={85}
         projection="globe"
       >
-        {unselectedMarkers.map((marker) => (
-          <MapMarkerNode
-            key={marker.id}
-            marker={marker}
-            isSelected={false}
-            mapMode={mapMode}
-            onSelect={handleMarkerSelect}
-          />
-        ))}
-        {selectedMarker ? (
-          <MapMarkerNode
-            key={selectedMarker.id}
-            marker={selectedMarker}
-            isSelected
-            mapMode={mapMode}
-            onSelect={handleMarkerSelect}
-          />
-        ) : null}
+        {/* Collection route line */}
+        {routeGeojson && collectionFilter && (
+          <Source id="collection-route" type="geojson" data={routeGeojson}>
+            <Layer
+              id="collection-route-shadow"
+              type="line"
+              paint={{ "line-color": "#000000", "line-width": 6, "line-opacity": 0.07, "line-blur": 4 }}
+              layout={{ "line-cap": "round", "line-join": "round" }}
+            />
+            <Layer
+              id="collection-route-line"
+              type="line"
+              paint={{
+                "line-color": collectionFilter.color,
+                "line-width": 2.5,
+                "line-opacity": 0.8,
+                "line-dasharray": [2, 2.5]
+              }}
+              layout={{ "line-cap": "round", "line-join": "round" }}
+            />
+          </Source>
+        )}
+
+        {unselectedMarkers.map((marker) => {
+          const { colorOverride, dimmed } = getMarkerCollectionState(marker);
+          return (
+            <MapMarkerNode
+              key={marker.id}
+              marker={marker}
+              isSelected={false}
+              mapMode={mapMode}
+              colorOverride={colorOverride}
+              dimmed={dimmed}
+              onSelect={handleMarkerSelect}
+            />
+          );
+        })}
+        {selectedMarker ? (() => {
+          const { colorOverride } = getMarkerCollectionState(selectedMarker);
+          return (
+            <MapMarkerNode
+              key={selectedMarker.id}
+              marker={selectedMarker}
+              isSelected
+              mapMode={mapMode}
+              colorOverride={colorOverride}
+              dimmed={false}
+              onSelect={handleMarkerSelect}
+            />
+          );
+        })() : null}
 
         {popupInfo && (
           <Popup

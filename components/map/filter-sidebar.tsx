@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MAP_CATEGORY_OPTIONS } from "@/lib/map-filters";
-import type { MapCategory, MapGroupOption, TimeFilter } from "@/types/app";
+import type { CollectionSummary, MapCategory, MapGroupOption, TimeFilter } from "@/types/app";
 
 const timeOptions: Array<{ value: TimeFilter; label: string }> = [
   { value: "all", label: "All Time" },
@@ -19,9 +19,12 @@ export function FilterSidebar({
   selectedGroupIds,
   selectedCategories,
   groupOptions,
+  collections,
+  selectedCollectionId,
   onTimeChange,
   onToggleGroup,
   onToggleCategory,
+  onSelectCollection,
   onClear,
   onClose
 }: {
@@ -30,9 +33,12 @@ export function FilterSidebar({
   selectedGroupIds: string[];
   selectedCategories: MapCategory[];
   groupOptions: MapGroupOption[];
+  collections: CollectionSummary[];
+  selectedCollectionId: string | null;
   onTimeChange: (value: TimeFilter) => void;
   onToggleGroup: (groupId: string) => void;
   onToggleCategory: (category: MapCategory) => void;
+  onSelectCollection: (id: string | null) => void;
   onClear: () => void;
   onClose: () => void;
 }) {
@@ -47,7 +53,7 @@ export function FilterSidebar({
       />
       <aside
         className={cn(
-          "glass-panel absolute inset-y-0 right-0 z-[790] flex w-full max-w-sm flex-col rounded-l-[2rem] border-l p-5 transition-transform duration-300",
+          "glass-panel absolute inset-y-0 right-0 z-[790] flex w-full max-w-sm flex-col overflow-y-auto rounded-l-[2rem] border-l p-5 transition-transform duration-300",
           open ? "translate-x-0" : "translate-x-full"
         )}
       >
@@ -60,6 +66,48 @@ export function FilterSidebar({
             <X className="h-4 w-4" />
           </Button>
         </div>
+
+        {/* Trips & Collections */}
+        {collections.length > 0 && (
+          <section className="mt-8 space-y-4">
+            <div>
+              <p className="text-sm font-semibold">Trips &amp; Collections</p>
+              <p className="mt-1 text-sm text-[var(--foreground)]/58">Focus the map on one trip or collection.</p>
+            </div>
+            <div className="space-y-2">
+              {collections.map((col) => {
+                const isActive = selectedCollectionId === col.id;
+                return (
+                  <button
+                    key={col.id}
+                    type="button"
+                    onClick={() => onSelectCollection(isActive ? null : col.id)}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-3xl border px-4 py-3 text-left text-sm transition",
+                      isActive
+                        ? "border-[rgba(56,182,201,0.24)] bg-[var(--map-accent-soft)] text-[var(--foreground)]"
+                        : "bg-[var(--surface-soft)] hover:bg-[var(--surface-strong)]"
+                    )}
+                  >
+                    {/* Color swatch */}
+                    <span
+                      className="h-3 w-3 shrink-0 rounded-full"
+                      style={{ backgroundColor: col.color ?? "var(--map-accent)" }}
+                      aria-hidden
+                    />
+                    <span className="flex-1 truncate">{col.name}</span>
+                    <span className="shrink-0 text-xs text-[var(--foreground)]/45">
+                      {col.postCount} {col.postCount === 1 ? "memory" : "memories"}
+                    </span>
+                    <span
+                      className={cn("h-3 w-3 shrink-0 rounded-full border", isActive && "bg-[var(--map-accent)] border-[var(--map-accent)]")}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         <section className="mt-8 space-y-4">
           <p className="text-sm font-semibold">Time</p>
@@ -140,7 +188,7 @@ export function FilterSidebar({
         </section>
 
         <div className="mt-auto flex items-center justify-between rounded-[1.75rem] border bg-[var(--surface-soft)] p-4 text-sm text-[var(--foreground)]/62">
-          <span>Filters are wired for future expansion without changing the map flow.</span>
+          <span>Filters are applied instantly.</span>
           <Button variant="secondary" onClick={onClear}>
             Clear all
           </Button>

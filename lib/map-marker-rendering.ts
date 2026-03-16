@@ -185,7 +185,7 @@ function getMarkerVisualCacheKey(marker: MapMarker) {
   return `${marker.type}:${marker.id}`;
 }
 
-function createPinRenderSpec(marker: MapMarker, selected: boolean): MarkerRenderSpec {
+function createPinRenderSpec(marker: MapMarker, selected: boolean, colorOverride: string | null): MarkerRenderSpec {
   const cityCluster = marker.type === "cityCluster";
   const placeCluster = marker.type === "placeCluster";
   const profileMarker = marker.type === "profileBubble";
@@ -201,17 +201,14 @@ function createPinRenderSpec(marker: MapMarker, selected: boolean): MarkerRender
   const contentSize = cityCluster || placeCluster || profileMarker
     ? Math.round(Math.min(width * 0.72, height * 0.46))
     : Math.round(Math.min(width * 0.66, height * 0.41));
-  const fill = cityCluster
-    ? selected
-      ? "#236A47"
-      : "#185538"
+
+  // Use colorOverride for pin, else default fill
+  const defaultFill = cityCluster
+    ? selected ? "#236A47" : "#185538"
     : placeCluster
-      ? selected
-        ? "#1691A3"
-        : "#38B6C9"
-      : selected
-        ? "#38B6C9"
-        : "#185538";
+      ? selected ? "#1691A3" : "#38B6C9"
+      : selected ? "#38B6C9" : "#185538";
+  const fill = colorOverride ?? defaultFill;
 
   return {
     width,
@@ -235,15 +232,15 @@ function createPinRenderSpec(marker: MapMarker, selected: boolean): MarkerRender
   };
 }
 
-function getPinRenderSpec(marker: MapMarker, selected: boolean): MarkerRenderSpec {
-  const cacheKey = `${getMarkerVisualCacheKey(marker)}:${selected ? 1 : 0}`;
+function getPinRenderSpec(marker: MapMarker, selected: boolean, colorOverride: string | null): MarkerRenderSpec {
+  const cacheKey = `${getMarkerVisualCacheKey(marker)}:${selected ? 1 : 0}:${colorOverride ?? ""}`;
   const cached = markerSpecCache.get(cacheKey);
 
   if (cached) {
     return cached;
   }
 
-  const spec = createPinRenderSpec(marker, selected);
+  const spec = createPinRenderSpec(marker, selected, colorOverride);
   markerSpecCache.set(cacheKey, spec);
   pruneMarkerCache(markerSpecCache);
   return spec;
@@ -284,8 +281,8 @@ function renderDotContent(spec: MarkerRenderSpec) {
   return `<span style="display:block;width:${dotSize}px;height:${dotSize}px;border-radius:9999px;background:${spec.fill};box-shadow:0 0 0 1px rgba(255,248,240,0.22)"></span>`;
 }
 
-function renderPinMarker(marker: MapMarker, selected: boolean, mapMode: MapVisualMode) {
-  const spec = getPinRenderSpec(marker, selected);
+function renderPinMarker(marker: MapMarker, selected: boolean, mapMode: MapVisualMode, colorOverride: string | null) {
+  const spec = getPinRenderSpec(marker, selected, colorOverride);
   const representedMemoryCount = getRepresentedMemoryCount(marker);
   const content =
     marker.type === "cityCluster" || marker.type === "placeCluster"
@@ -309,22 +306,22 @@ function renderPinMarker(marker: MapMarker, selected: boolean, mapMode: MapVisua
   </div>`;
 }
 
-export function getMarkerHtml(marker: MapMarker, isSelected: boolean, mapMode: MapVisualMode) {
-  const cacheKey = `${getMarkerVisualCacheKey(marker)}:${isSelected ? 1 : 0}:${mapMode}`;
+export function getMarkerHtml(marker: MapMarker, isSelected: boolean, mapMode: MapVisualMode, colorOverride: string | null = null) {
+  const cacheKey = `${getMarkerVisualCacheKey(marker)}:${isSelected ? 1 : 0}:${mapMode}:${colorOverride ?? ""}`;
   const cached = markerHtmlCache.get(cacheKey);
 
   if (cached) {
     return cached;
   }
 
-  const html = renderPinMarker(marker, isSelected, mapMode);
+  const html = renderPinMarker(marker, isSelected, mapMode, colorOverride);
   markerHtmlCache.set(cacheKey, html);
   pruneMarkerCache(markerHtmlCache);
   return html;
 }
 
 export function getMarkerVisualSize(marker: MapMarker, isSelected = false) {
-  const spec = getPinRenderSpec(marker, isSelected);
+  const spec = getPinRenderSpec(marker, isSelected, null);
 
   return {
     width: spec.width,
@@ -370,5 +367,5 @@ export function getMarkerAnchor(_marker: MapMarker): "bottom" {
 }
 
 export function getMarkerPopupOffset(marker: MapMarker) {
-  return getPinRenderSpec(marker, true).popupOffset;
+  return getPinRenderSpec(marker, true, null).popupOffset;
 }

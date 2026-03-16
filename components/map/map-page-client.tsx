@@ -42,7 +42,7 @@ import {
 } from "@/lib/map-post-navigation";
 import { MAP_MODE_STORAGE_KEY, getMapStyle, isSatelliteModeAvailable, parseStoredMapMode } from "@/lib/map-style";
 import { canonicalizeViewportForDataQuery, createViewportFingerprint, FULL_WORLD_BOUNDS, type MapViewport } from "@/lib/map-viewport";
-import type { LayerMode, MapCategory, MapGroupOption, MapResponse, MapVisualMode, PlaceClusterMarker, PostSummary, TimeFilter } from "@/types/app";
+import type { CollectionSummary, LayerMode, MapCategory, MapCollectionFilter, MapGroupOption, MapResponse, MapVisualMode, PlaceClusterMarker, PostSummary, TimeFilter } from "@/types/app";
 
 const DynamicMapCanvas = dynamic(() => import("@/components/map/map-canvas").then((mod) => mod.MapCanvas), {
   ssr: false,
@@ -77,6 +77,9 @@ export function MapPageClient() {
   const [mapData, setMapData] = useState<MapResponse>(emptyMap);
   const [loadingMap, setLoadingMap] = useState(true);
   const [groupOptions, setGroupOptions] = useState<MapGroupOption[]>([]);
+  const [collections, setCollections] = useState<CollectionSummary[]>([]);
+  const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
+  const [collectionFilter, setCollectionFilter] = useState<MapCollectionFilter | null>(null);
   const [query, setQuery] = useState("");
   const [layer, setLayer] = useState<LayerMode>("both");
   const [mapMode, setMapMode] = useState<MapVisualMode>("default");
@@ -173,6 +176,7 @@ export function MapPageClient() {
     }
   }, [mapModeHydrated, mapMode]);
 
+  // Load friend groups
   useEffect(() => {
     let ignore = false;
 
@@ -196,6 +200,78 @@ export function MapPageClient() {
       ignore = true;
     };
   }, []);
+
+  // Load user collections for the filter sidebar
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadCollections() {
+      const response = await fetch("/api/collections");
+
+      if (!response.ok) return;
+
+      const data = await response.json();
+
+      if (!ignore) {
+        setCollections(
+          (data.collections ?? []).filter((c: CollectionSummary) => c.postCount > 0)
+        );
+      }
+    }
+
+    void loadCollections();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  // When a collection is selected, fetch its route points and build the filter
+  useEffect(() => {
+    if (!selectedCollectionId) {
+      setCollectionFilter(null);
+      return;
+    }
+
+    const selectedCol = collections.find((c) => c.id === selectedCollectionId);
+
+    if (!selectedCol) {
+      setCollectionFilter(null);
+      return;
+    }
+
+    // Capture primitives before async boundary so TS can narrow them
+    const colId = selectedCol.id;
+    const colName = selectedCol.name;
+    const colColor = selectedCol.color ?? "#38B6C9";
+
+    let ignore = false;
+
+    async function loadCollectionRoute() {
+      const response = await fetch(`/api/collections/${colId}/route-points`);
+
+      if (!response.ok || ignore) return;
+
+      const data = await response.json();
+      const points: Array<{ postId: string; latitude: number; longitude: number; visitedAt: string }> = data.points ?? [];
+
+      if (!ignore) {
+        setCollectionFilter({
+          collectionId: colId,
+          name: colName,
+          color: colColor,
+          postIds: new Set(points.map((p) => p.postId)),
+          routePoints: points
+        });
+      }
+    }
+
+    void loadCollectionRoute();
+
+    return () => {
+      ignore = true;
+    };
+  }, [selectedCollectionId, collections]);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -320,7 +396,7 @@ export function MapPageClient() {
   const showControls = mapData.stage !== "world";
   const showWelcomeCard = mapData.stage === "world" || !mapData.cityContext;
   const forceWelcomeOpen = searchParams.get("welcome") === "1";
-  const activeFilterCount = (time !== "all" ? 1 : 0) + selectedGroupIds.length + selectedCategories.length;
+  const activeFilterCount = (time !== "all" ? 1 : 0) + selectedGroupIds.length + selectedCategories.length + (selectedCollectionId ? 1 : 0);
   const activeSearchQuery = deferredQuery.trim();
   const showEmptySearchState = activeSearchQuery.length > 0 && !loadingMap && mapData.markers.length === 0;
   const minimalCopy = useMemo(
@@ -358,6 +434,8 @@ export function MapPageClient() {
     setTime("all");
     setSelectedGroupIds([]);
     setSelectedCategories([]);
+    setSelectedCollectionId(null);
+    setCollectionFilter(null);
   }
 
   const handleMapModeChange = useCallback(
@@ -434,6 +512,7 @@ export function MapPageClient() {
         mapStyle={mapStyle}
         expandedPostId={expandedPost?.id ?? null}
         selectedLocationMarkerId={selectedLocationMarkerId}
+        collectionFilter={collectionFilter}
         initialViewState={
           mapFocusTarget
             ? {
@@ -562,9 +641,12 @@ export function MapPageClient() {
           selectedGroupIds={selectedGroupIds}
           selectedCategories={selectedCategories}
           groupOptions={groupOptions}
+          collections={collections}
+          selectedCollectionId={selectedCollectionId}
           onTimeChange={setTime}
           onToggleGroup={toggleGroup}
           onToggleCategory={toggleCategory}
+          onSelectCollection={setSelectedCollectionId}
           onClear={clearFilters}
           onClose={() => setFilterOpen(false)}
         />
