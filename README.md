@@ -88,6 +88,8 @@ After seeding, sign in with any of these and password `password123`:
 - `elena@pinly.demo`
 - `leo@pinly.demo`
 
+The deployed demo no longer depends on running the destructive seed script in production. The first demo sign-in bootstraps the reserved demo dataset non-destructively, and the landing page `Explore the demo` button signs in with the default demo account automatically.
+
 ## Environment variables
 - `DATABASE_URL`: Neon pooled PostgreSQL connection string
 - `DIRECT_URL`: Neon direct PostgreSQL connection string for migrations

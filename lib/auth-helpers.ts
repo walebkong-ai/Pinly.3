@@ -1,6 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { compare, hash } from "bcryptjs";
+import { ensureDemoDataset, type DemoProvisionPrisma } from "@/lib/demo-data";
+import { isDemoCredentials } from "@/lib/demo-config";
 import { signInSchema } from "@/lib/validation";
+import { createUniqueUsername, normalizeUsernameSeed } from "@/lib/usernames";
 
 type UserRecord = {
   id: string;
@@ -11,13 +14,7 @@ type UserRecord = {
   avatarUrl: string | null;
 };
 
-type AuthPrisma = {
-  user: {
-    findUnique: (...args: any[]) => Promise<UserRecord | null>;
-    create: (...args: any[]) => Promise<UserRecord>;
-    update: (...args: any[]) => Promise<UserRecord>;
-  };
-};
+type AuthPrisma = DemoProvisionPrisma;
 
 export type AuthUserPayload = {
   id: string;
@@ -37,48 +34,7 @@ function toPayload(user: UserRecord): AuthUserPayload {
   };
 }
 
-export function normalizeUsernameSeed(value: string) {
-  const fromEmail = value.includes("@") ? value.split("@")[0] ?? value : value;
-  const normalized = fromEmail
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .replace(/_+/g, "_");
-
-  let base = normalized || "traveler";
-
-  if (base.length < 3) {
-    base = `${base}_pinly`;
-  }
-
-  base = base.slice(0, 20).replace(/_+$/g, "");
-
-  if (base.length < 3) {
-    return "traveler";
-  }
-
-  return base;
-}
-
-export async function createUniqueUsername(prisma: AuthPrisma, seed: string) {
-  const base = normalizeUsernameSeed(seed);
-
-  for (let index = 0; index < 100; index += 1) {
-    const suffix = index === 0 ? "" : String(index);
-    const maxBaseLength = 20 - suffix.length;
-    const candidateBase = base.slice(0, Math.max(3, maxBaseLength)).replace(/_+$/g, "");
-    const candidate = `${candidateBase}${suffix}`;
-    const existing = await prisma.user.findUnique({
-      where: { username: candidate }
-    });
-
-    if (!existing) {
-      return candidate;
-    }
-  }
-
-  return `pinly_${randomUUID().replace(/-/g, "").slice(0, 14)}`;
-}
+export { createUniqueUsername, normalizeUsernameSeed };
 
 export async function authorizeCredentials(prisma: AuthPrisma, credentials: unknown) {
   const parsed = signInSchema.safeParse(credentials);
@@ -87,11 +43,19 @@ export async function authorizeCredentials(prisma: AuthPrisma, credentials: unkn
     return null;
   }
 
+  const wantsDemoAccess = isDemoCredentials(parsed.data.email, parsed.data.password);
   let user;
   try {
     user = await prisma.user.findUnique({
       where: { email: parsed.data.email.toLowerCase() }
     });
+
+    if (!user && wantsDemoAccess) {
+      await ensureDemoDataset(prisma);
+      user = await prisma.user.findUnique({
+        where: { email: parsed.data.email.toLowerCase() }
+      });
+    }
   } catch (error) {
     console.error("Database connection error during authorization:", error);
     return null;
@@ -101,7 +65,25 @@ export async function authorizeCredentials(prisma: AuthPrisma, credentials: unkn
     return null;
   }
 
-  const passwordsMatch = await compare(parsed.data.password, user.passwordHash);
+  let passwordsMatch = await compare(parsed.data.password, user.passwordHash);
+
+  if (!passwordsMatch && wantsDemoAccess) {
+    try {
+      await ensureDemoDataset(prisma);
+      user = await prisma.user.findUnique({
+        where: { email: parsed.data.email.toLowerCase() }
+      });
+    } catch (error) {
+      console.error("Database connection error during demo authorization:", error);
+      return null;
+    }
+
+    if (!user) {
+      return null;
+    }
+
+    passwordsMatch = await compare(parsed.data.password, user.passwordHash);
+  }
 
   if (!passwordsMatch) {
     return null;

@@ -71,7 +71,7 @@ If enabling Google auth, configure OAuth redirect URIs in Google Cloud:
 ## Production Caveats
 - Vercel server uploads are small-request friendly. Keep uploads short and keep `MAX_UPLOAD_SIZE_MB` at `4` unless you move to client-side uploads.
 - Nominatim place search is good for prototype scale, but it is not the final production-grade places provider if usage grows.
-- Seed data is for demo environments only. Do not run the seed script against production data.
+- Do not run the destructive seed script against production data. The public demo login now bootstraps the reserved demo dataset non-destructively on first use, so production demo access does not rely on `npm run prisma:seed`.
 - `STORAGE_DRIVER=local` is only for local development. Vercel production should use `vercel-blob`.
 - Public images are now allowlisted in `next.config.ts`; new remote media hosts must be added there before use.
 

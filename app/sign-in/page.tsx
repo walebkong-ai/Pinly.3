@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { Brand } from "@/components/brand";
 import { SignInForm } from "@/components/auth/sign-in-form";
+import { DEFAULT_DEMO_USER_EMAIL, DEMO_PASSWORD } from "@/lib/demo-config";
 
 export default async function SignInPage() {
   const session = await auth();
@@ -21,7 +22,8 @@ export default async function SignInPage() {
             Sign in to revisit your own travel memories and see what your friends have pinned around the world.
           </p>
           <div className="mt-10 rounded-3xl border border-white/10 bg-white/8 p-5 text-sm text-white/72">
-            Demo users are created by the seed script with password <span className="font-semibold text-white">password123</span>.
+            Demo access is available with <span className="font-semibold text-white">{DEFAULT_DEMO_USER_EMAIL}</span> and password{" "}
+            <span className="font-semibold text-white">{DEMO_PASSWORD}</span>, or you can use the demo button below.
           </div>
         </div>
         <div className="flex items-center">

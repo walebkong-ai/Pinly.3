@@ -75,7 +75,7 @@ export default async function LandingPage() {
               <Link href="/sign-up">
                 <Button className="w-full sm:w-auto">Create your account</Button>
               </Link>
-              <Link href="/sign-in">
+              <Link href="/sign-in?demo=1">
                 <Button variant="secondary" className="w-full sm:w-auto">
                   Explore the demo
                 </Button>

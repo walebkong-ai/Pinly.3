@@ -1,8 +1,21 @@
 import { hash } from "bcryptjs";
-import { describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+import { DEFAULT_DEMO_USER_EMAIL, DEMO_PASSWORD } from "@/lib/demo-config";
 import { authorizeCredentials, createUniqueUsername, ensureGoogleUser, normalizeUsernameSeed } from "@/lib/auth-helpers";
 
+const { ensureDemoDatasetMock } = vi.hoisted(() => ({
+  ensureDemoDatasetMock: vi.fn()
+}));
+
+vi.mock("@/lib/demo-data", () => ({
+  ensureDemoDataset: ensureDemoDatasetMock
+}));
+
 describe("auth helpers", () => {
+  beforeEach(() => {
+    ensureDemoDatasetMock.mockReset();
+  });
+
   test("credentials authorize returns user when password is valid", async () => {
     const passwordHash = await hash("password123", 10);
     const prisma = {
@@ -47,6 +60,89 @@ describe("auth helpers", () => {
       password: "not-right"
     });
 
+    expect(user).toBeNull();
+  });
+
+  test("demo credentials provision the reserved demo dataset when the user is missing", async () => {
+    const passwordHash = await hash(DEMO_PASSWORD, 10);
+    const findUniqueMock = vi
+      .fn()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        id: "user_1",
+        name: "Avery Chen",
+        username: "avery",
+        email: DEFAULT_DEMO_USER_EMAIL,
+        passwordHash,
+        avatarUrl: null
+      });
+    const prisma = {
+      user: {
+        findUnique: findUniqueMock
+      }
+    };
+
+    const user = await authorizeCredentials(prisma as never, {
+      email: DEFAULT_DEMO_USER_EMAIL,
+      password: DEMO_PASSWORD
+    });
+
+    expect(ensureDemoDatasetMock).toHaveBeenCalledWith(prisma);
+    expect(findUniqueMock).toHaveBeenCalledTimes(2);
+    expect(user?.email).toBe(DEFAULT_DEMO_USER_EMAIL);
+  });
+
+  test("demo credentials repair stale password hashes for reserved demo users", async () => {
+    const stalePasswordHash = await hash("oldpassword123", 10);
+    const repairedPasswordHash = await hash(DEMO_PASSWORD, 10);
+    const findUniqueMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        id: "user_1",
+        name: "Avery Chen",
+        username: "avery",
+        email: DEFAULT_DEMO_USER_EMAIL,
+        passwordHash: stalePasswordHash,
+        avatarUrl: null
+      })
+      .mockResolvedValueOnce({
+        id: "user_1",
+        name: "Avery Chen",
+        username: "avery",
+        email: DEFAULT_DEMO_USER_EMAIL,
+        passwordHash: repairedPasswordHash,
+        avatarUrl: null
+      });
+    const prisma = {
+      user: {
+        findUnique: findUniqueMock
+      }
+    };
+
+    const user = await authorizeCredentials(prisma as never, {
+      email: DEFAULT_DEMO_USER_EMAIL,
+      password: DEMO_PASSWORD
+    });
+
+    expect(ensureDemoDatasetMock).toHaveBeenCalledWith(prisma);
+    expect(findUniqueMock).toHaveBeenCalledTimes(2);
+    expect(user?.username).toBe("avery");
+  });
+
+  test("wrong demo password does not provision demo data", async () => {
+    const findUniqueMock = vi.fn().mockResolvedValue(null);
+    const prisma = {
+      user: {
+        findUnique: findUniqueMock
+      }
+    };
+
+    const user = await authorizeCredentials(prisma as never, {
+      email: DEFAULT_DEMO_USER_EMAIL,
+      password: "nottherightone"
+    });
+
+    expect(ensureDemoDatasetMock).not.toHaveBeenCalled();
     expect(user).toBeNull();
   });
 

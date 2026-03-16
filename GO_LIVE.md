@@ -26,6 +26,7 @@ This runbook is for the first real Pinly deployment on Vercel with Neon Postgres
 7. Open the deployed app and complete the post-deploy verification list below before sharing it.
 
 ## Post-Deploy Verification Checklist
+- [ ] `Explore the demo` signs in and lands on `/map` with demo data visible
 - [ ] Sign up works for a new account
 - [ ] Sign in works and the session persists across refresh
 - [ ] Feed tab loads for an authenticated user
