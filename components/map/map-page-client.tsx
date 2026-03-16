@@ -18,9 +18,22 @@ import { MapModeToggle } from "@/components/map/map-mode-toggle";
 import { SameLocationSheet } from "@/components/map/same-location-sheet";
 import { WelcomeCard } from "@/components/map/welcome-card";
 import { buildLightweightMapGroups } from "@/lib/map-groups";
+import {
+  backFromPostPreview,
+  canReturnToLocationPreview,
+  closeMapPreview,
+  findPlaceClusterMarker,
+  getActiveLocationPreviewMarkerId,
+  getExpandedPreviewPost,
+  hasOpenMapPreview,
+  IDLE_MAP_PREVIEW_STATE,
+  openLocationPreview,
+  openPostPreview,
+  syncPreviewStateWithMarkers,
+  type MapPreviewState
+} from "@/lib/map-preview-state";
 import { MAP_MODE_STORAGE_KEY, getMapStyle, isSatelliteModeAvailable, parseStoredMapMode } from "@/lib/map-style";
 import { canonicalizeViewportForDataQuery, createViewportFingerprint, FULL_WORLD_BOUNDS, type MapViewport } from "@/lib/map-viewport";
-import { cn } from "@/lib/utils";
 import type { LayerMode, MapCategory, MapGroupOption, MapResponse, MapVisualMode, PlaceClusterMarker, PostSummary, TimeFilter } from "@/types/app";
 
 const DynamicMapCanvas = dynamic(() => import("@/components/map/map-canvas").then((mod) => mod.MapCanvas), {
@@ -44,10 +57,6 @@ function hasRenderableMapData(mapData: MapResponse) {
   return mapData.markers.length > 0 || mapData.cityContext !== null || mapData.friendActivity.length > 0;
 }
 
-function findPlaceClusterMarker(markers: MapResponse["markers"], markerId: string) {
-  return markers.find((marker): marker is PlaceClusterMarker => marker.type === "placeCluster" && marker.id === markerId) ?? null;
-}
-
 export function MapPageClient() {
   const searchParams = useSearchParams();
   const didToastSatelliteFallbackRef = useRef(false);
@@ -65,9 +74,7 @@ export function MapPageClient() {
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<MapCategory[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [expandedPost, setExpandedPost] = useState<PostSummary | null>(null);
-  const [selectedLocationCluster, setSelectedLocationCluster] = useState<PlaceClusterMarker | null>(null);
-  const [locationClusterReturnTarget, setLocationClusterReturnTarget] = useState<PlaceClusterMarker | null>(null);
+  const [previewState, setPreviewState] = useState<MapPreviewState>(IDLE_MAP_PREVIEW_STATE);
   const [viewport, setViewport] = useState<MapViewport>(() =>
     canonicalizeViewportForDataQuery({
       zoom: 2,
@@ -79,6 +86,14 @@ export function MapPageClient() {
   const satelliteToggleVisible = true;
   const satelliteAvailability = satelliteFailed ? "failed" : "available";
   const activeMapMode = satelliteModeAvailable && !satelliteFailed ? mapMode : "default";
+  const expandedPost = getExpandedPreviewPost(previewState);
+  const activeLocationMarkerId = getActiveLocationPreviewMarkerId(previewState);
+  const selectedLocationCluster = useMemo(
+    () => (previewState.kind === "location" ? findPlaceClusterMarker(mapData.markers, previewState.markerId) : null),
+    [mapData.markers, previewState]
+  );
+  const previewSurfaceOpen = hasOpenMapPreview(previewState);
+  const canReturnToAllMemories = canReturnToLocationPreview(previewState);
   const mapStyle = useMemo(
     () =>
       getMapStyle({
@@ -224,50 +239,14 @@ export function MapPageClient() {
   }, [viewport, deferredQuery, layer, time, selectedGroupIds, selectedCategories]);
 
   useEffect(() => {
-    if (!expandedPost) {
-      return;
-    }
-
-    const stillVisible = mapData.markers.some((marker) => "post" in marker && marker.post.id === expandedPost.id);
-
-    if (!stillVisible) {
-      setExpandedPost(null);
-    }
-  }, [expandedPost, mapData]);
+    setPreviewState((currentState) => syncPreviewStateWithMarkers(currentState, mapData.markers));
+  }, [mapData.markers]);
 
   useEffect(() => {
-    if (!selectedLocationCluster) {
-      return;
+    if (previewSurfaceOpen && filterOpen) {
+      setFilterOpen(false);
     }
-
-    const nextLocationCluster = findPlaceClusterMarker(mapData.markers, selectedLocationCluster.id);
-
-    if (!nextLocationCluster) {
-      setSelectedLocationCluster(null);
-      return;
-    }
-
-    if (nextLocationCluster !== selectedLocationCluster) {
-      setSelectedLocationCluster(nextLocationCluster);
-    }
-  }, [mapData, selectedLocationCluster]);
-
-  useEffect(() => {
-    if (!locationClusterReturnTarget) {
-      return;
-    }
-
-    const nextLocationCluster = findPlaceClusterMarker(mapData.markers, locationClusterReturnTarget.id);
-
-    if (!nextLocationCluster) {
-      setLocationClusterReturnTarget(null);
-      return;
-    }
-
-    if (nextLocationCluster !== locationClusterReturnTarget) {
-      setLocationClusterReturnTarget(nextLocationCluster);
-    }
-  }, [locationClusterReturnTarget, mapData]);
+  }, [filterOpen, previewSurfaceOpen]);
 
   const showControls = mapData.stage !== "world";
   const showWelcomeCard = mapData.stage === "world" || !mapData.cityContext;
@@ -275,7 +254,6 @@ export function MapPageClient() {
   const activeFilterCount = (time !== "all" ? 1 : 0) + selectedGroupIds.length + selectedCategories.length;
   const activeSearchQuery = deferredQuery.trim();
   const showEmptySearchState = activeSearchQuery.length > 0 && !loadingMap && mapData.markers.length === 0;
-  const multiMemoryJourneyOpen = selectedLocationCluster !== null || (expandedPost !== null && locationClusterReturnTarget !== null);
   const minimalCopy = useMemo(
     () =>
       mapData.stage === "world"
@@ -350,47 +328,29 @@ export function MapPageClient() {
 
   const handleOpenLocationCluster = useCallback((marker: PlaceClusterMarker) => {
     setFilterOpen(false);
-    setExpandedPost(null);
-    setSelectedLocationCluster(marker);
-    setLocationClusterReturnTarget(marker);
+    setPreviewState(openLocationPreview(marker.id));
   }, []);
 
   const handleExpandPost = useCallback((post: PostSummary) => {
     setFilterOpen(false);
-    setSelectedLocationCluster(null);
-    setLocationClusterReturnTarget(null);
-    setExpandedPost(post);
+    setPreviewState(openPostPreview(post));
   }, []);
 
   const handleSelectLocationPost = useCallback((post: PostSummary) => {
     setFilterOpen(false);
-
-    if (selectedLocationCluster) {
-      setLocationClusterReturnTarget(selectedLocationCluster);
-    }
-
-    setSelectedLocationCluster(null);
-    setExpandedPost(post);
-  }, [selectedLocationCluster]);
+    setPreviewState(openPostPreview(post, activeLocationMarkerId));
+  }, [activeLocationMarkerId]);
 
   const handleCloseLocationCluster = useCallback(() => {
-    setSelectedLocationCluster(null);
-    setLocationClusterReturnTarget(null);
+    setPreviewState(closeMapPreview());
   }, []);
 
   const handleBackToLocationCluster = useCallback(() => {
-    if (!locationClusterReturnTarget) {
-      setExpandedPost(null);
-      return;
-    }
-
-    setExpandedPost(null);
-    setSelectedLocationCluster(locationClusterReturnTarget);
-  }, [locationClusterReturnTarget]);
+    setPreviewState((currentState) => (currentState.kind === "post" ? backFromPostPreview(currentState) : currentState));
+  }, []);
 
   const handleCloseExpandedPost = useCallback(() => {
-    setExpandedPost(null);
-    setLocationClusterReturnTarget(null);
+    setPreviewState(closeMapPreview());
   }, []);
 
   return (
@@ -400,7 +360,7 @@ export function MapPageClient() {
         mapMode={activeMapMode}
         mapStyle={mapStyle}
         expandedPostId={expandedPost?.id ?? null}
-        selectedLocationMarkerId={selectedLocationCluster?.id ?? null}
+        selectedLocationMarkerId={activeLocationMarkerId}
         onExpandPost={handleExpandPost}
         onOpenLocationCluster={handleOpenLocationCluster}
         onMapError={handleMapError}
@@ -408,106 +368,99 @@ export function MapPageClient() {
       />
 
       <div className="pointer-events-none absolute inset-0 z-[700]">
-        <div
-          className={cn(
-            "pointer-events-none flex h-full flex-col justify-between p-4 transition-all duration-300 md:p-5",
-            multiMemoryJourneyOpen && "opacity-0 translate-y-3 sm:translate-y-0 sm:opacity-25"
-          )}
-        >
-          <div className="space-y-4">
-            <div className="pointer-events-auto hidden max-w-xl items-center gap-4 rounded-full border bg-[var(--surface-strong)] px-4 py-3 shadow-sm md:inline-flex">
-              <Brand compact />
-              <p className="text-sm text-[var(--foreground)]/62">{minimalCopy}</p>
-            </div>
+        {!previewSurfaceOpen ? (
+          <>
+            <div className="pointer-events-none flex h-full flex-col justify-between p-4 md:p-5">
+              <div className="space-y-4">
+                <div className="pointer-events-auto hidden max-w-xl items-center gap-4 rounded-full border bg-[var(--surface-strong)] px-4 py-3 shadow-sm md:inline-flex">
+                  <Brand compact />
+                  <p className="text-sm text-[var(--foreground)]/62">{minimalCopy}</p>
+                </div>
 
-            <div className="pointer-events-auto flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between animate-in fade-in slide-in-from-top-4 duration-500 ease-out">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <div className="relative w-full sm:min-w-[280px] sm:max-w-xl">
-                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--foreground)]/40" />
-                  <Input
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Search places, cities, countries, people, captions"
-                    className="bg-[var(--surface-strong)] pl-11 pr-11 shadow-sm"
-                  />
-                  {activeSearchQuery ? (
-                    <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[var(--foreground)]/40">
-                      {loadingMap ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
-                    </span>
+                <div className="pointer-events-auto flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between animate-in fade-in slide-in-from-top-4 duration-500 ease-out">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <div className="relative w-full sm:min-w-[280px] sm:max-w-xl">
+                      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--foreground)]/40" />
+                      <Input
+                        value={query}
+                        onChange={(event) => setQuery(event.target.value)}
+                        placeholder="Search places, cities, countries, people, captions"
+                        className="bg-[var(--surface-strong)] pl-11 pr-11 shadow-sm"
+                      />
+                      {activeSearchQuery ? (
+                        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[var(--foreground)]/40">
+                          {loadingMap ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {showControls ? (
+                        <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
+                          <button
+                            type="button"
+                            onClick={() => setFilterOpen(true)}
+                            className="flex min-h-10 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-[var(--foreground)]/70 transition hover:bg-[var(--foreground)]/5 md:gap-2 md:px-4 md:text-sm"
+                          >
+                            <Filter className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                            <span className="hidden sm:inline">Filters</span>
+                            {activeFilterCount > 0 && <span>({activeFilterCount})</span>}
+                          </button>
+                        </div>
+                      ) : null}
+                      {showControls ? (
+                        <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
+                          <LayerToggle value={layer} onChange={setLayer} />
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                  {showControls ? (
+                    <Link href="/create" className="pointer-events-auto">
+                      <Button className="gap-2">
+                        <Plus className="h-4 w-4" />
+                        Add memory
+                      </Button>
+                    </Link>
                   ) : null}
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {showControls ? (
-                    <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
-                      <button
-                        type="button"
-                        onClick={() => setFilterOpen(true)}
-                        className="flex min-h-10 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-[var(--foreground)]/70 transition hover:bg-[var(--foreground)]/5 md:gap-2 md:px-4 md:text-sm"
-                      >
-                        <Filter className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                        <span className="hidden sm:inline">Filters</span>
-                        {activeFilterCount > 0 && <span>({activeFilterCount})</span>}
-                      </button>
-                    </div>
-                  ) : null}
-                  {showControls ? (
-                    <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
-                      <LayerToggle value={layer} onChange={setLayer} />
-                    </div>
-                  ) : null}
-                </div>
+                {showEmptySearchState ? (
+                  <div className="pointer-events-auto inline-flex max-w-lg items-center gap-2 rounded-2xl border bg-[var(--surface-strong)] px-4 py-2 text-sm text-[var(--foreground)]/68 shadow-sm">
+                    <Search className="h-4 w-4 text-[var(--map-accent)]" />
+                    <span>No places, people, countries, or captions matched that search.</span>
+                  </div>
+                ) : null}
               </div>
-              {showControls ? (
-                <Link href="/create" className="pointer-events-auto">
-                  <Button className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Add memory
-                  </Button>
-                </Link>
-              ) : null}
             </div>
-            {showEmptySearchState ? (
-              <div className="pointer-events-auto inline-flex max-w-lg items-center gap-2 rounded-2xl border bg-[var(--surface-strong)] px-4 py-2 text-sm text-[var(--foreground)]/68 shadow-sm">
-                <Search className="h-4 w-4 text-[var(--map-accent)]" />
-                <span>No places, people, countries, or captions matched that search.</span>
+
+            {(showControls || showWelcomeCard || satelliteToggleVisible) && (
+              <div className="pointer-events-none absolute inset-x-4 bottom-24 grid gap-4 md:bottom-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-end xl:px-1 animate-in fade-in duration-500 ease-out">
+                <div className="pointer-events-none flex flex-col-reverse gap-3 xl:flex-row xl:items-end xl:justify-between xl:gap-4">
+                  {satelliteToggleVisible ? (
+                    <div className="pointer-events-auto self-start xl:self-end">
+                      <MapModeToggle
+                        value={activeMapMode}
+                        onChange={handleMapModeChange}
+                        satelliteAvailability={satelliteAvailability}
+                      />
+                    </div>
+                  ) : null}
+                  <div className="pointer-events-auto max-w-md">
+                    {mapData.cityContext ? (
+                      <CityContextPanel cityContext={mapData.cityContext} />
+                    ) : (
+                      <WelcomeCard forceOpen={forceWelcomeOpen} />
+                    )}
+                  </div>
+                </div>
+                {showControls ? (
+                  <div className="pointer-events-auto justify-self-end">
+                    <FriendActivityPanel items={mapData.friendActivity} layer={layer} />
+                  </div>
+                ) : null}
               </div>
-            ) : null}
-          </div>
-
-        </div>
-
-        {(showControls || showWelcomeCard || satelliteToggleVisible) && (
-          <div
-            className={cn(
-              "pointer-events-none absolute inset-x-4 bottom-24 grid gap-4 transition-all duration-300 md:bottom-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-end xl:px-1 animate-in fade-in duration-500 ease-out",
-              multiMemoryJourneyOpen && "opacity-0 translate-y-3 sm:translate-y-0 sm:opacity-25"
             )}
-          >
-            <div className="pointer-events-none flex flex-col-reverse gap-3 xl:flex-row xl:items-end xl:justify-between xl:gap-4">
-              {satelliteToggleVisible ? (
-                <div className="pointer-events-auto self-start xl:self-end">
-                  <MapModeToggle
-                    value={activeMapMode}
-                    onChange={handleMapModeChange}
-                    satelliteAvailability={satelliteAvailability}
-                  />
-                </div>
-              ) : null}
-              <div className="pointer-events-auto max-w-md">
-                {mapData.cityContext ? (
-                  <CityContextPanel cityContext={mapData.cityContext} />
-                ) : (
-                  <WelcomeCard forceOpen={forceWelcomeOpen} />
-                )}
-              </div>
-            </div>
-            {showControls ? (
-              <div className="pointer-events-auto justify-self-end">
-                <FriendActivityPanel items={mapData.friendActivity} layer={layer} />
-              </div>
-            ) : null}
-          </div>
-        )}
+          </>
+        ) : null}
 
         <FilterSidebar
           open={filterOpen}
@@ -530,7 +483,7 @@ export function MapPageClient() {
       />
       <BottomSheet
         post={expandedPost}
-        onBack={locationClusterReturnTarget ? handleBackToLocationCluster : undefined}
+        onBack={canReturnToAllMemories ? handleBackToLocationCluster : undefined}
         backLabel="All memories"
         onClose={handleCloseExpandedPost}
       />
