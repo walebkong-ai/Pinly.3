@@ -47,6 +47,7 @@ export function AppShell({ children, user }: AppShellProps) {
 
   useEffect(() => {
     let ignore = false;
+
     async function loadUnreadCounts() {
       try {
         const [groupsResponse, notificationsResponse] = await Promise.all([
@@ -71,20 +72,30 @@ export function AppShell({ children, user }: AppShellProps) {
         // ignore
       }
     }
+
     const handleUnreadDataUpdated = () => {
       void loadUnreadCounts();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void loadUnreadCounts();
+      }
     };
 
     void loadUnreadCounts();
     window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, handleUnreadDataUpdated);
     window.addEventListener(MESSAGES_UPDATED_EVENT, handleUnreadDataUpdated);
+    window.addEventListener("focus", handleUnreadDataUpdated);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       ignore = true;
       window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, handleUnreadDataUpdated);
       window.removeEventListener(MESSAGES_UPDATED_EVENT, handleUnreadDataUpdated);
+      window.removeEventListener("focus", handleUnreadDataUpdated);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [pathname]);
+  }, []);
 
   return (
     <div className="min-h-screen px-2 py-2 md:px-6 md:py-4">

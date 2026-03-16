@@ -23,13 +23,13 @@ export function MediaView({
   const proxyUrl = getMediaProxyUrl(mediaUrl);
   const proxyThumb = getMediaProxyUrl(thumbnailUrl);
   const [loaded, setLoaded] = useState(false);
-  const [lastTap, setLastTap] = useState(0);
   const [showHeart, setShowHeart] = useState(false);
+  const lastTapRef = useRef(0);
   const hideHeartTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     setLoaded(false);
-    setLastTap(0);
+    lastTapRef.current = 0;
     setShowHeart(false);
 
     if (hideHeartTimeoutRef.current !== null) {
@@ -49,7 +49,7 @@ export function MediaView({
   const handleInteraction = (e: React.MouseEvent | React.TouchEvent) => {
     if (!postId) return;
     const now = Date.now();
-    if (now - lastTap < 300) {
+    if (now - lastTapRef.current < 300) {
       e.preventDefault();
       window.dispatchEvent(new CustomEvent(`like-post-${postId}`));
       setShowHeart(true);
@@ -62,9 +62,9 @@ export function MediaView({
         hideHeartTimeoutRef.current = null;
         setShowHeart(false);
       }, 800);
-      setLastTap(0);
+      lastTapRef.current = 0;
     } else {
-      setLastTap(now);
+      lastTapRef.current = now;
     }
   };
 
@@ -99,6 +99,7 @@ export function MediaView({
           src={proxyUrl} 
           alt="" 
           fill 
+          sizes="(max-width: 768px) 100vw, 50vw"
           onLoad={() => setLoaded(true)}
           onError={() => setLoaded(true)}
           className={cn("object-cover transition-opacity duration-500", loaded ? "opacity-100" : "opacity-0")}

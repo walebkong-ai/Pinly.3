@@ -430,7 +430,6 @@ export function EditPostForm({ post }: { post: PostSummary }) {
 
       toast.success("Memory updated.");
       router.replace(`/posts/${post.id}`);
-      router.refresh();
     } catch {
       toast.error("Could not update this memory. Check your connection and try again.");
     } finally {

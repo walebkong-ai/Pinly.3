@@ -20,7 +20,7 @@ export function BackButton({
   function handleBack() {
     if (
       typeof window !== "undefined" &&
-      canUseHistoryBack(window.history.length, document.referrer, window.location.origin)
+      canUseHistoryBack(window.history.length, document.referrer, window.location.origin, window.history.state)
     ) {
       router.back();
     } else {

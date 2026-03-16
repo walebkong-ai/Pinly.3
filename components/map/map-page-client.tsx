@@ -39,9 +39,15 @@ const emptyMap: MapResponse = {
 };
 const satelliteApiKey = process.env.NEXT_PUBLIC_MAPTILER_API_KEY ?? "";
 
+function hasRenderableMapData(mapData: MapResponse) {
+  return mapData.markers.length > 0 || mapData.cityContext !== null || mapData.friendActivity.length > 0;
+}
+
 export function MapPageClient() {
   const searchParams = useSearchParams();
   const didToastSatelliteFallbackRef = useRef(false);
+  const latestMapDataRef = useRef<MapResponse>(emptyMap);
+  const mapRequestIdRef = useRef(0);
   const [mapData, setMapData] = useState<MapResponse>(emptyMap);
   const [loadingMap, setLoadingMap] = useState(true);
   const [groupOptions, setGroupOptions] = useState<MapGroupOption[]>([]);
@@ -75,6 +81,10 @@ export function MapPageClient() {
       }),
     [activeMapMode, satelliteApiKey]
   );
+
+  useEffect(() => {
+    latestMapDataRef.current = mapData;
+  }, [mapData]);
 
   useEffect(() => {
     try {
@@ -129,6 +139,8 @@ export function MapPageClient() {
   useEffect(() => {
     const abortController = new AbortController();
     let ignore = false;
+    const requestId = mapRequestIdRef.current + 1;
+    mapRequestIdRef.current = requestId;
 
     async function loadMap() {
       setLoadingMap(true);
@@ -161,26 +173,30 @@ export function MapPageClient() {
           signal: abortController.signal
         });
       } catch (error) {
-        if (ignore || (error instanceof DOMException && error.name === "AbortError")) {
+        if (ignore || requestId !== mapRequestIdRef.current || (error instanceof DOMException && error.name === "AbortError")) {
           return;
         }
 
-        setMapData(emptyMap);
+        if (!hasRenderableMapData(latestMapDataRef.current)) {
+          setMapData(emptyMap);
+        }
         setLoadingMap(false);
         return;
       }
 
-      const data = (await response.json()) as Partial<MapResponse>;
+      const data = (await response.json().catch(() => null)) as Partial<MapResponse> | null;
 
-      if (!response.ok) {
-        if (!ignore) {
-          setMapData(emptyMap);
+      if (!response.ok || !data) {
+        if (!ignore && requestId === mapRequestIdRef.current) {
+          if (!hasRenderableMapData(latestMapDataRef.current)) {
+            setMapData(emptyMap);
+          }
           setLoadingMap(false);
         }
         return;
       }
 
-      if (ignore) {
+      if (ignore || requestId !== mapRequestIdRef.current) {
         return;
       }
 

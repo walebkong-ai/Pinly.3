@@ -467,7 +467,7 @@ export function CreatePostForm() {
       }
 
       toast.success("Your memory is pinned.");
-      router.push("/map");
+      router.replace("/map");
     } catch {
       toast.error("Could not create post. Check your connection and try again.");
     } finally {

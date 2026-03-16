@@ -31,10 +31,9 @@ export function DeletePostButton({ postId, redirectToMap }: { postId: string, re
       toast.success("Memory deleted.");
       
       if (redirectToMap) {
-        router.push("/map");
-        router.refresh();
+        router.replace("/map");
       } else {
-        router.refresh(); // Or reload to update the feed visually
+        router.refresh();
       }
     } catch (err) {
       toast.error("Failed to delete memory.");
