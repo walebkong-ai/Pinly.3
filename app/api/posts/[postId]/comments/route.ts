@@ -52,7 +52,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ post
     take: 100
   });
 
-  return Response.json({ comments });
+  return Response.json({
+    comments,
+    currentUserId: session.user.id,
+    postOwnerId: post.userId
+  });
 }
 
 // POST = add a comment

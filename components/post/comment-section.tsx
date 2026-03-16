@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { CornerDownRight, LoaderCircle, MessageCircle, Send } from "lucide-react";
+import { CornerDownRight, LoaderCircle, MessageCircle, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -34,6 +34,9 @@ export function CommentSection({
   const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
   const [replyInput, setReplyInput] = useState("");
   const [replySubmittingId, setReplySubmittingId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [postOwnerId, setPostOwnerId] = useState<string | null>(null);
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,6 +57,8 @@ export function CommentSection({
           const data = await res.json();
           if (!ignore) {
             setComments(data.comments ?? []);
+            setCurrentUserId(data.currentUserId ?? null);
+            setPostOwnerId(data.postOwnerId ?? null);
           }
         }
       } catch {
@@ -141,6 +146,77 @@ export function CommentSection({
     }
   }
 
+  async function deleteComment({
+    id,
+    parentId,
+    replyCount = 0
+  }: {
+    id: string;
+    parentId?: string;
+    replyCount?: number;
+  }) {
+    if (deletingCommentId === id) {
+      return;
+    }
+
+    const isReply = Boolean(parentId);
+    const confirmationMessage = isReply
+      ? "Delete this reply? This can't be undone."
+      : replyCount > 0
+        ? `Delete this comment and its ${replyCount} ${replyCount === 1 ? "reply" : "replies"}? This can't be undone.`
+        : "Delete this comment? This can't be undone.";
+
+    if (!window.confirm(confirmationMessage)) {
+      return;
+    }
+
+    setDeletingCommentId(id);
+
+    try {
+      const res = await fetch(`/api/posts/${postId}/comments/${id}`, {
+        method: "DELETE"
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error ?? `Could not delete ${isReply ? "reply" : "comment"}.`);
+        return;
+      }
+
+      if (!parentId) {
+        if (replyTargetId === id) {
+          setReplyTargetId(null);
+          setReplyInput("");
+        }
+
+        setReplySubmittingId((current) => (current === id ? null : current));
+      }
+
+      if (parentId) {
+        setComments((prev) =>
+          prev.map((comment) =>
+            comment.id === parentId
+              ? {
+                  ...comment,
+                  replies: comment.replies.filter((reply) => reply.id !== id)
+                }
+              : comment
+          )
+        );
+      } else {
+        setComments((prev) => prev.filter((comment) => comment.id !== id));
+      }
+
+      toast.success(
+        isReply ? "Reply deleted" : replyCount > 0 ? "Comment thread deleted" : "Comment deleted"
+      );
+    } catch {
+      toast.error(`Could not delete ${parentId ? "reply" : "comment"}.`);
+    } finally {
+      setDeletingCommentId((current) => (current === id ? null : current));
+    }
+  }
+
   const commentCount = comments.reduce((total, comment) => total + 1 + comment.replies.length, 0);
 
   if (commentsDisabled) {
@@ -189,17 +265,48 @@ export function CommentSection({
                       </span>
                     </p>
                     <p className="mt-0.5 text-sm leading-5 text-[var(--foreground)]/80">{comment.content}</p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setReplyTargetId((current) => (current === comment.id ? null : comment.id));
-                        setReplyInput("");
-                      }}
-                      className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-[var(--map-accent)] transition hover:text-[var(--foreground)]"
-                    >
-                      <CornerDownRight className="h-3.5 w-3.5" />
-                      Reply
-                    </button>
+                    <div className="mt-1 flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReplyTargetId((current) => (current === comment.id ? null : comment.id));
+                          setReplyInput("");
+                        }}
+                        disabled={deletingCommentId === comment.id}
+                        className={cn(
+                          "inline-flex min-h-8 items-center gap-1 rounded-full px-2 py-1 text-xs font-medium text-[var(--map-accent)] transition hover:text-[var(--foreground)]",
+                          deletingCommentId === comment.id && "pointer-events-none opacity-50"
+                        )}
+                      >
+                        <CornerDownRight className="h-3.5 w-3.5" />
+                        Reply
+                      </button>
+                      {(currentUserId === comment.user.id || currentUserId === postOwnerId) && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            deleteComment({
+                              id: comment.id,
+                              replyCount: comment.replies.length
+                            })
+                          }
+                          disabled={deletingCommentId === comment.id}
+                          className={cn(
+                            "inline-flex min-h-8 items-center gap-1 rounded-full px-2 py-1 text-xs font-medium transition",
+                            deletingCommentId === comment.id
+                              ? "pointer-events-none text-red-500"
+                              : "text-red-500/80 hover:text-red-500"
+                          )}
+                        >
+                          {deletingCommentId === comment.id ? (
+                            <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" />
+                          )}
+                          Delete
+                        </button>
+                      )}
+                    </div>
 
                     {replyTargetId === comment.id ? (
                       <form
@@ -251,6 +358,31 @@ export function CommentSection({
                             </span>
                           </p>
                           <p className="mt-0.5 text-sm leading-5 text-[var(--foreground)]/78">{reply.content}</p>
+                          {(currentUserId === reply.user.id || currentUserId === postOwnerId) && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                deleteComment({
+                                  id: reply.id,
+                                  parentId: comment.id
+                                })
+                              }
+                              disabled={deletingCommentId === reply.id}
+                              className={cn(
+                                "mt-1 inline-flex min-h-8 items-center gap-1 rounded-full px-2 py-1 text-xs font-medium transition",
+                                deletingCommentId === reply.id
+                                  ? "pointer-events-none text-red-500"
+                                  : "text-red-500/70 hover:text-red-500"
+                              )}
+                            >
+                              {deletingCommentId === reply.id ? (
+                                <LoaderCircle className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-3 w-3" />
+                              )}
+                              Delete
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}

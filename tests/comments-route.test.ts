@@ -60,6 +60,49 @@ describe("post comments route", () => {
     expect(findManyMock).not.toHaveBeenCalled();
   });
 
+  test("GET returns comments with moderation context for the viewer", async () => {
+    getVisiblePostByIdMock.mockResolvedValue({
+      id: "post_1",
+      userId: "owner_1",
+      user: {
+        settings: {
+          commentsEnabled: true
+        }
+      }
+    });
+    findManyMock.mockResolvedValue([
+      {
+        id: "comment_1",
+        content: "Looks amazing",
+        createdAt: new Date().toISOString(),
+        user: {
+          id: "viewer_1",
+          name: "Avery Chen",
+          username: "avery",
+          avatarUrl: null
+        },
+        replies: []
+      }
+    ]);
+
+    const { GET } = await import("@/app/api/posts/[postId]/comments/route");
+    const response = await GET(new Request("http://localhost/api/posts/post_1/comments"), {
+      params: Promise.resolve({ postId: "post_1" })
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      comments: [
+        expect.objectContaining({
+          id: "comment_1",
+          replies: []
+        })
+      ],
+      currentUserId: "viewer_1",
+      postOwnerId: "owner_1"
+    });
+  });
+
   test("POST creates a comment when comments are enabled", async () => {
     getVisiblePostByIdMock.mockResolvedValue({
       id: "post_2",
