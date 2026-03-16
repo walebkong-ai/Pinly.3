@@ -320,15 +320,6 @@ export function MapPageClient() {
                   ) : null}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  {satelliteToggleVisible ? (
-                    <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
-                      <MapModeToggle
-                        value={activeMapMode}
-                        onChange={handleMapModeChange}
-                        satelliteDisabled={satelliteOptionDisabled}
-                      />
-                    </div>
-                  ) : null}
                   {showControls ? (
                     <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
                       <button
@@ -358,6 +349,15 @@ export function MapPageClient() {
                 </Link>
               ) : null}
             </div>
+            {satelliteToggleVisible ? (
+              <div className="pointer-events-auto flex justify-end">
+                <MapModeToggle
+                  value={activeMapMode}
+                  onChange={handleMapModeChange}
+                  satelliteDisabled={satelliteOptionDisabled}
+                />
+              </div>
+            ) : null}
             {showEmptySearchState ? (
               <div className="pointer-events-auto inline-flex max-w-lg items-center gap-2 rounded-2xl border bg-[var(--surface-strong)] px-4 py-2 text-sm text-[var(--foreground)]/68 shadow-sm">
                 <Search className="h-4 w-4 text-[var(--map-accent)]" />

@@ -1,17 +1,8 @@
 "use client";
 
-import { Map, Satellite } from "lucide-react";
+import { Satellite } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MapVisualMode } from "@/types/app";
-
-const options: Array<{
-  value: MapVisualMode;
-  label: string;
-  icon: typeof Map;
-}> = [
-  { value: "default", label: "Map", icon: Map },
-  { value: "satellite", label: "Satellite", icon: Satellite }
-];
 
 export function MapModeToggle({
   value,
@@ -22,34 +13,46 @@ export function MapModeToggle({
   onChange: (value: MapVisualMode) => void;
   satelliteDisabled?: boolean;
 }) {
-  return (
-    <div className="flex items-center gap-1">
-      {options.map((option) => {
-        const Icon = option.icon;
-        const disabled = option.value === "satellite" && satelliteDisabled;
+  const satelliteEnabled = value === "satellite";
 
-        return (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => onChange(option.value)}
-            disabled={disabled}
-            className={cn(
-              "inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium whitespace-nowrap transition md:px-4 md:text-sm",
-              value === option.value
-                ? "bg-[var(--foreground)] text-[var(--background)] shadow-sm"
-                : "text-[var(--foreground)]/70 hover:bg-[var(--foreground)]/5",
-              disabled && "cursor-not-allowed opacity-45 hover:bg-transparent"
-            )}
-            aria-pressed={value === option.value}
-            aria-label={option.label}
-            title={disabled ? "Satellite is unavailable right now" : option.label}
-          >
-            <Icon className="h-3.5 w-3.5 md:h-4 md:w-4" />
-            <span>{option.label}</span>
-          </button>
-        );
-      })}
-    </div>
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(satelliteEnabled ? "default" : "satellite")}
+      disabled={satelliteDisabled}
+      className={cn(
+        "glass-panel inline-flex min-h-10 items-center gap-2 rounded-full px-3 py-2 text-[11px] font-medium whitespace-nowrap shadow-lg shadow-black/10 transition md:px-3.5 md:text-xs",
+        satelliteEnabled
+          ? "border-[rgba(252,236,218,0.14)] bg-[rgba(8,17,26,0.82)] text-[var(--background)] shadow-[0_14px_30px_rgba(7,16,24,0.34)]"
+          : "text-[var(--foreground)]/78 hover:bg-[rgba(255,250,244,0.96)]",
+        satelliteDisabled && "cursor-not-allowed opacity-45 hover:bg-[var(--card)]"
+      )}
+      aria-pressed={satelliteEnabled}
+      aria-label={satelliteEnabled ? "Turn satellite mode off" : "Turn satellite mode on"}
+      title={
+        satelliteDisabled
+          ? "Satellite is unavailable right now"
+          : satelliteEnabled
+            ? "Switch back to the default map"
+            : "Switch to satellite mode"
+      }
+    >
+      <span
+        className={cn(
+          "flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition",
+          satelliteEnabled ? "bg-[rgba(252,236,218,0.16)]" : "bg-[var(--foreground)]/8"
+        )}
+      >
+        <Satellite className="h-3.5 w-3.5" />
+      </span>
+      <span>Satellite</span>
+      <span
+        aria-hidden="true"
+        className={cn(
+          "h-2.5 w-2.5 shrink-0 rounded-full transition",
+          satelliteEnabled ? "bg-[var(--map-accent)] shadow-[0_0_0_4px_rgba(56,182,201,0.18)]" : "bg-[var(--foreground)]/18"
+        )}
+      />
+    </button>
   );
 }
