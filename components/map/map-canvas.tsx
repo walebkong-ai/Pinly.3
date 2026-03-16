@@ -127,7 +127,6 @@ export function MapCanvas({
         projection="globe"
       >
         {markers.map((marker) => {
-        {markers.map((marker) => {
           const isSelected = marker.id === popupInfo?.id || ("post" in marker && marker.post.id === selectedPostId);
 
           return (
