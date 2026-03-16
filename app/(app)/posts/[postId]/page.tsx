@@ -153,12 +153,12 @@ export default async function PostDetailPage({ params }: Props) {
                     Comments off
                   </span>
                 )}
+                <SaveButton postId={post.id} initialSaved={post.savedByViewer} />
+                <ShareSheet postId={post.id} />
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
-                <SaveButton postId={post.id} initialSaved={post.savedByViewer} triggerStyle="emphasis" />
                 <WantToGoButton location={post} initialItemId={wantToGoItem?.id ?? null} triggerStyle="emphasis" />
                 <DirectionsSheet post={post} label="Directions" triggerStyle="emphasis" />
-                <ShareSheet postId={post.id} triggerStyle="emphasis" />
               </div>
             </div>
 

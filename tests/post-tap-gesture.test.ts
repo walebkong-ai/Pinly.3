@@ -168,7 +168,7 @@ describe("post tap gesture helpers", () => {
     const gestureSurface = new EventTarget();
     const targetInsideSurface = {
       closest: () => gestureSurface
-    } as EventTarget & { closest: (selector: string) => EventTarget | null };
+    } as unknown as EventTarget & { closest: (selector: string) => EventTarget | null };
 
     expect(
       getGestureBlockingInteractiveTarget({
@@ -183,7 +183,7 @@ describe("post tap gesture helpers", () => {
     const nestedControl = new EventTarget();
     const targetInsideControl = {
       closest: () => nestedControl
-    } as EventTarget & { closest: (selector: string) => EventTarget | null };
+    } as unknown as EventTarget & { closest: (selector: string) => EventTarget | null };
 
     expect(
       getGestureBlockingInteractiveTarget({
