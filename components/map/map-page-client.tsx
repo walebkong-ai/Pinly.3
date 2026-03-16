@@ -60,7 +60,7 @@ export function MapPageClient() {
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<MapCategory[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [selectedPost, setSelectedPost] = useState<PostSummary | null>(null);
+  const [expandedPost, setExpandedPost] = useState<PostSummary | null>(null);
   const [selectedLocationCluster, setSelectedLocationCluster] = useState<PlaceClusterMarker | null>(null);
   const [viewport, setViewport] = useState<MapViewport>(() =>
     canonicalizeViewportForDataQuery({
@@ -218,16 +218,16 @@ export function MapPageClient() {
   }, [viewport, deferredQuery, layer, time, selectedGroupIds, selectedCategories]);
 
   useEffect(() => {
-    if (!selectedPost) {
+    if (!expandedPost) {
       return;
     }
 
-    const stillVisible = mapData.markers.some((marker) => "post" in marker && marker.post.id === selectedPost.id);
+    const stillVisible = mapData.markers.some((marker) => "post" in marker && marker.post.id === expandedPost.id);
 
     if (!stillVisible) {
-      setSelectedPost(null);
+      setExpandedPost(null);
     }
-  }, [mapData, selectedPost]);
+  }, [expandedPost, mapData]);
 
   useEffect(() => {
     if (!selectedLocationCluster) {
@@ -322,13 +322,13 @@ export function MapPageClient() {
   );
 
   const handleOpenLocationCluster = useCallback((marker: PlaceClusterMarker) => {
-    setSelectedPost(null);
+    setExpandedPost(null);
     setSelectedLocationCluster(marker);
   }, []);
 
   const handleSelectLocationPost = useCallback((post: PostSummary) => {
     setSelectedLocationCluster(null);
-    setSelectedPost(post);
+    setExpandedPost(post);
   }, []);
 
   return (
@@ -337,9 +337,9 @@ export function MapPageClient() {
         markers={mapData.markers}
         mapMode={activeMapMode}
         mapStyle={mapStyle}
-        selectedPostId={selectedPost?.id ?? null}
+        expandedPostId={expandedPost?.id ?? null}
         selectedLocationMarkerId={selectedLocationCluster?.id ?? null}
-        onExpandPost={setSelectedPost}
+        onExpandPost={setExpandedPost}
         onOpenLocationCluster={handleOpenLocationCluster}
         onMapError={handleMapError}
         onViewportChange={onViewportChange}
@@ -456,7 +456,7 @@ export function MapPageClient() {
         onClose={() => setSelectedLocationCluster(null)}
         onSelectPost={handleSelectLocationPost}
       />
-      <BottomSheet post={selectedPost} onClose={() => setSelectedPost(null)} />
+      <BottomSheet post={expandedPost} onClose={() => setExpandedPost(null)} />
     </section>
   );
 }

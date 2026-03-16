@@ -11,6 +11,7 @@ import {
   getMarkerRenderPriority,
   sortMarkersForRender
 } from "@/lib/map-marker-rendering";
+import { getSelectedMapMarkerId, shouldDismissMapPopup } from "@/lib/map-selection-state";
 import type { MapStyleValue } from "@/lib/map-style";
 import { cn } from "@/lib/utils";
 
@@ -23,7 +24,7 @@ const defaultCenter = {
 };
 
 export function MapCanvas({
-  selectedPostId,
+  expandedPostId,
   selectedLocationMarkerId,
   markers,
   mapMode,
@@ -36,7 +37,7 @@ export function MapCanvas({
   markers: MapMarker[];
   mapMode: MapVisualMode;
   mapStyle: MapStyleValue;
-  selectedPostId: string | null;
+  expandedPostId: string | null;
   selectedLocationMarkerId: string | null;
   onExpandPost: (post: PostSummary) => void;
   onOpenLocationCluster: (marker: PlaceClusterMarker) => void;
@@ -74,10 +75,15 @@ export function MapCanvas({
   }, [reportViewport]);
 
   useEffect(() => {
-    if (selectedPostId || selectedLocationMarkerId) {
+    if (
+      shouldDismissMapPopup({
+        expandedPostId,
+        selectedLocationMarkerId
+      })
+    ) {
       setPopupInfo(null);
     }
-  }, [selectedLocationMarkerId, selectedPostId]);
+  }, [expandedPostId, selectedLocationMarkerId]);
 
   useEffect(() => {
     if (!popupInfo) {
@@ -95,14 +101,21 @@ export function MapCanvas({
     reportViewport();
   }, [reportViewport]);
 
-  const selectedMarkerId =
-    selectedLocationMarkerId ??
-    popupInfo?.id ??
-    markers.find((marker) => "post" in marker && marker.post.id === selectedPostId)?.id ??
-    null;
+  const selectedMarkerId = getSelectedMapMarkerId({
+    popupMarkerId: popupInfo?.id ?? null,
+    selectedLocationMarkerId
+  });
   const orderedMarkers = useMemo(
     () => sortMarkersForRender(markers, selectedMarkerId),
     [markers, selectedMarkerId]
+  );
+
+  const handleExpandPost = useCallback(
+    (post: PostSummary) => {
+      setPopupInfo(null);
+      onExpandPost(post);
+    },
+    [onExpandPost]
   );
 
   function zoomToMarker(marker: MapMarker) {
@@ -147,10 +160,7 @@ export function MapCanvas({
         projection="globe"
       >
         {orderedMarkers.map((marker) => {
-          const isSelected =
-            marker.id === selectedLocationMarkerId ||
-            marker.id === popupInfo?.id ||
-            ("post" in marker && marker.post.id === selectedPostId);
+          const isSelected = marker.id === selectedMarkerId;
 
           return (
             <Marker
@@ -210,7 +220,7 @@ export function MapCanvas({
             <MarkerPreview
               marker={popupInfo}
               onZoomIn={() => zoomToMarker(popupInfo)}
-              onExpandPost={onExpandPost}
+              onExpandPost={handleExpandPost}
               onClosePreview={() => setPopupInfo(null)}
             />
           </Popup>
