@@ -53,20 +53,20 @@ function getRepresentedMemoryCount(marker: MapMarker) {
 }
 
 function getMemoryScaleBoost(memoryCount: number) {
-  if (memoryCount >= 13) {
-    return 10;
+  if (memoryCount >= 11) {
+    return 28;
   }
 
   if (memoryCount >= 7) {
-    return 8;
+    return 22;
   }
 
   if (memoryCount >= 4) {
-    return 6;
+    return 15;
   }
 
   if (memoryCount >= 2) {
-    return 3;
+    return 7;
   }
 
   return 0;
@@ -126,8 +126,8 @@ function getPinRenderSpec(marker: MapMarker, selected: boolean): MarkerRenderSpe
         ? 48 + memoryScaleBoost + (selected ? 4 : 0)
         : 44 + memoryScaleBoost + (selected ? 4 : 0);
   const contentSize = cityCluster || placeCluster || profileMarker
-    ? Math.round(height * 0.42)
-    : Math.round(height * 0.38);
+    ? Math.round(height * 0.44)
+    : Math.round(height * 0.4);
   const fill = cityCluster
     ? selected
       ? "#236A47"
@@ -148,7 +148,7 @@ function getPinRenderSpec(marker: MapMarker, selected: boolean): MarkerRenderSpe
     popupOffset: Math.round(height * 0.74),
     fill,
     stroke: selected ? "#FFF8F0" : "#FFF3E6",
-    strokeWidth: (selected ? 3 : 2.6) + Math.min(memoryScaleBoost, 10) * 0.03,
+    strokeWidth: (selected ? 3 : 2.6) + Math.min(memoryScaleBoost, 28) * 0.025,
     contentBackground: placeCluster && selected ? "#F2FDFF" : "#FFF8F0",
     contentBorder: placeCluster ? "rgba(8, 52, 61, 0.12)" : "rgba(24, 85, 56, 0.12)",
     contentColor: cityCluster

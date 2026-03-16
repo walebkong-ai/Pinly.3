@@ -127,10 +127,11 @@ describe("map marker rendering", () => {
     const mediumClusterSize = getMarkerVisualSize(makePlaceClusterMarker(5));
     const largeClusterSize = getMarkerVisualSize(makeCityClusterMarker(14));
 
-    expect(mediumClusterSize.height).toBeGreaterThan(singlePinSize.height);
-    expect(mediumClusterSize.width).toBeGreaterThan(singlePinSize.width);
-    expect(largeClusterSize.height).toBeGreaterThan(mediumClusterSize.height);
-    expect(largeClusterSize.width).toBeGreaterThan(mediumClusterSize.width);
+    expect(singlePinSize).toEqual({ width: 32, height: 44 });
+    expect(mediumClusterSize.height - singlePinSize.height).toBeGreaterThanOrEqual(18);
+    expect(mediumClusterSize.width - singlePinSize.width).toBeGreaterThanOrEqual(12);
+    expect(largeClusterSize.height - mediumClusterSize.height).toBeGreaterThanOrEqual(14);
+    expect(largeClusterSize.width - mediumClusterSize.width).toBeGreaterThanOrEqual(10);
   });
 
   test("keeps all marker stages bottom-anchored for a consistent pin tip", () => {
