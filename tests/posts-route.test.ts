@@ -127,6 +127,45 @@ describe("posts route", () => {
     expect(postCreateMock).not.toHaveBeenCalled();
   });
 
+  test("POST normalizes country codes before saving", async () => {
+    getFriendIdsMock.mockResolvedValue([]);
+    postCollectionFindManyMock.mockResolvedValue([]);
+    postCreateMock.mockResolvedValue({
+      id: "post_1",
+      visitedWith: []
+    });
+
+    const { POST } = await import("@/app/api/posts/route");
+    const response = await POST(
+      new Request("http://localhost/api/posts", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          mediaType: "IMAGE",
+          mediaUrl: "/uploads/example.jpg",
+          thumbnailUrl: null,
+          caption: "Harbor morning.",
+          placeName: "North Shore",
+          city: "Auckland",
+          country: "NZ",
+          latitude: -36.8,
+          longitude: 174.7,
+          visitedAt: new Date().toISOString(),
+          taggedUserIds: []
+        })
+      })
+    );
+
+    expect(response.status).toBe(201);
+    expect(postCreateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          country: "New Zealand"
+        })
+      })
+    );
+  });
+
   test("POST adds a new memory to selected collections", async () => {
     const collectionId = "ck77777777777777777777777";
     getFriendIdsMock.mockResolvedValue([]);

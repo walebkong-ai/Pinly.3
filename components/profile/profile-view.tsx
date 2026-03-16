@@ -8,6 +8,32 @@ import { MessageFriendButton } from "@/components/messages/message-friend-button
 import { CollectionCard } from "@/components/collections/collection-card";
 import { CreateCollectionButton } from "@/components/collections/create-collection-button";
 import { InstallAppCard } from "@/components/pwa/install-app-card";
+import { LocationCountryText } from "@/components/ui/country-flag";
+import { resolveCountry } from "@/lib/country-flags";
+
+function buildProfilePlaceKey(post: Pick<PostSummary, "city" | "country">) {
+  const resolvedCountry = resolveCountry(post.country);
+  const countryKey = resolvedCountry.code ?? resolvedCountry.name.trim().toLowerCase();
+  return `${post.city.trim().toLowerCase()}|${countryKey}`;
+}
+
+function getUniqueProfilePlaces(posts: PostSummary[]) {
+  const uniquePlaces = new Map<string, { key: string; city: string; country: string }>();
+
+  for (const post of posts) {
+    const key = buildProfilePlaceKey(post);
+
+    if (!uniquePlaces.has(key)) {
+      uniquePlaces.set(key, {
+        key,
+        city: post.city,
+        country: post.country
+      });
+    }
+  }
+
+  return Array.from(uniquePlaces.values());
+}
 
 export function ProfileView({
   profile,
@@ -31,8 +57,9 @@ export function ProfileView({
   showLikeCounts?: boolean;
   collections?: CollectionSummary[];
 }) {
-  const visiblePlaces = profile.places.slice(0, 8);
-  const hiddenPlaceCount = Math.max(profile.places.length - visiblePlaces.length, 0);
+  const uniquePlaces = getUniqueProfilePlaces(profile.posts);
+  const visiblePlaces = uniquePlaces.slice(0, 8);
+  const hiddenPlaceCount = Math.max(uniquePlaces.length - visiblePlaces.length, 0);
   const firstName = profile.user.name.split(" ")[0] || profile.user.name;
   const summaryDateFormatter = new Intl.DateTimeFormat("en-US", {
     month: "short",
@@ -131,8 +158,11 @@ export function ProfileView({
 
         <div className="mt-6 flex flex-wrap gap-2">
           {visiblePlaces.map((place) => (
-            <span key={place} className="rounded-full border bg-[var(--surface-soft)] px-3 py-1 text-sm text-[var(--foreground)]/68">
-              {place}
+            <span
+              key={place.key}
+              className="rounded-full border bg-[var(--surface-soft)] px-3 py-1 text-sm text-[var(--foreground)]/68"
+            >
+              <LocationCountryText city={place.city} country={place.country} className="max-w-[12rem] sm:max-w-full" />
             </span>
           ))}
           {hiddenPlaceCount > 0 ? (
@@ -177,7 +207,7 @@ export function ProfileView({
                       key={`${place.city}-${place.country}`}
                       className="rounded-full border border-[rgba(56,182,201,0.18)] bg-[rgba(56,182,201,0.08)] px-3 py-1.5 text-sm text-[var(--foreground)]/74"
                     >
-                      {place.city}, {place.country}
+                      <LocationCountryText city={place.city} country={place.country} className="max-w-[12rem] sm:max-w-full" />
                     </span>
                   ))}
                 </div>
@@ -209,9 +239,10 @@ export function ProfileView({
                     <p className="truncate font-[var(--font-serif)] text-[0.98rem] leading-snug text-[var(--foreground)]">
                       {memory.caption.trim() || `Memory from ${memory.placeName}`}
                     </p>
-                    <p className="mt-1 truncate text-xs text-[var(--foreground)]/56">
-                      {memory.placeName}, {memory.city}, {memory.country}
-                    </p>
+                    <div className="mt-1 flex min-w-0 max-w-full items-center gap-1 text-xs text-[var(--foreground)]/56">
+                      <span className="truncate">{memory.placeName},</span>
+                      <LocationCountryText city={memory.city} country={memory.country} className="min-w-0 max-w-full" />
+                    </div>
                     <p className="mt-1 text-[11px] text-[var(--foreground)]/43">
                       {summaryDateFormatter.format(new Date(memory.visitedAt))}
                     </p>

@@ -7,6 +7,7 @@ import { Send, Users, X, UserPlus, CheckCircle2, LoaderCircle, Share2, Image as 
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { LocationCountryText } from "@/components/ui/country-flag";
 import { Input } from "@/components/ui/input";
 import { ProfileLink } from "@/components/profile/profile-link";
 import { MESSAGES_UPDATED_EVENT } from "@/lib/notification-events";
@@ -336,9 +337,14 @@ export function GroupDetail({ groupId, viewerId }: { groupId: string; viewerId: 
                               <p className="line-clamp-2 font-[var(--font-serif)] text-base leading-tight drop-shadow-sm">
                                 {msg.sharedPost.caption?.trim() || `Memory from ${msg.sharedPost.placeName}`}
                               </p>
-                              <p className="mt-1 text-xs text-white/80 line-clamp-1">
-                                {msg.sharedPost.placeName}, {msg.sharedPost.city}, {msg.sharedPost.country}
-                              </p>
+                              <div className="mt-1 flex min-w-0 max-w-full items-center gap-1 text-xs text-white/80">
+                                <span className="truncate">{msg.sharedPost.placeName},</span>
+                                <LocationCountryText
+                                  city={msg.sharedPost.city}
+                                  country={msg.sharedPost.country}
+                                  className="min-w-0 max-w-full"
+                                />
+                              </div>
                             </div>
                           </div>
                           <div className="p-3 bg-white text-center text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent)]/5 transition-colors">

@@ -148,6 +148,61 @@ describe("single post route", () => {
     expect(updateMock).not.toHaveBeenCalled();
   });
 
+  test("PATCH normalizes country codes before saving", async () => {
+    findUniqueMock.mockResolvedValue({
+      userId: viewerId,
+      visitedWith: []
+    });
+    getFriendIdsMock.mockResolvedValue([]);
+    updateMock.mockResolvedValue({
+      id: "post_1",
+      caption: "Auckland harbor",
+      placeName: "North Shore",
+      city: "Auckland",
+      country: "New Zealand",
+      latitude: -36.8,
+      longitude: 174.7,
+      visitedAt: new Date("2026-03-10T12:00:00.000Z"),
+      user: {
+        id: viewerId,
+        name: "Avery Chen",
+        username: "avery",
+        avatarUrl: null
+      },
+      visitedWith: []
+    });
+
+    const { PATCH } = await import("@/app/api/posts/[postId]/route");
+    const response = await PATCH(
+      new Request("http://localhost/api/posts/post_1", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          caption: "Auckland harbor",
+          placeName: "North Shore",
+          city: "Auckland",
+          country: "NZ",
+          latitude: -36.8,
+          longitude: 174.7,
+          visitedAt: "2026-03-10T12:00:00.000Z",
+          taggedUserIds: []
+        })
+      }),
+      {
+        params: Promise.resolve({ postId: "post_1" })
+      }
+    );
+
+    expect(response.status).toBe(200);
+    expect(updateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          country: "New Zealand"
+        })
+      })
+    );
+  });
+
   test("PATCH allows already-tagged users to remain when saving edits", async () => {
     findUniqueMock.mockResolvedValue({
       userId: viewerId,

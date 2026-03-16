@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { getFriendIds, getVisiblePostById } from "@/lib/data";
 import { apiError, apiValidationError } from "@/lib/api";
+import { normalizeCountryForStorage } from "@/lib/country-flags";
 import { editPostSchema } from "@/lib/validation";
 import { prisma } from "@/lib/prisma";
 
@@ -91,7 +92,7 @@ export async function PATCH(request: Request, context: Context) {
         caption: parsed.data.caption,
         placeName: parsed.data.placeName,
         city: parsed.data.city,
-        country: parsed.data.country,
+        country: normalizeCountryForStorage(parsed.data.country),
         latitude: parsed.data.latitude,
         longitude: parsed.data.longitude,
         visitedAt: new Date(parsed.data.visitedAt),

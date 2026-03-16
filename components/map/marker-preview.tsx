@@ -3,6 +3,7 @@ import type { SyntheticEvent } from "react";
 import type { MapMarker, PostSummary } from "@/types/app";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
+import { LocationCountryText } from "@/components/ui/country-flag";
 import { MediaView } from "@/components/post/media-view";
 import { ProfileLink } from "@/components/profile/profile-link";
 import { formatVisitDate } from "@/lib/utils";
@@ -37,9 +38,7 @@ export function MarkerPreview({
           <X className="h-4 w-4" />
         </Button>
         <div>
-          <p className="font-semibold">
-            {marker.city}, {marker.country}
-          </p>
+          <LocationCountryText city={marker.city} country={marker.country} className="w-full min-w-0 font-semibold" />
           <p className="mt-1 text-xs text-[var(--foreground)]/54">
             {marker.postCount} memories · {marker.friendCount} friends
           </p>
@@ -73,9 +72,11 @@ export function MarkerPreview({
         </Button>
         <div>
           <p className="font-semibold">{marker.placeName}</p>
-          <p className="mt-1 text-xs text-[var(--foreground)]/54">
-            {marker.city}, {marker.country}
-          </p>
+          <LocationCountryText
+            city={marker.city}
+            country={marker.country}
+            className="mt-1 w-full min-w-0 text-xs text-[var(--foreground)]/54"
+          />
         </div>
         <p className="text-sm text-[var(--foreground)]/76">{marker.postCount} moments pinned here</p>
         <Button className="w-full justify-between bg-[var(--map-accent)] text-[var(--foreground)] focus:ring-[var(--map-accent)]" onClick={onZoomIn}>
@@ -112,8 +113,9 @@ export function MarkerPreview({
         <div className="flex flex-wrap gap-2 text-[11px] text-[var(--foreground)]/56">
           <span className="inline-flex items-center gap-1 rounded-full border bg-[var(--surface-soft)] px-2.5 py-1">
             <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--map-accent)]" />
-            <span className="truncate">
-              {post.placeName}, {post.city}, {post.country}
+            <span className="flex min-w-0 max-w-full items-center gap-1 truncate">
+              <span className="truncate">{post.placeName},</span>
+              <LocationCountryText city={post.city} country={post.country} className="min-w-0 max-w-full" />
             </span>
           </span>
           <span className="inline-flex items-center rounded-full border bg-[var(--surface-soft)] px-2.5 py-1 uppercase tracking-[0.14em] text-[var(--foreground)]/48">

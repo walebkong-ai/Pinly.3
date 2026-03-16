@@ -1,4 +1,5 @@
 import type { ProfileTravelSummary } from "@/types/app";
+import { normalizeCountryForStorage, resolveCountry } from "@/lib/country-flags";
 
 type TravelSummaryPost = {
   id: string;
@@ -16,8 +17,13 @@ function normalizeValue(value: string) {
   return value.trim().toLowerCase();
 }
 
+function buildCountryKey(country: string) {
+  const resolvedCountry = resolveCountry(country);
+  return resolvedCountry.code ?? normalizeValue(resolvedCountry.name);
+}
+
 function buildCityKey(post: Pick<TravelSummaryPost, "city" | "country">) {
-  return `${normalizeValue(post.city)}|${normalizeValue(post.country)}`;
+  return `${normalizeValue(post.city)}|${buildCountryKey(post.country)}`;
 }
 
 function buildPlaceKey(post: Pick<TravelSummaryPost, "placeName" | "city" | "country">) {
@@ -46,14 +52,14 @@ export function buildProfileTravelSummary(
 
   for (const post of sortedPosts) {
     cityKeys.add(buildCityKey(post));
-    countryKeys.add(normalizeValue(post.country));
+    countryKeys.add(buildCountryKey(post.country));
 
     const placeKey = buildPlaceKey(post);
     if (!recentPlaces.has(placeKey)) {
       recentPlaces.set(placeKey, {
         placeName: post.placeName,
         city: post.city,
-        country: post.country,
+        country: normalizeCountryForStorage(post.country),
         visitedAt: post.visitedAt
       });
     }
@@ -67,7 +73,7 @@ export function buildProfileTravelSummary(
     if (viewerCityKeys.has(cityKey) && !sharedPlaces.has(cityKey)) {
       sharedPlaces.set(cityKey, {
         city: post.city,
-        country: post.country
+        country: normalizeCountryForStorage(post.country)
       });
     }
   }
@@ -81,7 +87,7 @@ export function buildProfileTravelSummary(
       caption: post.caption,
       placeName: post.placeName,
       city: post.city,
-      country: post.country,
+      country: normalizeCountryForStorage(post.country),
       visitedAt: post.visitedAt,
       mediaType: post.mediaType,
       mediaUrl: post.mediaUrl,

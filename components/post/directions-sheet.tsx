@@ -11,6 +11,7 @@ import {
   type DirectionLocation,
   type DirectionsProvider
 } from "@/lib/directions";
+import { LocationCountryText } from "@/components/ui/country-flag";
 import { cn } from "@/lib/utils";
 
 type DirectionsSheetProps = {
@@ -114,9 +115,10 @@ export function DirectionsSheet({
               </div>
               <div className="min-w-0">
                 <h2 className="font-[var(--font-serif)] text-2xl font-semibold">Open directions</h2>
-                <p className="mt-1 text-sm text-[var(--foreground)]/62">
-                  {post.placeName}, {post.city}, {post.country}
-                </p>
+                <div className="mt-1 flex min-w-0 max-w-full items-center gap-1 text-sm text-[var(--foreground)]/62">
+                  <span className="truncate">{post.placeName},</span>
+                  <LocationCountryText city={post.city} country={post.country} className="min-w-0 max-w-full" />
+                </div>
               </div>
             </div>
 

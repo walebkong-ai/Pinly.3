@@ -18,6 +18,7 @@ import { VisitedWithList } from "@/components/post/visited-with-list";
 import { ManagePostCollectionsCard } from "@/components/collections/collection-picker";
 import { WantToGoButton } from "@/components/places/want-to-go-button";
 import { ProfileLink } from "@/components/profile/profile-link";
+import { LocationCountryText } from "@/components/ui/country-flag";
 
 type Props = {
   params: Promise<{ postId: string }>;
@@ -124,7 +125,11 @@ export default async function PostDetailPage({ params }: Props) {
                     <div className="min-w-0">
                       <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--foreground)]/45">Location</p>
                       <p className="mt-1 truncate text-sm font-medium text-[var(--foreground)]">{post.placeName}</p>
-                      <p className="mt-1 text-xs text-[var(--foreground)]/62">{post.city}, {post.country}</p>
+                      <LocationCountryText
+                        city={post.city}
+                        country={post.country}
+                        className="mt-1 w-full min-w-0 text-xs text-[var(--foreground)]/62"
+                      />
                     </div>
                   </div>
                 </div>

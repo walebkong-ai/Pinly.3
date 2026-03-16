@@ -14,6 +14,7 @@ import { ShareSheet } from "@/components/post/share-sheet";
 import { SaveButton } from "@/components/post/save-button";
 import { VisitedWithList } from "@/components/post/visited-with-list";
 import { ProfileLink } from "@/components/profile/profile-link";
+import { LocationCountryText } from "@/components/ui/country-flag";
 import {
   MOBILE_TAP_MAX_MOVEMENT_PX,
   MOBILE_TAP_NAVIGATION_DELAY_MS,
@@ -324,9 +325,7 @@ export function PostCard({
             <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--map-accent)]" />
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium text-[var(--foreground)]/66">{post.placeName}</p>
-              <p className="truncate">
-                {post.city}, {post.country}
-              </p>
+              <LocationCountryText city={post.city} country={post.country} className="mt-0.5 w-full min-w-0" />
             </div>
           </div>
           <VisitedWithList friends={post.visitedWith} compact />

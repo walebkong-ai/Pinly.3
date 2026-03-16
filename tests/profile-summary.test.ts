@@ -87,4 +87,38 @@ describe("profile travel summary", () => {
     expect(summary.countryCount).toBe(1);
     expect(summary.sharedPlaces).toEqual([]);
   });
+
+  test("treats country codes and country names as the same place", () => {
+    const summary = buildProfileTravelSummary(
+      [
+        {
+          id: "post_1",
+          caption: "Harbor walk",
+          placeName: "North Shore",
+          city: "Auckland",
+          country: "NZ",
+          visitedAt: "2026-03-01T12:00:00.000Z",
+          mediaType: "IMAGE" as const,
+          mediaUrl: "/1.jpg",
+          thumbnailUrl: null
+        }
+      ],
+      [
+        {
+          city: "Auckland",
+          country: "New Zealand"
+        }
+      ]
+    );
+
+    expect(summary.cityCount).toBe(1);
+    expect(summary.countryCount).toBe(1);
+    expect(summary.sharedPlaces).toEqual([
+      {
+        city: "Auckland",
+        country: "New Zealand"
+      }
+    ]);
+    expect(summary.recentMemories[0]?.country).toBe("New Zealand");
+  });
 });

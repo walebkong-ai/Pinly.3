@@ -56,7 +56,7 @@ describe("place reverse route", () => {
     expect(data.place).toEqual({
       placeName: "North Shore",
       city: "Auckland",
-      country: "NZ"
+      country: "New Zealand"
     });
   });
 });

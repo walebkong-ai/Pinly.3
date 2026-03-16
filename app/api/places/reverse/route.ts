@@ -1,4 +1,5 @@
 import { apiError, apiValidationError } from "@/lib/api";
+import { normalizeCountryForStorage } from "@/lib/country-flags";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -59,7 +60,9 @@ export async function GET(request: Request) {
       data.address?.region ??
       "";
 
-    const country = data.address?.country ?? data.address?.country_code?.toUpperCase() ?? "";
+    const country = normalizeCountryForStorage(
+      data.address?.country ?? data.address?.country_code?.toUpperCase() ?? ""
+    );
     const placeName = data.name || data.display_name?.split(",")[0] || "Pinned Location";
 
     return Response.json({

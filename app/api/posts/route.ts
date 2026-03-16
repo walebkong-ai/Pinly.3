@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { mapQuerySchema, postSchema } from "@/lib/validation";
 import { apiError, apiValidationError } from "@/lib/api";
+import { normalizeCountryForStorage } from "@/lib/country-flags";
 import { getFriendIds, getMapData } from "@/lib/data";
 
 export const runtime = "nodejs";
@@ -99,7 +100,7 @@ export async function POST(request: Request) {
         caption: parsed.data.caption,
         placeName: parsed.data.placeName,
         city: parsed.data.city,
-        country: parsed.data.country,
+        country: normalizeCountryForStorage(parsed.data.country),
         latitude: parsed.data.latitude,
         longitude: parsed.data.longitude,
         visitedAt: new Date(parsed.data.visitedAt),
