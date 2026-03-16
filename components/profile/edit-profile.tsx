@@ -8,6 +8,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AvatarPhotoEditor } from "@/components/profile/avatar-photo-editor";
+import { normalizeUsername, usernameRegex, usernameValidationMessage } from "@/lib/validation";
 
 export function EditProfile({
   initialName,
@@ -61,45 +62,76 @@ export function EditProfile({
 
   async function handleSave() {
     setUsernameError(null);
-    const cleanedUsername = username.trim();
+    const cleanedUsername = normalizeUsername(username);
 
     if (!cleanedUsername) {
       setUsernameError("Username is required.");
       return;
     }
 
-    if (!/^[a-z0-9_-]{3,20}$/.test(cleanedUsername)) {
-      setUsernameError("Use 3-20 lowercase letters, numbers, underscores, or hyphens");
+    if (!usernameRegex.test(cleanedUsername)) {
+      setUsernameError(usernameValidationMessage);
       return;
     }
 
     setSaving(true);
 
-    const response = await fetch("/api/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: cleanedUsername,
-        avatarUrl: avatarUrl || ""
-      })
-    });
+    let response: Response;
+    try {
+      response = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: cleanedUsername,
+          avatarUrl: avatarUrl || ""
+        })
+      });
+    } catch {
+      setSaving(false);
+      toast.error("Could not reach the server. Please try again.");
+      return;
+    }
+
+    let data: any = null;
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
 
     setSaving(false);
 
     if (!response.ok) {
-      const data = await response.json();
-      if (data?.error === "Username has been taken") {
+      const fieldError = Array.isArray(data?.issues?.fieldErrors?.username) ? data.issues.fieldErrors.username[0] : null;
+
+      if (typeof fieldError === "string") {
+        setUsernameError(fieldError);
+        return;
+      }
+
+      if (data?.error === "Username is already taken") {
         setUsernameError("Username is already taken");
         return;
       }
-      toast.error(data.error ?? "Failed to save profile.");
+
+      toast.error(data?.error ?? "Failed to save profile.");
       return;
     }
 
+    const nextUsername = typeof data?.user?.username === "string" ? data.user.username : cleanedUsername;
+    const nextAvatarUrl =
+      data?.user && "avatarUrl" in data.user ? (data.user.avatarUrl as string | null) : avatarUrl;
+
     toast.success("Profile updated.");
     setIsEditing(false);
-    
-    // Refresh to update server components and header
+    setUsername(nextUsername);
+    setAvatarUrl(nextAvatarUrl);
+
+    if (nextUsername !== initialUsername) {
+      router.replace(`/profile/${nextUsername}`);
+      return;
+    }
+
     router.refresh();
   }
 
@@ -159,6 +191,13 @@ export function EditProfile({
               if (usernameError) setUsernameError(null);
             }} 
             disabled={saving}
+            autoCapitalize="none"
+            autoCorrect="off"
+            autoComplete="username"
+            spellCheck={false}
+            inputMode="text"
+            maxLength={20}
+            aria-invalid={Boolean(usernameError)}
           />
           {usernameError && <p className="mt-1 text-xs text-red-500">{usernameError}</p>}
         </div>

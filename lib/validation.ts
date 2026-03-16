@@ -2,6 +2,17 @@ import { z } from "zod";
 import type { MapCategory } from "@/types/app";
 
 export const usernameRegex = /^[a-z0-9_-]{3,20}$/;
+export const usernameValidationMessage = "Use 3-20 lowercase letters, numbers, underscores, or hyphens";
+
+export function normalizeUsername(value: string) {
+  return value.trim().toLowerCase();
+}
+
+export const usernameSchema = z.string().regex(usernameRegex, usernameValidationMessage);
+export const normalizedUsernameSchema = z.preprocess(
+  (value) => (typeof value === "string" ? normalizeUsername(value) : value),
+  usernameSchema
+);
 const mapCategoryValues = ["photo", "video", "food", "nature", "landmark", "neighborhood"] as const satisfies readonly MapCategory[];
 
 const csvArray = <T extends z.ZodTypeAny>(itemSchema: T) =>
@@ -25,7 +36,7 @@ const csvArray = <T extends z.ZodTypeAny>(itemSchema: T) =>
 
 export const signUpSchema = z.object({
   name: z.string().min(2).max(50),
-  username: z.string().regex(usernameRegex, "Use 3-20 lowercase letters, numbers, underscores, or hyphens"),
+  username: usernameSchema,
   email: z.string().email(),
   password: z.string().min(8, "Password must be at least 8 characters.").max(100),
   inviteToken: z.string().optional()
@@ -37,7 +48,7 @@ export const signInSchema = z.object({
 });
 
 export const friendRequestSchema = z.object({
-  username: z.string().min(3).max(20).regex(usernameRegex, "Use a valid lowercase username")
+  username: normalizedUsernameSchema
 });
 
 export const friendRequestActionSchema = z.object({

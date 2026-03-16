@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { getProfileData } from "@/lib/data";
 import { apiError } from "@/lib/api";
+import { normalizeUsername } from "@/lib/validation";
 
 type Context = {
   params: Promise<{ username: string }>;
@@ -16,7 +17,7 @@ export async function GET(_: Request, context: Context) {
   }
 
   const { username } = await context.params;
-  const profile = await getProfileData(username, session.user.id);
+  const profile = await getProfileData(normalizeUsername(username), session.user.id);
 
   if (!profile) {
     return apiError("Profile not found", 404);
