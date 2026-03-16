@@ -35,7 +35,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-xl space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
-      <BackButton />
+      <BackButton fallbackHref={`/profile/${user.username}`} label="Profile" />
       <section className="glass-panel rounded-[1.75rem] p-4">
         <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Settings</p>
         <h1 className="mt-1.5 font-[var(--font-serif)] text-2xl">Profile settings</h1>

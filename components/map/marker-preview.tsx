@@ -1,4 +1,5 @@
-import { ChevronRight, MapPin, ZoomIn } from "lucide-react";
+import { ChevronRight, MapPin, X, ZoomIn } from "lucide-react";
+import type { SyntheticEvent } from "react";
 import type { MapMarker, PostSummary } from "@/types/app";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
@@ -8,15 +9,32 @@ import { formatVisitDate } from "@/lib/utils";
 export function MarkerPreview({
   marker,
   onExpandPost,
-  onZoomIn
+  onZoomIn,
+  onClosePreview
 }: {
   marker: MapMarker;
   onExpandPost: (post: PostSummary) => void;
   onZoomIn: () => void;
+  onClosePreview: () => void;
 }) {
+  function handleClose(event: SyntheticEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    onClosePreview();
+  }
+
   if (marker.type === "cityCluster") {
     return (
-      <div className="w-56 space-y-3 rounded-2xl border bg-[var(--surface-strong)] p-3 shadow-xl backdrop-blur-xl">
+      <div className="relative w-56 space-y-3 rounded-2xl border bg-[var(--surface-strong)] p-3 shadow-xl backdrop-blur-xl">
+        <Button
+          variant="ghost"
+          className="absolute right-2 top-2 z-10 h-9 w-9 rounded-full bg-[rgba(24,85,56,0.82)] p-0 text-[var(--background)] hover:bg-[rgba(24,85,56,0.96)] hover:text-[var(--background)]"
+          onPointerDown={handleClose}
+          onClick={handleClose}
+          aria-label="Close preview"
+        >
+          <X className="h-4 w-4" />
+        </Button>
         <div>
           <p className="font-semibold">
             {marker.city}, {marker.country}
@@ -40,7 +58,16 @@ export function MarkerPreview({
 
   if (marker.type === "placeCluster") {
     return (
-      <div className="w-60 space-y-3 rounded-2xl border bg-[var(--surface-strong)] p-3 shadow-xl backdrop-blur-xl">
+      <div className="relative w-60 space-y-3 rounded-2xl border bg-[var(--surface-strong)] p-3 shadow-xl backdrop-blur-xl">
+        <Button
+          variant="ghost"
+          className="absolute right-2 top-2 z-10 h-9 w-9 rounded-full bg-[rgba(24,85,56,0.82)] p-0 text-[var(--background)] hover:bg-[rgba(24,85,56,0.96)] hover:text-[var(--background)]"
+          onPointerDown={handleClose}
+          onClick={handleClose}
+          aria-label="Close preview"
+        >
+          <X className="h-4 w-4" />
+        </Button>
         <div>
           <p className="font-semibold">{marker.placeName}</p>
           <p className="mt-1 text-xs text-[var(--foreground)]/54">
@@ -60,7 +87,16 @@ export function MarkerPreview({
   const primaryCaption = post.caption.trim() || `Memory from ${post.placeName}`;
 
   return (
-    <div className="w-60 overflow-hidden rounded-2xl border bg-[var(--surface-strong)] shadow-2xl shadow-black/20 backdrop-blur-xl">
+    <div className="relative w-60 overflow-hidden rounded-2xl border bg-[var(--surface-strong)] shadow-2xl shadow-black/20 backdrop-blur-xl">
+      <Button
+        variant="ghost"
+        className="absolute right-2 top-2 z-10 h-9 w-9 rounded-full bg-[rgba(24,85,56,0.82)] p-0 text-[var(--background)] hover:bg-[rgba(24,85,56,0.96)] hover:text-[var(--background)]"
+        onPointerDown={handleClose}
+        onClick={handleClose}
+        aria-label="Close preview"
+      >
+        <X className="h-4 w-4" />
+      </Button>
       {/* image — no padding so it butts to the card edge */}
       <div className="aspect-[4/3] overflow-hidden">
         <MediaView mediaType={post.mediaType} mediaUrl={post.mediaUrl} thumbnailUrl={post.thumbnailUrl} />

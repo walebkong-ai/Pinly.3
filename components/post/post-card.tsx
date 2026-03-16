@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useRef, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
+import { useRouter } from "next/navigation";
 import { MapPin } from "lucide-react";
 import type { PostSummary } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
@@ -9,6 +13,14 @@ import { CommentSection } from "@/components/post/comment-section";
 import { ShareSheet } from "@/components/post/share-sheet";
 import { SaveButton } from "@/components/post/save-button";
 import { VisitedWithList } from "@/components/post/visited-with-list";
+import {
+  MOBILE_TAP_MAX_DURATION_MS,
+  MOBILE_TAP_MAX_MOVEMENT_PX,
+  MOBILE_TAP_NAVIGATION_DELAY_MS,
+  isDoubleTapCandidate,
+  isTapWithinTolerance,
+  type TapPoint
+} from "@/lib/post-tap-gesture";
 
 export function PostCard({
   post,
@@ -21,10 +33,172 @@ export function PostCard({
   showLikeCounts?: boolean;
   openOnBodyTap?: boolean;
 }) {
+  const router = useRouter();
+  const touchSessionRef = useRef<{
+    pointerId: number;
+    pointerType: string;
+    x: number;
+    y: number;
+    startedAt: number;
+    moved: boolean;
+  } | null>(null);
+  const lastTouchTapRef = useRef<TapPoint | null>(null);
+  const pendingNavigationRef = useRef<number | null>(null);
+  const suppressNextClickRef = useRef(false);
   const commentsEnabled = post.user.settings?.commentsEnabled ?? true;
   const primaryCaption = post.caption.trim() || `Memory from ${post.placeName}`;
+
+  useEffect(() => {
+    return () => {
+      if (pendingNavigationRef.current !== null) {
+        window.clearTimeout(pendingNavigationRef.current);
+      }
+    };
+  }, []);
+
+  function clearPendingNavigation() {
+    if (pendingNavigationRef.current !== null) {
+      window.clearTimeout(pendingNavigationRef.current);
+      pendingNavigationRef.current = null;
+    }
+  }
+
+  function openPost() {
+    clearPendingNavigation();
+    router.push(`/posts/${post.id}`);
+  }
+
+  function dispatchDoubleTapLike() {
+    window.dispatchEvent(new CustomEvent(`like-post-${post.id}`));
+  }
+
+  function isInteractiveTarget(target: EventTarget | null) {
+    if (!(target instanceof HTMLElement)) {
+      return false;
+    }
+
+    return Boolean(
+      target.closest("a,button,input,select,textarea,summary,video,[role='button'],[role='link']")
+    );
+  }
+
+  function handleBodyPointerDown(event: PointerEvent<HTMLDivElement>) {
+    if (!openOnBodyTap || event.button !== 0 || isInteractiveTarget(event.target)) {
+      return;
+    }
+
+    touchSessionRef.current = {
+      pointerId: event.pointerId,
+      pointerType: event.pointerType,
+      x: event.clientX,
+      y: event.clientY,
+      startedAt: Date.now(),
+      moved: false
+    };
+  }
+
+  function handleBodyPointerMove(event: PointerEvent<HTMLDivElement>) {
+    const session = touchSessionRef.current;
+
+    if (!session || session.pointerId !== event.pointerId) {
+      return;
+    }
+
+    if (
+      !isTapWithinTolerance(
+        { x: session.x, y: session.y },
+        { x: event.clientX, y: event.clientY },
+        MOBILE_TAP_MAX_MOVEMENT_PX
+      )
+    ) {
+      session.moved = true;
+    }
+  }
+
+  function resetTouchGesture() {
+    touchSessionRef.current = null;
+  }
+
+  function handleBodyPointerUp(event: PointerEvent<HTMLDivElement>) {
+    const session = touchSessionRef.current;
+    resetTouchGesture();
+
+    if (!openOnBodyTap || !session || session.pointerId !== event.pointerId) {
+      return;
+    }
+
+    if (session.pointerType === "mouse" || session.moved || isInteractiveTarget(event.target)) {
+      return;
+    }
+
+    const tapPoint = {
+      x: event.clientX,
+      y: event.clientY,
+      timestamp: Date.now()
+    };
+
+    if (tapPoint.timestamp - session.startedAt > MOBILE_TAP_MAX_DURATION_MS) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    suppressNextClickRef.current = true;
+
+    if (isDoubleTapCandidate(lastTouchTapRef.current, tapPoint)) {
+      clearPendingNavigation();
+      lastTouchTapRef.current = null;
+      dispatchDoubleTapLike();
+      return;
+    }
+
+    lastTouchTapRef.current = tapPoint;
+    clearPendingNavigation();
+    pendingNavigationRef.current = window.setTimeout(() => {
+      pendingNavigationRef.current = null;
+      lastTouchTapRef.current = null;
+      openPost();
+    }, MOBILE_TAP_NAVIGATION_DELAY_MS);
+  }
+
+  function handleBodyClick(event: MouseEvent<HTMLDivElement>) {
+    if (!openOnBodyTap || isInteractiveTarget(event.target)) {
+      return;
+    }
+
+    if (suppressNextClickRef.current) {
+      suppressNextClickRef.current = false;
+      event.preventDefault();
+      return;
+    }
+
+    openPost();
+  }
+
+  function handleBodyKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (!openOnBodyTap) {
+      return;
+    }
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openPost();
+    }
+  }
+
   const body = (
-    <>
+    <div
+      className={openOnBodyTap ? "group block cursor-pointer touch-pan-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/50" : undefined}
+      onPointerDown={handleBodyPointerDown}
+      onPointerMove={handleBodyPointerMove}
+      onPointerUp={handleBodyPointerUp}
+      onPointerCancel={resetTouchGesture}
+      onClick={handleBodyClick}
+      onKeyDown={handleBodyKeyDown}
+      role={openOnBodyTap ? "link" : undefined}
+      tabIndex={openOnBodyTap ? 0 : undefined}
+      aria-label={openOnBodyTap ? `Open ${primaryCaption}` : undefined}
+    >
       <div className={compact ? "aspect-[4/3]" : "aspect-[4/3]"}>
         <MediaView
           mediaType={post.mediaType}
@@ -66,22 +240,12 @@ export function PostCard({
           </p>
         </div>
       </div>
-    </>
+    </div>
   );
 
   return (
     <article className="overflow-hidden rounded-[1.75rem] border bg-[var(--surface-strong)] shadow-sm">
-      {openOnBodyTap ? (
-        <Link
-          href={`/posts/${post.id}`}
-          className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/50"
-          aria-label={`Open ${post.placeName}`}
-        >
-          {body}
-        </Link>
-      ) : (
-        body
-      )}
+      {body}
 
       {/* Like + Comment + Share + Open */}
       <div className="flex flex-wrap items-center gap-1 border-t px-4 pb-4 pt-2">

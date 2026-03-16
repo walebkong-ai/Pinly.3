@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { SyntheticEvent } from "react";
+import { useEffect, useRef, type SyntheticEvent } from "react";
 import { CalendarDays, MapPin, X } from "lucide-react";
 import type { PostSummary } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
@@ -18,6 +18,7 @@ export function BottomSheet({
   post: PostSummary | null;
   onClose: () => void;
 }) {
+  const closeTriggeredRef = useRef(false);
   const caption = post?.caption.trim();
   const primaryCopy = caption?.length
     ? caption
@@ -30,23 +31,45 @@ export function BottomSheet({
     event.stopPropagation();
   }
 
-  function handleClose(event: SyntheticEvent) {
-    consumeInteraction(event);
+  useEffect(() => {
+    if (!post) {
+      closeTriggeredRef.current = false;
+    }
+  }, [post]);
+
+  function requestClose() {
+    closeTriggeredRef.current = true;
     onClose();
+  }
+
+  function handleClosePointerDown(event: SyntheticEvent) {
+    consumeInteraction(event);
+    requestClose();
+  }
+
+  function handleCloseClick(event: SyntheticEvent) {
+    consumeInteraction(event);
+
+    if (closeTriggeredRef.current) {
+      return;
+    }
+
+    requestClose();
   }
 
   return (
     <div
       className={cn(
-        "pointer-events-none absolute inset-0 z-[980] flex items-end justify-center p-3 transition-all duration-400 ease-out will-change-[transform,opacity]",
+        "pointer-events-none fixed inset-0 z-[990] flex items-end justify-center p-3 transition-all duration-400 ease-out will-change-[transform,opacity]",
         post ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
       )}
     >
       {post ? (
         <div
           aria-hidden="true"
-          className="pointer-events-auto absolute inset-0"
+          className="pointer-events-auto absolute inset-0 bg-black/10"
           onPointerDown={consumeInteraction}
+          onPointerUp={consumeInteraction}
           onClick={consumeInteraction}
         />
       ) : null}
@@ -54,6 +77,7 @@ export function BottomSheet({
       <div
         className="pointer-events-auto relative z-[1] glass-panel w-full max-w-3xl rounded-[2rem] p-3 shadow-2xl shadow-black/20"
         onPointerDown={(event) => event.stopPropagation()}
+        onPointerUp={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
       >
         {post && (
@@ -73,8 +97,8 @@ export function BottomSheet({
                 <Button
                   variant="ghost"
                   className="rounded-full p-2"
-                  onPointerDown={consumeInteraction}
-                  onClick={handleClose}
+                  onPointerDown={handleClosePointerDown}
+                  onClick={handleCloseClick}
                   aria-label="Close sheet"
                 >
                   <X className="h-4 w-4" />
@@ -113,8 +137,8 @@ export function BottomSheet({
                 <Button
                   variant="secondary"
                   className="w-full sm:w-auto"
-                  onPointerDown={consumeInteraction}
-                  onClick={handleClose}
+                  onPointerDown={handleClosePointerDown}
+                  onClick={handleCloseClick}
                 >
                   Close
                 </Button>

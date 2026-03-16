@@ -295,7 +295,6 @@ export function MapPageClient() {
           </div>
         )}
 
-        <BottomSheet post={selectedPost} onClose={() => setSelectedPost(null)} />
         <FilterSidebar
           open={filterOpen}
           time={time}
@@ -309,6 +308,8 @@ export function MapPageClient() {
           onClose={() => setFilterOpen(false)}
         />
       </div>
+
+      <BottomSheet post={selectedPost} onClose={() => setSelectedPost(null)} />
     </section>
   );
 }

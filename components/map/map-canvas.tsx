@@ -208,6 +208,7 @@ export function MapCanvas({
             anchor="bottom"
             offset={20}
             subpixelPositioning
+            closeButton={false}
             onClose={() => setPopupInfo(null)}
             closeOnClick={false}
             className="pinly-popup-container"
@@ -216,6 +217,7 @@ export function MapCanvas({
               marker={popupInfo}
               onZoomIn={() => zoomToMarker(popupInfo)}
               onExpandPost={onExpandPost}
+              onClosePreview={() => setPopupInfo(null)}
             />
           </Popup>
         )}
