@@ -10,6 +10,7 @@ describe("CountryFlag", () => {
     expect(markup).toContain("🇳🇿");
     expect(markup).toContain("New Zealand");
     expect(markup).toContain("aria-hidden=\"true\"");
+    expect(markup.indexOf("New Zealand")).toBeLessThan(markup.indexOf("🇳🇿"));
   });
 
   test("renders readable text only for unknown countries", () => {

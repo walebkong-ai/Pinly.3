@@ -33,6 +33,7 @@ export function CountryFlag({
 
   return (
     <span className={cn("inline-flex min-w-0 max-w-full items-center gap-1 align-baseline", className)}>
+      {showText ? <span className={cn("truncate", textClassName)}>{resolvedCountry.name}</span> : null}
       {resolvedCountry.flag ? (
         <span
           aria-hidden="true"
@@ -42,7 +43,6 @@ export function CountryFlag({
           {resolvedCountry.flag}
         </span>
       ) : null}
-      {showText ? <span className={cn("truncate", textClassName)}>{resolvedCountry.name}</span> : null}
     </span>
   );
 }
