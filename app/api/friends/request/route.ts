@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { normalizeFriendPair } from "@/lib/friendships";
 import { createNotificationSafely } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
-import { friendRequestSchema } from "@/lib/validation";
+import { friendRequestSchema, normalizeUsername } from "@/lib/validation";
 import { apiError, apiValidationError } from "@/lib/api";
 
 export const runtime = "nodejs";
@@ -28,8 +28,9 @@ export async function POST(request: Request) {
     return apiValidationError(parsed.error);
   }
 
+  const normalizedUsername = normalizeUsername(parsed.data.username);
   const target = await prisma.user.findUnique({
-    where: { username: parsed.data.username.toLowerCase() }
+    where: { username: normalizedUsername }
   });
 
   if (!target) {

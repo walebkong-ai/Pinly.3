@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getOwnedCollections, getProfileData } from "@/lib/data";
 import { ProfileView } from "@/components/profile/profile-view";
+import { normalizeUsername } from "@/lib/validation";
 
 type Props = {
   params: Promise<{ username: string }>;
@@ -16,9 +17,10 @@ export default async function ProfilePage({ params }: Props) {
   }
 
   const { username } = await params;
+  const normalizedRouteUsername = normalizeUsername(username);
   
-  let resolvedUsername = username;
-  if (username === "me") {
+  let resolvedUsername = normalizedRouteUsername;
+  if (normalizedRouteUsername === "me") {
     const dbUser = await prisma.user.findUnique({ 
       where: { id: session.user.id }, 
       select: { username: true } 

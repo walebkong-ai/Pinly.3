@@ -1,14 +1,12 @@
-import { auth } from "@/lib/auth";
+import { auth, unstable_update } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { apiError, apiValidationError } from "@/lib/api";
+import { getPrismaErrorCode } from "@/lib/prisma-errors";
 import { z } from "zod";
-import { usernameRegex } from "@/lib/validation";
+import { normalizedUsernameSchema } from "@/lib/validation";
 
 const updateProfileSchema = z.object({
-  username: z
-    .string()
-    .regex(usernameRegex, "Use 3-20 lowercase letters, numbers, underscores, or hyphens")
-    .optional(),
+  username: normalizedUsernameSchema.optional(),
   avatarUrl: z.string().url("Invalid avatar URL").optional().or(z.literal(""))
 });
 
@@ -33,22 +31,38 @@ export async function PATCH(request: Request) {
     return apiValidationError(parsed.error);
   }
 
+  const currentUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      id: true,
+      username: true,
+      avatarUrl: true
+    }
+  });
+
+  if (!currentUser) {
+    return apiError("Unauthorized", 401);
+  }
+
   const { username, avatarUrl } = parsed.data;
 
   const updateData: any = {};
 
   if (username !== undefined) {
-    const normalizedUsername = username.toLowerCase();
-    
-    if (normalizedUsername !== session.user.username) {
-      // Check for uniqueness
-      const existing = await prisma.user.findUnique({
-        where: { username: normalizedUsername }
+    if (username !== currentUser.username) {
+      const existing = await prisma.user.findFirst({
+        where: {
+          username,
+          id: { not: currentUser.id }
+        },
+        select: { id: true }
       });
+
       if (existing) {
         return apiError("Username is already taken", 409);
       }
-      updateData.username = normalizedUsername;
+
+      updateData.username = username;
     }
   }
 
@@ -63,8 +77,24 @@ export async function PATCH(request: Request) {
   try {
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
-      data: updateData
+      data: updateData,
+      select: {
+        id: true,
+        username: true,
+        avatarUrl: true
+      }
     });
+
+    try {
+      await unstable_update({
+        user: {
+          username: updatedUser.username,
+          avatarUrl: updatedUser.avatarUrl
+        }
+      });
+    } catch (error) {
+      console.error("Failed to refresh auth session after profile update:", error);
+    }
 
     return Response.json({
       success: true,
@@ -75,6 +105,10 @@ export async function PATCH(request: Request) {
       }
     });
   } catch (err) {
+    if (getPrismaErrorCode(err) === "P2002") {
+      return apiError("Username is already taken", 409);
+    }
+
     return apiError("Failed to update profile", 500);
   }
 }

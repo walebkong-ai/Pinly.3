@@ -1,6 +1,6 @@
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { signUpSchema } from "@/lib/validation";
+import { normalizeUsername, signUpSchema } from "@/lib/validation";
 import { apiError, apiValidationError } from "@/lib/api";
 
 export const runtime = "nodejs";
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   }
 
   const email = parsed.data.email.toLowerCase();
-  const username = parsed.data.username.toLowerCase();
+  const username = normalizeUsername(parsed.data.username);
 
   let existing;
   try {

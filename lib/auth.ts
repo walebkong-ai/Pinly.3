@@ -64,11 +64,21 @@ export const authConfig = {
         return false;
       }
     },
-    jwt: async ({ token, user }: any) => {
+    jwt: async ({ token, user, trigger, session }: any) => {
       if (user) {
         token.id = user.id ?? token.id ?? token.sub;
         token.username = user.username ?? token.username ?? "traveler";
         token.avatarUrl = user.avatarUrl ?? user.image ?? token.avatarUrl ?? null;
+      }
+
+      if (trigger === "update" && session?.user) {
+        if (typeof session.user.username === "string") {
+          token.username = session.user.username;
+        }
+
+        if ("avatarUrl" in session.user) {
+          token.avatarUrl = session.user.avatarUrl ?? null;
+        }
       }
 
       return token;
@@ -86,7 +96,7 @@ export const authConfig = {
   }
 } satisfies NextAuthConfig;
 
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
+export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth(authConfig);
 
 export async function requireUser() {
   const session = await auth();
