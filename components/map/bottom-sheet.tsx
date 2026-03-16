@@ -7,7 +7,6 @@ import type { PostSummary } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { MediaView } from "@/components/post/media-view";
-import { WantToGoButton } from "@/components/places/want-to-go-button";
 import { formatVisitDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -125,17 +124,13 @@ export function BottomSheet({
               </div>
 
               <div className="mt-auto flex flex-col gap-3 pt-6 sm:flex-row">
-                <WantToGoButton
-                  location={post}
-                  hydrateFromApi
-                  triggerStyle="secondary"
-                  className="w-full sm:w-auto"
-                />
                 <Link href={`/posts/${post.id}`} className="w-full sm:w-auto">
-                  <Button className="w-full">Open full post</Button>
+                  <Button className="w-full bg-[var(--map-accent)] text-[var(--foreground)] hover:opacity-95 focus:ring-[var(--map-accent)]">
+                    Open full post
+                  </Button>
                 </Link>
                 <Button
-                  variant="secondary"
+                  variant="danger"
                   className="w-full sm:w-auto"
                   onPointerDown={handleClosePointerDown}
                   onClick={handleCloseClick}

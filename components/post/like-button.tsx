@@ -76,14 +76,14 @@ export function LikeButton({
       className={cn(
         "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-all active:scale-95",
         liked
-          ? "text-[var(--social-accent)]"
-          : "text-[var(--foreground)]/55 hover:text-[var(--social-accent)]"
+          ? "text-[var(--danger)]"
+          : "text-[var(--foreground)]/55 hover:text-[var(--danger)]"
       )}
     >
       <Heart
         className={cn(
           "h-5 w-5 transition-all",
-          liked && "scale-110 fill-[var(--social-accent)] text-[var(--social-accent)]"
+          liked && "scale-110 fill-[var(--danger)] text-[var(--danger)]"
         )}
       />
       {showCount && count > 0 && <span>{count}</span>}

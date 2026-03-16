@@ -124,7 +124,10 @@ export function MarkerPreview({
             <p className="truncate text-[11px] text-[var(--foreground)]/48">@{post.user.username}</p>
           </div>
         </div>
-        <Button className="w-full justify-between" onClick={() => onExpandPost(post)}>
+        <Button
+          className="w-full justify-between bg-[var(--map-accent)] text-[var(--foreground)] hover:opacity-95 focus:ring-[var(--map-accent)]"
+          onClick={() => onExpandPost(post)}
+        >
           Expand memory
           <ChevronRight className="h-4 w-4" />
         </Button>
