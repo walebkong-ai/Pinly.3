@@ -91,7 +91,7 @@ export default async function PostDetailPage({ params }: Props) {
               {isOwnPost && (
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   <Link
-                    href={`/posts//edit`}
+                    href={`/posts/${post.id}/edit`}
                     className="inline-flex h-9 items-center gap-2 rounded-2xl border bg-[var(--surface-soft)] px-3 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--foreground)]/5"
                   >
                     <PencilLine className="h-4 w-4" />

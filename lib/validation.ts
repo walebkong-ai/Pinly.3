@@ -66,6 +66,17 @@ export const postSchema = z.object({
   collectionIds: z.array(z.string().cuid()).max(24).default([])
 });
 
+export const editPostSchema = z.object({
+  caption: z.string().min(3).max(600),
+  placeName: z.string().min(2).max(120),
+  city: z.string().min(2).max(80),
+  country: z.string().min(2).max(80),
+  latitude: z.coerce.number().min(-90).max(90),
+  longitude: z.coerce.number().min(-180).max(180),
+  visitedAt: z.string().datetime(),
+  taggedUserIds: z.array(z.string().cuid()).max(24).default([])
+});
+
 export const collectionSchema = z.object({
   name: z.string().trim().min(2).max(60)
 });

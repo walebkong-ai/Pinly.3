@@ -10,27 +10,49 @@ import { Input } from "@/components/ui/input";
 import { rankBySearch } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
-type Friend = {
+export type VisitedWithFriend = {
   id: string;
   name: string;
   username: string;
   avatarUrl: string | null;
 };
 
+function mergeFriends(
+  existingFriends: VisitedWithFriend[],
+  nextFriends: VisitedWithFriend[]
+) {
+  return Array.from(
+    new Map(
+      [...existingFriends, ...nextFriends].map((friend) => [friend.id, friend])
+    ).values()
+  );
+}
+
 export function VisitedWithPicker({
   selectedFriendIds,
-  onChange
+  onChange,
+  initialSelectedFriends = []
 }: {
   selectedFriendIds: string[];
   onChange: (friendIds: string[]) => void;
+  initialSelectedFriends?: VisitedWithFriend[];
 }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [friends, setFriends] = useState<Friend[]>([]);
+  const [friends, setFriends] = useState<VisitedWithFriend[]>(() => initialSelectedFriends);
+  const [hasLoadedFriends, setHasLoadedFriends] = useState(false);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    if (!open || friends.length > 0) {
+    if (initialSelectedFriends.length === 0) {
+      return;
+    }
+
+    setFriends((currentFriends) => mergeFriends(currentFriends, initialSelectedFriends));
+  }, [initialSelectedFriends]);
+
+  useEffect(() => {
+    if (!open || hasLoadedFriends) {
       return;
     }
 
@@ -47,7 +69,8 @@ export function VisitedWithPicker({
 
         const data = await response.json();
         if (!ignore) {
-          setFriends(data.friends ?? []);
+          setFriends((currentFriends) => mergeFriends(currentFriends, data.friends ?? []));
+          setHasLoadedFriends(true);
         }
       } catch {
         if (!ignore) {
@@ -65,7 +88,7 @@ export function VisitedWithPicker({
     return () => {
       ignore = true;
     };
-  }, [open, friends.length]);
+  }, [open, hasLoadedFriends]);
 
   const selectedSet = useMemo(() => new Set(selectedFriendIds), [selectedFriendIds]);
   const selectedFriends = useMemo(
