@@ -13,10 +13,12 @@ import { CityContextPanel } from "@/components/map/city-context-panel";
 import { FilterSidebar } from "@/components/map/filter-sidebar";
 import { FriendActivityPanel } from "@/components/map/friend-activity-panel";
 import { LayerToggle } from "@/components/map/layer-toggle";
+import { MapModeToggle } from "@/components/map/map-mode-toggle";
 import { WelcomeCard } from "@/components/map/welcome-card";
 import { buildLightweightMapGroups } from "@/lib/map-groups";
+import { getMapStyle, isSatelliteModeAvailable } from "@/lib/map-style";
 import { canonicalizeViewportForDataQuery, createViewportFingerprint, FULL_WORLD_BOUNDS, type MapViewport } from "@/lib/map-viewport";
-import type { LayerMode, MapCategory, MapGroupOption, MapResponse, PostSummary, TimeFilter } from "@/types/app";
+import type { LayerMode, MapCategory, MapGroupOption, MapResponse, MapVisualMode, PostSummary, TimeFilter } from "@/types/app";
 
 const DynamicMapCanvas = dynamic(() => import("@/components/map/map-canvas").then((mod) => mod.MapCanvas), {
   ssr: false,
@@ -33,6 +35,7 @@ const emptyMap: MapResponse = {
   cityContext: null,
   friendActivity: []
 };
+const satelliteApiKey = process.env.NEXT_PUBLIC_MAPTILER_API_KEY ?? "";
 
 export function MapPageClient() {
   const searchParams = useSearchParams();
@@ -41,6 +44,7 @@ export function MapPageClient() {
   const [groupOptions, setGroupOptions] = useState<MapGroupOption[]>([]);
   const [query, setQuery] = useState("");
   const [layer, setLayer] = useState<LayerMode>("both");
+  const [mapMode, setMapMode] = useState<MapVisualMode>("default");
   const [time, setTime] = useState<TimeFilter>("all");
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<MapCategory[]>([]);
@@ -53,6 +57,16 @@ export function MapPageClient() {
     })
   );
   const deferredQuery = useDeferredValue(query);
+  const satelliteModeAvailable = isSatelliteModeAvailable(satelliteApiKey);
+  const activeMapMode = satelliteModeAvailable ? mapMode : "default";
+  const mapStyle = useMemo(
+    () =>
+      getMapStyle({
+        mode: activeMapMode,
+        satelliteApiKey
+      }),
+    [activeMapMode]
+  );
 
   useEffect(() => {
     let ignore = false;
@@ -212,6 +226,8 @@ export function MapPageClient() {
     <section className="relative min-h-[calc(100vh-7.5rem)] overflow-hidden rounded-[2.2rem] border bg-[var(--surface-soft)] shadow-2xl shadow-black/5">
       <DynamicMapCanvas
         markers={mapData.markers}
+        mapMode={activeMapMode}
+        mapStyle={mapStyle}
         selectedPostId={selectedPost?.id ?? null}
         onExpandPost={setSelectedPost}
         onViewportChange={onViewportChange}
@@ -241,21 +257,31 @@ export function MapPageClient() {
                     </span>
                   ) : null}
                 </div>
-                {showControls ? (
-                  <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
-                    <button
-                      type="button"
-                      onClick={() => setFilterOpen(true)}
-                      className="flex items-center gap-1.5 md:gap-2 rounded-full px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-medium text-[var(--foreground)]/70 hover:bg-[var(--foreground)]/5 transition"
-                    >
-                      <Filter className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                      <span className="hidden sm:inline">Filters</span>
-                      {activeFilterCount > 0 && <span>({activeFilterCount})</span>}
-                    </button>
-                    <div className="mx-1 h-4 w-[1px] bg-[var(--foreground)]/10" />
-                    <LayerToggle value={layer} onChange={setLayer} />
-                  </div>
-                ) : null}
+                <div className="flex flex-wrap items-center gap-2">
+                  {satelliteModeAvailable ? (
+                    <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
+                      <MapModeToggle value={activeMapMode} onChange={setMapMode} />
+                    </div>
+                  ) : null}
+                  {showControls ? (
+                    <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
+                      <button
+                        type="button"
+                        onClick={() => setFilterOpen(true)}
+                        className="flex min-h-10 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-[var(--foreground)]/70 transition hover:bg-[var(--foreground)]/5 md:gap-2 md:px-4 md:text-sm"
+                      >
+                        <Filter className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                        <span className="hidden sm:inline">Filters</span>
+                        {activeFilterCount > 0 && <span>({activeFilterCount})</span>}
+                      </button>
+                    </div>
+                  ) : null}
+                  {showControls ? (
+                    <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
+                      <LayerToggle value={layer} onChange={setLayer} />
+                    </div>
+                  ) : null}
+                </div>
               </div>
               {showControls ? (
                 <Link href="/create" className="pointer-events-auto">

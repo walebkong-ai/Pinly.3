@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Map, { Marker, Popup, MapRef } from "react-map-gl/maplibre";
-import type { MapMarker, PostSummary } from "@/types/app";
+import type { MapMarker, MapVisualMode, PostSummary } from "@/types/app";
 import { MarkerPreview } from "@/components/map/marker-preview";
+import type { MapStyleValue } from "@/lib/map-style";
+import { cn } from "@/lib/utils";
 
 const defaultCenter = {
   longitude: 10,
@@ -60,10 +62,14 @@ const bubbleHTML = ({ name, avatarUrl, selected }: { name: string; avatarUrl?: s
 export function MapCanvas({
   selectedPostId,
   markers,
+  mapMode,
+  mapStyle,
   onExpandPost,
   onViewportChange
 }: {
   markers: MapMarker[];
+  mapMode: MapVisualMode;
+  mapStyle: MapStyleValue;
   selectedPostId: string | null;
   onExpandPost: (post: PostSummary) => void;
   onViewportChange: (viewport: {
@@ -144,7 +150,7 @@ export function MapCanvas({
           // Explicitly prevent bubbling to ensure blank map taps never trigger undocumented layout/global hooks
           e.originalEvent.stopPropagation();
         }}
-        mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+        mapStyle={mapStyle}
         interactiveLayerIds={[]}
         minZoom={1}
         maxPitch={85}
@@ -196,7 +202,13 @@ export function MapCanvas({
                 setPopupInfo(marker);
               }}
             >
-              <div dangerouslySetInnerHTML={{ __html: html }} className="cursor-pointer" />
+              <div
+                dangerouslySetInnerHTML={{ __html: html }}
+                className={cn(
+                  "cursor-pointer",
+                  mapMode === "satellite" && "drop-shadow-[0_10px_22px_rgba(7,16,24,0.58)]"
+                )}
+              />
             </Marker>
           );
         })}
