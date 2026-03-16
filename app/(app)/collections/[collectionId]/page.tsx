@@ -1,21 +1,11 @@
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { ArrowLeft, FolderOpen } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getOwnedCollectionById } from "@/lib/data";
 import { prisma } from "@/lib/prisma";
 import { PostCard } from "@/components/post/post-card";
-
-const CollectionMapView = dynamic(
-  () => import("@/components/collections/collection-map-view").then((m) => m.CollectionMapView),
-  { ssr: false }
-);
-
-const CollectionColorEditor = dynamic(
-  () => import("@/components/collections/collection-color-editor").then((m) => m.CollectionColorEditor),
-  { ssr: false }
-);
+import { CollectionDetailShell } from "@/components/collections/collection-detail-shell";
 
 type Props = {
   params: Promise<{ collectionId: string }>;
@@ -74,16 +64,17 @@ export default async function CollectionDetailPage({ params }: Props) {
           </div>
         </div>
 
-        {/* Color editor */}
-        <div className="mt-4 border-t border-[var(--foreground)]/6 pt-4">
-          <CollectionColorEditor collectionId={collection.id} initialColor={color} />
-        </div>
+        {/*
+          CollectionDetailShell is a "use client" component that lazily loads
+          CollectionColorEditor and CollectionMapView (both ssr:false) within
+          the Client Component boundary — valid in Next.js App Router.
+        */}
+        <CollectionDetailShell
+          collectionId={collection.id}
+          color={color}
+          hasPosts={posts.length > 0}
+        />
       </section>
-
-      {/* Route map — only shown when there are memories with locations */}
-      {posts.length > 0 && (
-        <CollectionMapView collectionId={collection.id} color={color} />
-      )}
 
       {posts.length > 0 ? (
         <section className="space-y-4">
