@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Compass, LockKeyhole, MapPinned, Users } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { Brand } from "@/components/brand";
+import { HeroGlobeBackground } from "@/components/marketing/hero-globe-background";
 import { Button } from "@/components/ui/button";
 
 const features = [
@@ -37,21 +38,28 @@ export default async function LandingPage() {
 
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-6 py-8">
-      <section className="glass-panel relative overflow-hidden rounded-[2rem] p-6 sm:p-10">
-        <div className="absolute right-0 top-0 h-48 w-48 rounded-full bg-[var(--accent-soft)] blur-3xl" />
-        <nav className="relative z-10 flex items-center justify-between">
-          <Brand />
+      <section className="landing-hero glass-panel relative isolate overflow-hidden rounded-[2rem] p-6 sm:p-10">
+        <div aria-hidden="true" className="landing-hero__ambient pointer-events-none absolute inset-0 z-0" />
+        <HeroGlobeBackground />
+        <div aria-hidden="true" className="landing-hero__readability pointer-events-none absolute inset-0 z-[2]" />
+        <nav className="relative z-20 flex items-center justify-between gap-3">
+          <div className="sm:hidden">
+            <Brand compact />
+          </div>
+          <div className="hidden sm:block">
+            <Brand />
+          </div>
           <div className="flex items-center gap-3">
             <Link href="/sign-in" className="text-sm text-[var(--foreground)]/70">
               Sign in
             </Link>
             <Link href="/sign-up">
-              <Button>Start mapping memories</Button>
+              <Button className="px-3 sm:px-4">Start mapping memories</Button>
             </Link>
           </div>
         </nav>
 
-        <div className="relative z-10 mt-16 grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+        <div className="relative z-20 mt-16 grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
           <div>
             <p className="mb-4 inline-flex rounded-full border bg-[var(--surface-soft)] px-3 py-1 text-xs uppercase tracking-[0.2em] text-[var(--foreground)]/60">
               Private social travel app
@@ -77,7 +85,7 @@ export default async function LandingPage() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             {features.map(({ icon: Icon, title, description }) => (
-              <div key={title} className="rounded-[1.75rem] border bg-[var(--surface-soft)] p-5 shadow-sm">
+              <div key={title} className="landing-hero__feature-card rounded-[1.75rem] border p-5">
                 <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--map-accent-soft)] text-[var(--map-accent)]">
                   <Icon className="h-5 w-5" />
                 </div>
