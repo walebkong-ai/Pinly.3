@@ -226,18 +226,40 @@ function normalizePostSummaries(posts: IncludedPost[]) {
   return posts.map((post) => normalizeIncludedPost(post));
 }
 
-export async function getVisibleUserIds(viewerId: string) {
-  const friendships = await prisma.friendship.findMany({
-    where: {
-      OR: [{ userAId: viewerId }, { userBId: viewerId }]
+async function getViewerFriendships(viewerId: string) {
+  try {
+    return await prisma.friendship.findMany({
+      where: {
+        OR: [{ userAId: viewerId }, { userBId: viewerId }]
+      }
+    });
+  } catch (error) {
+    if (isPrismaSchemaNotReadyError(error)) {
+      return [];
     }
-  });
 
-  const blocks = await prisma.block.findMany({
-    where: {
-      OR: [{ blockerId: viewerId }, { blockedId: viewerId }]
+    throw error;
+  }
+}
+
+async function getViewerBlocks(viewerId: string) {
+  try {
+    return await prisma.block.findMany({
+      where: {
+        OR: [{ blockerId: viewerId }, { blockedId: viewerId }]
+      }
+    });
+  } catch (error) {
+    if (isPrismaSchemaNotReadyError(error)) {
+      return [];
     }
-  });
+
+    throw error;
+  }
+}
+
+export async function getVisibleUserIds(viewerId: string) {
+  const [friendships, blocks] = await Promise.all([getViewerFriendships(viewerId), getViewerBlocks(viewerId)]);
 
   const blockedIds = new Set(
     blocks.map((b) => (b.blockerId === viewerId ? b.blockedId : b.blockerId))
@@ -248,17 +270,7 @@ export async function getVisibleUserIds(viewerId: string) {
 }
 
 export async function getFriendIds(viewerId: string) {
-  const friendships = await prisma.friendship.findMany({
-    where: {
-      OR: [{ userAId: viewerId }, { userBId: viewerId }]
-    }
-  });
-
-  const blocks = await prisma.block.findMany({
-    where: {
-      OR: [{ blockerId: viewerId }, { blockedId: viewerId }]
-    }
-  });
+  const [friendships, blocks] = await Promise.all([getViewerFriendships(viewerId), getViewerBlocks(viewerId)]);
 
   const blockedIds = new Set(
     blocks.map((b) => (b.blockerId === viewerId ? b.blockedId : b.blockerId))
