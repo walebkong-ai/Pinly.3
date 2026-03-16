@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { type CSSProperties, useEffect, useState } from "react";
 import Link from "next/link";
 import { Bell, Map, Newspaper, Plus, Search, Settings, UserRound, UsersRound, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
@@ -36,7 +36,10 @@ const secondaryNavItems = [
   { href: "/profile/me", label: "Profile", icon: UserRound }
 ];
 
-function isNavActive(pathname: string, href: string) {
+export const NOTIFICATION_BUTTON_ACTIVE_BACKGROUND = "#185538";
+export const NOTIFICATION_BUTTON_ACTIVE_INNER = "#FCECDA";
+
+export function isNavActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -45,6 +48,18 @@ export function AppShell({ children, user }: AppShellProps) {
   const [unreadGroupsCount, setUnreadGroupsCount] = useState(0);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const notificationsActive = isNavActive(pathname, "/notifications");
+  const notificationButtonStyle: CSSProperties | undefined = notificationsActive
+    ? {
+        backgroundColor: NOTIFICATION_BUTTON_ACTIVE_BACKGROUND,
+        borderColor: NOTIFICATION_BUTTON_ACTIVE_BACKGROUND
+      }
+    : undefined;
+  const notificationIconStyle: CSSProperties | undefined = notificationsActive
+    ? {
+        backgroundColor: NOTIFICATION_BUTTON_ACTIVE_INNER,
+        color: NOTIFICATION_BUTTON_ACTIVE_BACKGROUND
+      }
+    : undefined;
 
   useEffect(() => {
     let ignore = false;
@@ -156,13 +171,23 @@ export function AppShell({ children, user }: AppShellProps) {
             aria-label="Notifications"
             aria-current={notificationsActive ? "page" : undefined}
             className={cn(
-              "relative inline-flex h-11 w-11 items-center justify-center rounded-2xl border transition",
+              "relative inline-flex h-11 w-11 items-center justify-center rounded-2xl border transition-[background-color,border-color,box-shadow]",
               notificationsActive
-                ? "border-[#185538] bg-[#185538] text-[#FCECDA] shadow-[0_14px_30px_rgba(24,85,56,0.22)]"
+                ? "shadow-[0_14px_30px_rgba(24,85,56,0.22)]"
                 : "border-[rgba(24,85,56,0.08)] bg-[var(--surface-soft)] text-[var(--foreground)] hover:bg-[var(--surface-strong)]"
             )}
+            style={notificationButtonStyle}
           >
-            <Bell className="h-5 w-5" />
+            <span
+              aria-hidden="true"
+              className={cn(
+                "flex h-7 w-7 items-center justify-center rounded-full transition-[background-color,color,box-shadow]",
+                notificationsActive ? "shadow-[inset_0_1px_0_rgba(255,255,255,0.34)]" : "text-current"
+              )}
+              style={notificationIconStyle}
+            >
+              <Bell className="h-4 w-4" />
+            </span>
             {unreadNotificationsCount > 0 ? (
               <div
                 className={cn(
