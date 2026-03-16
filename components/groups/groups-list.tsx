@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { MessageCircle, Plus, Search, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Avatar } from "@/components/ui/avatar";
 import { StartDirectMessageSheet } from "@/components/messages/start-direct-message-sheet";
+import { ProfileLink } from "@/components/profile/profile-link";
 import { Input } from "@/components/ui/input";
 import { rankBySearch } from "@/lib/search";
 
@@ -42,6 +44,7 @@ type Group = {
 };
 
 export function GroupsList() {
+  const router = useRouter();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -80,6 +83,17 @@ export function GroupsList() {
       (group) => new Date(group.lastMessage?.createdAt ?? group.updatedAt).getTime()
     );
   }, [groups, query]);
+
+  function openConversation(groupId: string) {
+    router.push(`/messages/${groupId}`);
+  }
+
+  function handleConversationKeyDown(event: KeyboardEvent<HTMLDivElement>, groupId: string) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openConversation(groupId);
+    }
+  }
 
   return (
     <div className="grid gap-4 xl:grid-cols-[1fr_1fr] animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
@@ -127,10 +141,13 @@ export function GroupsList() {
             </div>
           ) : (
             visibleGroups.map((group) => (
-              <Link
+              <div
                 key={group.id}
-                href={`/messages/${group.id}`}
-                className={`flex items-start justify-between gap-3 rounded-3xl border p-4 transition-colors hover:bg-[var(--surface-strong)] ${
+                role="link"
+                tabIndex={0}
+                onClick={() => openConversation(group.id)}
+                onKeyDown={(event) => handleConversationKeyDown(event, group.id)}
+                className={`flex cursor-pointer items-start justify-between gap-3 rounded-3xl border p-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/40 hover:bg-[var(--surface-strong)] ${
                   group.hasUnread
                     ? "border-[rgba(56,182,201,0.22)] bg-[rgba(56,182,201,0.1)]"
                     : "bg-[var(--surface-soft)]"
@@ -138,11 +155,13 @@ export function GroupsList() {
               >
                 <div className="flex items-center gap-4">
                   {group.isDirect && group.directUser ? (
-                    <Avatar
-                      name={group.directUser.name}
-                      src={group.directUser.avatarUrl}
-                      className="h-12 w-12 shrink-0 border border-white/70"
-                    />
+                    <ProfileLink username={group.directUser.username} className="shrink-0 rounded-full">
+                      <Avatar
+                        name={group.directUser.name}
+                        src={group.directUser.avatarUrl}
+                        className="h-12 w-12 shrink-0 border border-white/70"
+                      />
+                    </ProfileLink>
                   ) : (
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--accent)]/10 text-[var(--accent)]">
                       <Users className="h-6 w-6" />
@@ -150,9 +169,16 @@ export function GroupsList() {
                   )}
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="truncate text-lg font-semibold">
-                        {group.isDirect ? group.directUser?.name ?? group.name : group.name}
-                      </h3>
+                      {group.isDirect && group.directUser ? (
+                        <ProfileLink
+                          username={group.directUser.username}
+                          className="min-w-0 rounded-xl px-1 py-1 -ml-1 transition hover:bg-[var(--surface-strong)]"
+                        >
+                          <h3 className="truncate text-lg font-semibold">{group.directUser.name}</h3>
+                        </ProfileLink>
+                      ) : (
+                        <h3 className="truncate text-lg font-semibold">{group.name}</h3>
+                      )}
                       <span
                         className={`inline-flex shrink-0 items-center rounded-full px-2 py-1 text-[11px] font-semibold ${
                           group.isDirect
@@ -164,7 +190,16 @@ export function GroupsList() {
                       </span>
                     </div>
                     <p className="mt-1 truncate text-sm text-[var(--foreground)]/60">
-                      {group.isDirect && group.directUser ? `@${group.directUser.username}` : `${group._count.members} members`}
+                      {group.isDirect && group.directUser ? (
+                        <ProfileLink
+                          username={group.directUser.username}
+                          className="rounded-md px-0.5 -ml-0.5 transition hover:text-[var(--foreground)]"
+                        >
+                          @{group.directUser.username}
+                        </ProfileLink>
+                      ) : (
+                        `${group._count.members} members`
+                      )}
                     </p>
                     <p className={`mt-1 line-clamp-2 text-sm ${group.hasUnread ? "font-medium text-[var(--foreground)]" : "text-[var(--foreground)]/72"}`}>
                       {group.lastMessage
@@ -189,7 +224,7 @@ export function GroupsList() {
                     </span>
                   ) : null}
                 </div>
-              </Link>
+              </div>
             ))
           )}
         </div>

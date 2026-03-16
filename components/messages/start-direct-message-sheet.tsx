@@ -8,6 +8,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageFriendButton } from "@/components/messages/message-friend-button";
+import { ProfileLink } from "@/components/profile/profile-link";
 import { rankBySearch } from "@/lib/search";
 
 type Friend = {
@@ -119,11 +120,16 @@ export function StartDirectMessageSheet() {
                       key={friend.id}
                       className="flex items-center gap-3 rounded-2xl border bg-[var(--surface-soft)] p-3"
                     >
-                      <Avatar name={friend.name} src={friend.avatarUrl} className="h-10 w-10 shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{friend.name}</p>
-                        <p className="truncate text-xs text-[var(--foreground)]/58">@{friend.username}</p>
-                      </div>
+                      <ProfileLink
+                        username={friend.username}
+                        className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl p-1 -m-1 transition hover:bg-[var(--surface-strong)]"
+                      >
+                        <Avatar name={friend.name} src={friend.avatarUrl} className="h-10 w-10 shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">{friend.name}</p>
+                          <p className="truncate text-xs text-[var(--foreground)]/58">@{friend.username}</p>
+                        </div>
+                      </ProfileLink>
                       <MessageFriendButton
                         friendId={friend.id}
                         label="Open"

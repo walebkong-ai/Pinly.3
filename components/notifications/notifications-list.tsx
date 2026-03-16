@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -17,6 +17,7 @@ import {
 import type { NotificationSummary } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { ProfileLink } from "@/components/profile/profile-link";
 import { NOTIFICATIONS_UPDATED_EVENT } from "@/lib/notification-events";
 import { getNotificationHref } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
@@ -31,37 +32,37 @@ function getNotificationCopy(notification: NotificationSummary) {
   switch (notification.type) {
     case "POST_LIKED":
       return {
-        title: `${notification.actor.name} liked your post`,
+        action: "liked your post",
         body: notification.post ? notification.post.placeName : "Open the post to see it."
       };
     case "POST_COMMENTED":
       return {
-        title: `${notification.actor.name} commented on your post`,
+        action: "commented on your post",
         body: notification.comment?.content || notification.post?.placeName || "Open the post to read it."
       };
     case "COMMENT_REPLIED":
       return {
-        title: `${notification.actor.name} replied to your comment`,
+        action: "replied to your comment",
         body: notification.comment?.content || notification.post?.placeName || "Open the post to read it."
       };
     case "POST_SHARED":
       return {
-        title: `${notification.actor.name} shared your post`,
+        action: "shared your post",
         body: notification.post ? notification.post.placeName : "Open the post to see it."
       };
     case "FRIEND_REQUEST_RECEIVED":
       return {
-        title: `${notification.actor.name} sent you a friend request`,
+        action: "sent you a friend request",
         body: "Open Friends to respond."
       };
     case "FRIEND_REQUEST_ACCEPTED":
       return {
-        title: `${notification.actor.name} accepted your friend request`,
+        action: "accepted your friend request",
         body: "You can now see each other's memories."
       };
     default:
       return {
-        title: "New notification",
+        action: "sent a notification",
         body: "Open to view."
       };
   }
@@ -147,6 +148,13 @@ export function NotificationsList({
     }
   }
 
+  function handleNotificationKeyDown(event: KeyboardEvent<HTMLDivElement>, notification: NotificationSummary) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      void handleOpen(notification);
+    }
+  }
+
   if (notifications.length === 0) {
     return (
       <div className="rounded-[1.75rem] border bg-[var(--surface-strong)] p-6 text-center">
@@ -181,19 +189,23 @@ export function NotificationsList({
           const isUnread = !notification.readAt;
 
           return (
-            <button
+            <div
               key={notification.id}
-              type="button"
+              role="button"
+              tabIndex={0}
               onClick={() => void handleOpen(notification)}
+              onKeyDown={(event) => handleNotificationKeyDown(event, notification)}
               className={cn(
-                "w-full rounded-[1.75rem] border p-4 text-left transition active:scale-[0.99]",
+                "w-full cursor-pointer rounded-[1.75rem] border p-4 text-left transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--social-accent)]/35",
                 isUnread
                   ? "border-[rgba(255,95,162,0.18)] bg-[rgba(255,95,162,0.07)]"
                   : "bg-[var(--surface-strong)] hover:bg-[var(--surface-soft)]"
               )}
             >
               <div className="flex items-start gap-3">
-                <Avatar name={notification.actor.name} src={notification.actor.avatarUrl} className="h-11 w-11 shrink-0" />
+                <ProfileLink username={notification.actor.username} className="shrink-0 rounded-full">
+                  <Avatar name={notification.actor.name} src={notification.actor.avatarUrl} className="h-11 w-11 shrink-0" />
+                </ProfileLink>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -203,7 +215,14 @@ export function NotificationsList({
                         </div>
                         {isUnread ? <span className="h-2 w-2 rounded-full bg-[var(--social-accent)]" /> : null}
                       </div>
-                      <p className="mt-2 text-sm font-medium text-[var(--foreground)]">{copy.title}</p>
+                      <ProfileLink
+                        username={notification.actor.username}
+                        className="mt-2 inline-flex min-w-0 flex-col rounded-xl px-1 py-1 -ml-1 transition hover:bg-[var(--surface-soft)]"
+                      >
+                        <span className="truncate text-sm font-medium text-[var(--foreground)]">{notification.actor.name}</span>
+                        <span className="truncate text-xs text-[var(--foreground)]/52">@{notification.actor.username}</span>
+                      </ProfileLink>
+                      <p className="mt-2 text-sm font-medium text-[var(--foreground)]">{copy.action}</p>
                       <p className="mt-1 text-sm leading-6 text-[var(--foreground)]/62">{copy.body}</p>
                     </div>
                     <div className="shrink-0 text-right">
@@ -215,7 +234,7 @@ export function NotificationsList({
                   </div>
                 </div>
               </div>
-            </button>
+            </div>
           );
         })}
       </section>

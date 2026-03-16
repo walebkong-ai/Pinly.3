@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ProfileLink } from "@/components/profile/profile-link";
 import { MESSAGES_UPDATED_EVENT } from "@/lib/notification-events";
 import { cn } from "@/lib/utils";
 
@@ -188,9 +189,7 @@ export function GroupDetail({ groupId, viewerId }: { groupId: string; viewerId: 
 
   const conversationName = group.isDirect ? group.directUser?.name ?? group.name : group.name;
   const conversationSubtitle = group.isDirect
-    ? group.directUser
-      ? `Direct message with @${group.directUser.username}`
-      : "Direct conversation"
+    ? "Direct conversation"
     : "Group chat for shared plans, memories, and updates";
 
   return (
@@ -198,18 +197,35 @@ export function GroupDetail({ groupId, viewerId }: { groupId: string; viewerId: 
       {/* Conversation Info Sidebar */}
       <section className="glass-panel hidden flex-col rounded-[2rem] p-5 xl:flex">
         {group.isDirect && group.directUser ? (
-          <Avatar
-            name={group.directUser.name}
-            src={group.directUser.avatarUrl}
-            className="h-16 w-16 rounded-2xl border border-white/70"
-          />
+          <ProfileLink username={group.directUser.username} className="w-fit rounded-[1.5rem]">
+            <Avatar
+              name={group.directUser.name}
+              src={group.directUser.avatarUrl}
+              className="h-16 w-16 rounded-2xl border border-white/70"
+            />
+          </ProfileLink>
         ) : (
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--accent)]/10 text-[var(--accent)]">
             <Users className="h-8 w-8" />
           </div>
         )}
-        <h1 className="mt-4 font-[var(--font-serif)] text-3xl">{conversationName}</h1>
-        <p className="mt-1 text-sm text-[var(--foreground)]/60">{conversationSubtitle}</p>
+        {group.isDirect && group.directUser ? (
+          <ProfileLink
+            username={group.directUser.username}
+            className="mt-4 inline-flex w-fit flex-col rounded-[1.5rem] p-1 -m-1 transition hover:bg-white/45"
+          >
+            <h1 className="font-[var(--font-serif)] text-3xl">{conversationName}</h1>
+            <p className="mt-1 text-sm text-[var(--foreground)]/60">@{group.directUser.username}</p>
+          </ProfileLink>
+        ) : (
+          <>
+            <h1 className="mt-4 font-[var(--font-serif)] text-3xl">{conversationName}</h1>
+            <p className="mt-1 text-sm text-[var(--foreground)]/60">{conversationSubtitle}</p>
+          </>
+        )}
+        {group.isDirect ? (
+          <p className="mt-1 text-sm text-[var(--foreground)]/60">{conversationSubtitle}</p>
+        ) : null}
 
         <div className="mt-8 flex items-center justify-between">
           <h2 className="font-semibold uppercase tracking-widest text-xs text-[var(--foreground)]/45">
@@ -223,13 +239,17 @@ export function GroupDetail({ groupId, viewerId }: { groupId: string; viewerId: 
         </div>
         <div className="mt-4 flex-1 space-y-3 overflow-y-auto">
           {group.members.map((member) => (
-            <div key={member.user.id} className="flex items-center gap-3 rounded-2xl bg-white/50 p-2">
+            <ProfileLink
+              key={member.user.id}
+              username={member.user.username}
+              className="flex items-center gap-3 rounded-2xl bg-white/50 p-2 transition hover:bg-white/70"
+            >
               <Avatar name={member.user.name} src={member.user.avatarUrl} className="h-8 w-8" />
               <div>
                 <p className="text-sm font-medium">{member.user.name}</p>
                 <p className="text-xs text-[var(--foreground)]/60">@{member.user.username} {member.role === "OWNER" && "• Owner"}</p>
               </div>
-            </div>
+            </ProfileLink>
           ))}
         </div>
       </section>
@@ -239,14 +259,22 @@ export function GroupDetail({ groupId, viewerId }: { groupId: string; viewerId: 
         {/* Mobile Header */}
         <div className="flex items-center gap-3 border-b border-black/5 bg-white/40 p-4 xl:hidden">
           {group.isDirect && group.directUser ? (
-            <Avatar name={group.directUser.name} src={group.directUser.avatarUrl} className="h-10 w-10 shrink-0" />
+            <ProfileLink username={group.directUser.username} className="shrink-0 rounded-full">
+              <Avatar name={group.directUser.name} src={group.directUser.avatarUrl} className="h-10 w-10 shrink-0" />
+            </ProfileLink>
           ) : (
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent)]/10 text-[var(--accent)]">
               <Users className="h-5 w-5" />
             </div>
           )}
           <div>
-            <h2 className="font-semibold">{conversationName}</h2>
+            {group.isDirect && group.directUser ? (
+              <ProfileLink username={group.directUser.username} className="rounded-md px-0.5 -ml-0.5 font-semibold transition hover:text-[var(--foreground)]">
+                {conversationName}
+              </ProfileLink>
+            ) : (
+              <h2 className="font-semibold">{conversationName}</h2>
+            )}
             <p className="text-xs text-[var(--foreground)]/50">
               {group.isDirect ? conversationSubtitle : `${group.members.length} members`}
             </p>
@@ -263,11 +291,22 @@ export function GroupDetail({ groupId, viewerId }: { groupId: string; viewerId: 
             messages.map((msg) => (
               <div key={msg.id} className={cn("flex gap-3", msg.user.id === viewerId && "justify-end")}>
                 {msg.user.id !== viewerId ? (
-                  <Avatar name={msg.user.name} src={msg.user.avatarUrl} className="h-8 w-8 flex-shrink-0" />
+                  <ProfileLink username={msg.user.username} className="shrink-0 rounded-full">
+                    <Avatar name={msg.user.name} src={msg.user.avatarUrl} className="h-8 w-8 flex-shrink-0" />
+                  </ProfileLink>
                 ) : null}
                 <div className={cn("flex max-w-[85%] flex-col", msg.user.id === viewerId && "items-end")}>
                   <div className={cn("flex items-center gap-2", msg.user.id === viewerId && "justify-end")}>
-                    <span className="text-sm font-medium">{msg.user.id === viewerId ? "You" : msg.user.name}</span>
+                    {msg.user.id === viewerId ? (
+                      <span className="text-sm font-medium">You</span>
+                    ) : (
+                      <ProfileLink
+                        username={msg.user.username}
+                        className="rounded-md px-0.5 -ml-0.5 text-sm font-medium transition hover:text-[var(--foreground)]"
+                      >
+                        {msg.user.name}
+                      </ProfileLink>
+                    )}
                     <span className="text-xs text-[var(--foreground)]/45">
                       {formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}
                     </span>
@@ -326,7 +365,9 @@ export function GroupDetail({ groupId, viewerId }: { groupId: string; viewerId: 
                   )}
                 </div>
                 {msg.user.id === viewerId ? (
-                  <Avatar name={msg.user.name} src={msg.user.avatarUrl} className="h-8 w-8 flex-shrink-0" />
+                  <ProfileLink username={msg.user.username} className="shrink-0 rounded-full">
+                    <Avatar name={msg.user.name} src={msg.user.avatarUrl} className="h-8 w-8 flex-shrink-0" />
+                  </ProfileLink>
                 ) : null}
               </div>
             ))
@@ -382,11 +423,16 @@ export function GroupDetail({ groupId, viewerId }: { groupId: string; viewerId: 
                       }}
                       className={`flex cursor-pointer items-center gap-3 rounded-2xl p-2 transition w-full border ${isSelected ? "border-[var(--accent)] bg-[var(--accent)]/5" : "border-transparent hover:bg-black/5"}`}
                     >
-                      <Avatar name={friend.name} src={friend.avatarUrl} className="h-10 w-10 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{friend.name}</p>
-                        <p className="text-xs text-[var(--foreground)]/58 truncate">@{friend.username}</p>
-                      </div>
+                      <ProfileLink
+                        username={friend.username}
+                        className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl p-1 -m-1 transition hover:bg-black/5"
+                      >
+                        <Avatar name={friend.name} src={friend.avatarUrl} className="h-10 w-10 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="truncate text-sm font-medium">{friend.name}</p>
+                          <p className="truncate text-xs text-[var(--foreground)]/58">@{friend.username}</p>
+                        </div>
+                      </ProfileLink>
                       <div className="shrink-0 text-[var(--accent)] px-2">
                         {isSelected && <CheckCircle2 className="h-5 w-5" />}
                       </div>

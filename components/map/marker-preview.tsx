@@ -4,6 +4,7 @@ import type { MapMarker, PostSummary } from "@/types/app";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { MediaView } from "@/components/post/media-view";
+import { ProfileLink } from "@/components/profile/profile-link";
 import { formatVisitDate } from "@/lib/utils";
 
 export function MarkerPreview({
@@ -45,7 +46,9 @@ export function MarkerPreview({
         </div>
         <div className="flex -space-x-2">
           {marker.visitors.map((visitor) => (
-            <Avatar key={visitor.id} name={visitor.name} src={visitor.avatarUrl} className="h-8 w-8 border-2 border-[var(--surface-strong)]" />
+            <ProfileLink key={visitor.id} username={visitor.username} className="rounded-full">
+              <Avatar name={visitor.name} src={visitor.avatarUrl} className="h-8 w-8 border-2 border-[var(--surface-strong)]" />
+            </ProfileLink>
           ))}
         </div>
         <Button className="w-full justify-between bg-[var(--map-accent)] text-[var(--foreground)] focus:ring-[var(--map-accent)]" onClick={onZoomIn}>
@@ -118,11 +121,16 @@ export function MarkerPreview({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <Avatar name={post.user.name} src={post.user.avatarUrl} className="h-7 w-7 shrink-0" />
-          <div className="min-w-0">
-            <p className="truncate text-xs font-medium leading-tight text-[var(--foreground)]/82">{post.user.name}</p>
-            <p className="truncate text-[11px] text-[var(--foreground)]/48">@{post.user.username}</p>
-          </div>
+          <ProfileLink
+            username={post.user.username}
+            className="flex min-w-0 items-center gap-2 rounded-2xl p-1 -m-1 transition hover:bg-[var(--surface-soft)]"
+          >
+            <Avatar name={post.user.name} src={post.user.avatarUrl} className="h-7 w-7 shrink-0" />
+            <div className="min-w-0">
+              <p className="truncate text-xs font-medium leading-tight text-[var(--foreground)]/82">{post.user.name}</p>
+              <p className="truncate text-[11px] text-[var(--foreground)]/48">@{post.user.username}</p>
+            </div>
+          </ProfileLink>
         </div>
         <Button
           className="w-full justify-between bg-[var(--map-accent)] text-[var(--foreground)] hover:opacity-95 focus:ring-[var(--map-accent)]"

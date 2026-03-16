@@ -8,6 +8,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageFriendButton } from "@/components/messages/message-friend-button";
+import { ProfileLink } from "@/components/profile/profile-link";
 
 type SearchResult = {
   id: string;
@@ -208,13 +209,16 @@ export function FriendsManager() {
           ) : null}
           {searchResults.map((user) => (
             <div key={user.id} className="flex items-center justify-between rounded-3xl border bg-[var(--surface-soft)] p-3">
-              <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
+              <ProfileLink
+                username={user.username}
+                className="mr-3 flex min-w-0 flex-1 items-center gap-3 rounded-2xl p-1 -m-1 transition hover:bg-[var(--surface-strong)]"
+              >
                 <Avatar name={user.name} src={user.avatarUrl} className="shrink-0" />
                 <div className="min-w-0">
-                  <p className="font-medium truncate">{user.name}</p>
-                  <p className="text-sm text-[var(--foreground)]/58 truncate">@{user.username}</p>
+                  <p className="truncate font-medium">{user.name}</p>
+                  <p className="truncate text-sm text-[var(--foreground)]/58">@{user.username}</p>
                 </div>
-              </div>
+              </ProfileLink>
               <div className="shrink-0">
                 {user.requestStatus === "none" && (
                   <Button className="gap-2" onClick={() => sendRequest(user.username)}>
@@ -260,13 +264,16 @@ export function FriendsManager() {
           <div className="mt-4 space-y-3">
             {state.incomingRequests.map((request) => (
               <div key={request.id} className="flex items-center justify-between rounded-3xl border bg-[var(--surface-soft)] p-3">
-                <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
+                <ProfileLink
+                  username={request.fromUser.username}
+                  className="mr-3 flex min-w-0 flex-1 items-center gap-3 rounded-2xl p-1 -m-1 transition hover:bg-[var(--surface-strong)]"
+                >
                   <Avatar name={request.fromUser.name} src={request.fromUser.avatarUrl} className="shrink-0" />
                   <div className="min-w-0">
-                    <p className="font-medium truncate">{request.fromUser.name}</p>
-                    <p className="text-sm text-[var(--foreground)]/58 truncate">@{request.fromUser.username}</p>
+                    <p className="truncate font-medium">{request.fromUser.name}</p>
+                    <p className="truncate text-sm text-[var(--foreground)]/58">@{request.fromUser.username}</p>
                   </div>
-                </div>
+                </ProfileLink>
                 <div className="flex shrink-0 gap-2">
                   <Button variant="secondary" onClick={() => respond(request.id, "decline")}>
                     <X className="h-4 w-4" />
@@ -319,11 +326,16 @@ export function FriendsManager() {
               <div className="mt-3 space-y-3">
                 {state.outgoingRequests.map((request) => (
                   <div key={request.id} className="flex items-center gap-3 rounded-3xl border bg-[var(--surface-soft)] p-3">
-                    <Avatar name={request.toUser.name} src={request.toUser.avatarUrl} />
-                    <div>
-                      <p className="font-medium">{request.toUser.name}</p>
-                      <p className="text-sm text-[var(--foreground)]/58">@{request.toUser.username}</p>
-                    </div>
+                    <ProfileLink
+                      username={request.toUser.username}
+                      className="flex min-w-0 items-center gap-3 rounded-2xl p-1 -m-1 transition hover:bg-[var(--surface-strong)]"
+                    >
+                      <Avatar name={request.toUser.name} src={request.toUser.avatarUrl} />
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{request.toUser.name}</p>
+                        <p className="truncate text-sm text-[var(--foreground)]/58">@{request.toUser.username}</p>
+                      </div>
+                    </ProfileLink>
                   </div>
                 ))}
               </div>
