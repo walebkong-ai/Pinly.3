@@ -24,6 +24,20 @@ export async function GET(request: Request) {
   const currentUserId = session.user.id;
   const visibleIds = await getVisibleUserIds(currentUserId);
 
+  const blockRecords = await prisma.block.findMany({
+    where: {
+      OR: [{ blockerId: currentUserId }, { blockedId: currentUserId }]
+    },
+    select: {
+      blockerId: true,
+      blockedId: true
+    }
+  });
+
+  const blockedUserIds = new Set<string>(
+    blockRecords.map((b) => (b.blockerId === currentUserId ? b.blockedId : b.blockerId))
+  );
+
   const pending = await prisma.friendRequest.findMany({
     where: {
       OR: [{ fromUserId: currentUserId }, { toUserId: currentUserId }]
@@ -37,7 +51,7 @@ export async function GET(request: Request) {
 
   const users = await prisma.user.findMany({
     where: {
-      id: { not: currentUserId },
+      id: { not: currentUserId, notIn: Array.from(blockedUserIds) },
       AND: searchTerms.map((term) => ({
         OR: [
           { username: { contains: term, mode: "insensitive" } },

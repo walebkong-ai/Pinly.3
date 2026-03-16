@@ -11,6 +11,7 @@ export type UserSummary = {
 export type CollectionSummary = {
   id: string;
   name: string;
+  color: string | null;
   postCount: number;
   updatedAt: string | Date;
   previewPost: {
@@ -27,6 +28,14 @@ export type CollectionSummary = {
 export type CollectionChip = {
   id: string;
   name: string;
+  color: string | null;
+};
+
+export type CollectionRoutePoint = {
+  postId: string;
+  latitude: number;
+  longitude: number;
+  visitedAt: string | Date;
 };
 
 export type WantToGoPlaceSummary = {

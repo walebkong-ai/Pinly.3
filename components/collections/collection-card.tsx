@@ -12,6 +12,7 @@ export function CollectionCard({
   compact?: boolean;
 }) {
   const previewPost = collection.previewPost;
+  const color = collection.color;
 
   return (
     <Link
@@ -40,9 +41,19 @@ export function CollectionCard({
             </div>
           </div>
         ) : (
-          <div className="flex h-full flex-col justify-between bg-[linear-gradient(180deg,rgba(252,236,218,0.96),rgba(252,236,218,0.82))] p-4">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--surface-strong)] text-[var(--map-accent)] shadow-sm">
-              <FolderOpen className="h-5 w-5" />
+          <div
+            className="flex h-full flex-col justify-between p-4"
+            style={{
+              background: color
+                ? `linear-gradient(180deg, ${color}30, ${color}18)`
+                : "linear-gradient(180deg,rgba(252,236,218,0.96),rgba(252,236,218,0.82))"
+            }}
+          >
+            <div
+              className="flex h-11 w-11 items-center justify-center rounded-2xl shadow-sm"
+              style={{ backgroundColor: color ?? "var(--surface-strong)" }}
+            >
+              <FolderOpen className="h-5 w-5" style={{ color: color ? "white" : "var(--map-accent)" }} />
             </div>
             <div>
               <p className="text-lg font-semibold text-[var(--foreground)]">{collection.name}</p>
@@ -52,15 +63,24 @@ export function CollectionCard({
         )}
       </div>
       <div className="flex items-center justify-between gap-3 p-4">
-        <div className="min-w-0">
+        <div className="flex min-w-0 items-center gap-2">
+          {color && (
+            <span
+              className="h-2.5 w-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: color }}
+              aria-hidden
+            />
+          )}
           <p className="truncate text-sm font-medium text-[var(--foreground)]">{collection.name}</p>
-          <p className="mt-1 text-xs text-[var(--foreground)]/55">
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <p className="text-xs text-[var(--foreground)]/55">
             {collection.postCount} {collection.postCount === 1 ? "memory" : "memories"}
           </p>
+          <span className="shrink-0 rounded-full bg-[var(--surface-soft)] px-3 py-1 text-xs uppercase tracking-[0.14em] text-[var(--foreground)]/48">
+            {formatVisitDate(collection.updatedAt)}
+          </span>
         </div>
-        <span className="shrink-0 rounded-full bg-[var(--surface-soft)] px-3 py-1 text-xs uppercase tracking-[0.14em] text-[var(--foreground)]/48">
-          Updated {formatVisitDate(collection.updatedAt)}
-        </span>
       </div>
     </Link>
   );

@@ -88,8 +88,32 @@ export const editPostSchema = z.object({
   taggedUserIds: z.array(z.string().cuid()).max(24).default([])
 });
 
+export const COLLECTION_COLORS = [
+  "#E04040",
+  "#E07A40",
+  "#D4B800",
+  "#3A9E5C",
+  "#38B6C9",
+  "#3A6EC9",
+  "#7A40C9",
+  "#C940A0"
+] as const;
+
+export type CollectionColor = (typeof COLLECTION_COLORS)[number];
+
+const collectionColorField = z
+  .enum(COLLECTION_COLORS as unknown as [string, ...string[]])
+  .nullable()
+  .optional();
+
 export const collectionSchema = z.object({
-  name: z.string().trim().min(2).max(60)
+  name: z.string().trim().min(2).max(60),
+  color: collectionColorField
+});
+
+export const collectionUpdateSchema = z.object({
+  name: z.string().trim().min(2).max(60).optional(),
+  color: collectionColorField
 });
 
 export const collectionAssignmentSchema = z.object({

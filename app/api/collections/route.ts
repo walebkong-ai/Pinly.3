@@ -17,6 +17,7 @@ export async function GET() {
     select: {
       id: true,
       name: true,
+      color: true,
       updatedAt: true,
       _count: {
         select: {
@@ -31,6 +32,7 @@ export async function GET() {
     collections: collections.map((collection) => ({
       id: collection.id,
       name: collection.name,
+      color: collection.color ?? null,
       postCount: collection._count.posts,
       updatedAt: collection.updatedAt
     }))
@@ -59,6 +61,7 @@ export async function POST(request: Request) {
   }
 
   const name = parsed.data.name.trim();
+  const color = parsed.data.color ?? null;
 
   const existing = await prisma.postCollection.findFirst({
     where: {
@@ -71,6 +74,7 @@ export async function POST(request: Request) {
     select: {
       id: true,
       name: true,
+      color: true,
       updatedAt: true,
       _count: {
         select: {
@@ -86,6 +90,7 @@ export async function POST(request: Request) {
       collection: {
         id: existing.id,
         name: existing.name,
+        color: existing.color ?? null,
         postCount: existing._count.posts,
         updatedAt: existing.updatedAt
       }
@@ -95,11 +100,13 @@ export async function POST(request: Request) {
   const collection = await prisma.postCollection.create({
     data: {
       userId: session.user.id,
-      name
+      name,
+      color
     },
     select: {
       id: true,
       name: true,
+      color: true,
       updatedAt: true
     }
   });
@@ -109,6 +116,7 @@ export async function POST(request: Request) {
       created: true,
       collection: {
         ...collection,
+        color: collection.color ?? null,
         postCount: 0
       }
     },

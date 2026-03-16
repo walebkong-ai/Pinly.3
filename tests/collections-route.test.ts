@@ -40,6 +40,7 @@ describe("collections route", () => {
       {
         id: "col_1",
         name: "Montreal trip",
+        color: null,
         updatedAt: new Date("2026-03-15T12:00:00.000Z"),
         _count: { posts: 3 }
       }
@@ -54,6 +55,7 @@ describe("collections route", () => {
         {
           id: "col_1",
           name: "Montreal trip",
+          color: null,
           postCount: 3,
           updatedAt: new Date("2026-03-15T12:00:00.000Z").toISOString()
         }
@@ -65,6 +67,7 @@ describe("collections route", () => {
     findFirstMock.mockResolvedValue({
       id: "col_1",
       name: "Montreal trip",
+      color: null,
       updatedAt: new Date("2026-03-15T12:00:00.000Z"),
       _count: { posts: 3 }
     });
@@ -84,6 +87,7 @@ describe("collections route", () => {
       collection: {
         id: "col_1",
         name: "Montreal trip",
+        color: null,
         postCount: 3,
         updatedAt: new Date("2026-03-15T12:00:00.000Z").toISOString()
       }
@@ -96,6 +100,7 @@ describe("collections route", () => {
     createMock.mockResolvedValue({
       id: "col_2",
       name: "Summer 2026",
+      color: null,
       updatedAt: new Date("2026-03-15T12:00:00.000Z")
     });
 
@@ -112,11 +117,13 @@ describe("collections route", () => {
     expect(createMock).toHaveBeenCalledWith({
       data: {
         userId: viewerId,
-        name: "Summer 2026"
+        name: "Summer 2026",
+        color: null
       },
       select: {
         id: true,
         name: true,
+        color: true,
         updatedAt: true
       }
     });

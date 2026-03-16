@@ -292,6 +292,7 @@ function normalizeCollectionSummary(collection: IncludedCollection): CollectionS
   return {
     id: collection.id,
     name: collection.name,
+    color: collection.color ?? null,
     postCount: collection._count.posts,
     updatedAt: collection.updatedAt,
     previewPost: collection.posts[0]?.post ?? null
@@ -980,12 +981,54 @@ export async function getOwnedCollectionsForPost(userId: string, postId: string)
       },
       select: {
         id: true,
-        name: true
+        name: true,
+        color: true
       },
       orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }]
     });
 
-    return collections;
+    return collections.map((c) => ({ ...c, color: c.color ?? null }));
+  } catch (error) {
+    if (isPrismaSchemaNotReadyError(error)) {
+      return [];
+    }
+
+    throw error;
+  }
+}
+
+export async function getCollectionRoutePoints(userId: string, collectionId: string) {
+  try {
+    const entries = await prisma.postCollectionItem.findMany({
+      where: {
+        collectionId,
+        collection: { userId },
+        post: { isArchived: false }
+      },
+      select: {
+        post: {
+          select: {
+            id: true,
+            latitude: true,
+            longitude: true,
+            visitedAt: true
+          }
+        }
+      },
+      orderBy: [
+        { post: { visitedAt: "asc" } },
+        { post: { createdAt: "asc" } }
+      ]
+    });
+
+    return entries
+      .filter((e) => e.post !== null)
+      .map((e) => ({
+        postId: e.post.id,
+        latitude: e.post.latitude,
+        longitude: e.post.longitude,
+        visitedAt: e.post.visitedAt
+      }));
   } catch (error) {
     if (isPrismaSchemaNotReadyError(error)) {
       return [];

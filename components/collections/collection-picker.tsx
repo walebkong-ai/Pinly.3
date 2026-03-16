@@ -32,11 +32,11 @@ async function loadCollectionOptions() {
   return (data.collections ?? []) as CollectionOption[];
 }
 
-async function createCollection(name: string) {
+async function createCollection(name: string, color?: string | null) {
   const response = await fetch("/api/collections", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name })
+    body: JSON.stringify({ name, color: color ?? null })
   });
 
   if (!response.ok) {
@@ -145,8 +145,13 @@ function CollectionSelectionPanel({
                       : "border-transparent bg-[var(--surface-soft)] hover:bg-[var(--surface-strong)]"
                   )}
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--surface-strong)] text-[var(--map-accent)]">
-                    <Folders className="h-4 w-4" />
+                  <div
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-white"
+                    style={{
+                      backgroundColor: collection.color ?? "rgba(56,182,201,0.15)"
+                    }}
+                  >
+                    <Folders className="h-4 w-4" style={{ color: collection.color ? "white" : "var(--map-accent)" }} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{collection.name}</p>

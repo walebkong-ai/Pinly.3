@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { CollectionColorPicker } from "@/components/collections/collection-color-picker";
 
 export function CreateCollectionButton({
   label = "New collection",
@@ -21,6 +22,7 @@ export function CreateCollectionButton({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [color, setColor] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleCreate() {
@@ -35,7 +37,7 @@ export function CreateCollectionButton({
         const response = await fetch("/api/collections", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: trimmedName })
+          body: JSON.stringify({ name: trimmedName, color })
         });
 
         if (!response.ok) {
@@ -46,6 +48,7 @@ export function CreateCollectionButton({
         const data = await response.json();
         setOpen(false);
         setName("");
+        setColor(null);
         router.push(`/collections/${data.collection.id}`);
         router.refresh();
       } catch (error) {
@@ -71,20 +74,23 @@ export function CreateCollectionButton({
             <p className="mt-1 text-sm text-[var(--foreground)]/58">
               Start a folder for a trip, season, or any set of memories you want grouped together.
             </p>
-            <div className="mt-5">
-              <label className="mb-2 block text-xs font-medium uppercase tracking-[0.16em] text-[var(--foreground)]/45">
-                Collection name
-              </label>
-              <Input
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="Summer 2026"
-                className="h-12 rounded-2xl"
-              />
+            <div className="mt-5 space-y-5">
+              <div>
+                <label className="mb-2 block text-xs font-medium uppercase tracking-[0.16em] text-[var(--foreground)]/45">
+                  Collection name
+                </label>
+                <Input
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="Summer 2026"
+                  className="h-12 rounded-2xl"
+                />
+              </div>
+              <CollectionColorPicker value={color} onChange={setColor} />
             </div>
             <Button
               type="button"
-              className="mt-5 h-12 w-full rounded-2xl"
+              className="mt-6 h-12 w-full rounded-2xl"
               onClick={handleCreate}
               disabled={isPending || name.trim().length < 2}
             >

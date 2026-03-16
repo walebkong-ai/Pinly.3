@@ -1,10 +1,21 @@
 import Link from "next/link";
-import { ArrowLeft, FolderOpen, Folders } from "lucide-react";
+import dynamic from "next/dynamic";
+import { ArrowLeft, FolderOpen } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getOwnedCollectionById } from "@/lib/data";
 import { prisma } from "@/lib/prisma";
 import { PostCard } from "@/components/post/post-card";
+
+const CollectionMapView = dynamic(
+  () => import("@/components/collections/collection-map-view").then((m) => m.CollectionMapView),
+  { ssr: false }
+);
+
+const CollectionColorEditor = dynamic(
+  () => import("@/components/collections/collection-color-editor").then((m) => m.CollectionColorEditor),
+  { ssr: false }
+);
 
 type Props = {
   params: Promise<{ collectionId: string }>;
@@ -31,6 +42,7 @@ export default async function CollectionDetailPage({ params }: Props) {
   }
 
   const { collection, posts } = collectionData;
+  const color = collection.color ?? null;
 
   return (
     <div className="mx-auto max-w-xl space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
@@ -44,8 +56,14 @@ export default async function CollectionDetailPage({ params }: Props) {
 
       <section className="glass-panel rounded-[1.75rem] p-4">
         <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[rgba(56,182,201,0.12)] text-[var(--map-accent)]">
-            <Folders className="h-5 w-5" />
+          <div
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-sm"
+            style={{
+              backgroundColor: color ? `${color}22` : "rgba(56,182,201,0.12)",
+              color: color ?? "var(--map-accent)"
+            }}
+          >
+            <FolderOpen className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Collection</p>
@@ -56,12 +74,16 @@ export default async function CollectionDetailPage({ params }: Props) {
           </div>
         </div>
 
-        {collection.previewPost ? (
-          <p className="mt-3 text-sm text-[var(--foreground)]/55">
-            Latest cover: {collection.previewPost.placeName}, {collection.previewPost.city}
-          </p>
-        ) : null}
+        {/* Color editor */}
+        <div className="mt-4 border-t border-[var(--foreground)]/6 pt-4">
+          <CollectionColorEditor collectionId={collection.id} initialColor={color} />
+        </div>
       </section>
+
+      {/* Route map — only shown when there are memories with locations */}
+      {posts.length > 0 && (
+        <CollectionMapView collectionId={collection.id} color={color} />
+      )}
 
       {posts.length > 0 ? (
         <section className="space-y-4">

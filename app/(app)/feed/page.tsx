@@ -42,8 +42,20 @@ export default async function FeedPage() {
           />
         ))}
         {posts.length === 0 && (
-          <div className="rounded-[1.75rem] border bg-[var(--surface-strong)] p-6 text-center">
-            <p className="text-sm text-[var(--foreground)]/55">No memories yet. Add your first memory from the map!</p>
+          <div className="rounded-[1.75rem] border bg-[var(--surface-strong)] p-6 text-center space-y-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Getting started</p>
+            <h2 className="font-[var(--font-serif)] text-xl">Your feed is empty</h2>
+            <p className="text-sm leading-6 text-[var(--foreground)]/60">
+              Memories from you and your friends will show up here. Start by creating your first memory or adding friends.
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+              <a href="/create" className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90">
+                Create your first memory
+              </a>
+              <a href="/friends" className="inline-flex items-center justify-center gap-2 rounded-full border bg-[var(--surface-soft)] px-4 py-2.5 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--foreground)]/5">
+                Add friends
+              </a>
+            </div>
           </div>
         )}
       </section>

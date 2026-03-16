@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const authMock = vi.fn();
 const getVisibleUserIdsMock = vi.fn();
+const blockFindManyMock = vi.fn();
 const friendRequestFindManyMock = vi.fn();
 const userFindManyMock = vi.fn();
 
@@ -15,6 +16,9 @@ vi.mock("@/lib/data", () => ({
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
+    block: {
+      findMany: blockFindManyMock
+    },
     friendRequest: {
       findMany: friendRequestFindManyMock
     },
@@ -30,6 +34,7 @@ describe("friends search route", () => {
   beforeEach(() => {
     authMock.mockReset();
     getVisibleUserIdsMock.mockReset();
+    blockFindManyMock.mockReset();
     friendRequestFindManyMock.mockReset();
     userFindManyMock.mockReset();
 
@@ -39,6 +44,7 @@ describe("friends search route", () => {
       }
     });
     getVisibleUserIdsMock.mockResolvedValue([viewerId, "ckfriend00000000000000001"]);
+    blockFindManyMock.mockResolvedValue([]);
     friendRequestFindManyMock.mockResolvedValue([
       {
         fromUserId: "ckpending0000000000000001",
