@@ -7,6 +7,7 @@ import { EditProfile } from "@/components/profile/edit-profile";
 import { MessageFriendButton } from "@/components/messages/message-friend-button";
 import { CollectionCard } from "@/components/collections/collection-card";
 import { CreateCollectionButton } from "@/components/collections/create-collection-button";
+import { InstallAppCard } from "@/components/pwa/install-app-card";
 
 export function ProfileView({
   profile,
@@ -83,6 +84,7 @@ export function ProfileView({
                 </Link>
                 <p className="text-xs text-[var(--foreground)]/55">Likes, comments, and profile photo.</p>
               </div>
+              <InstallAppCard className="mt-4 max-w-xl" />
             </div>
           ) : (
             <div className="flex items-center gap-4 min-w-0">
