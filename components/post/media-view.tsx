@@ -10,13 +10,15 @@ export function MediaView({
   mediaUrl,
   thumbnailUrl,
   className,
-  postId
+  postId,
+  showVideoControls = true
 }: {
   mediaType: "IMAGE" | "VIDEO";
   mediaUrl: string;
   thumbnailUrl?: string | null;
   className?: string;
   postId?: string;
+  showVideoControls?: boolean;
 }) {
   const proxyUrl = getMediaProxyUrl(mediaUrl);
   const proxyThumb = getMediaProxyUrl(thumbnailUrl);
@@ -45,7 +47,8 @@ export function MediaView({
       <div className={cn("relative h-full w-full overflow-hidden rounded-[1.5rem] bg-black/5", className)} {...interactiveProps}>
         <video
           className="h-full w-full object-cover"
-          controls
+          controls={showVideoControls}
+          playsInline
           poster={proxyThumb || undefined}
           preload="metadata"
         >

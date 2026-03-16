@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin } from "lucide-react";
+import { Heart, MapPin } from "lucide-react";
 import type { PostSummary } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
 import { MediaView } from "@/components/post/media-view";
@@ -14,11 +14,11 @@ import { ShareSheet } from "@/components/post/share-sheet";
 import { SaveButton } from "@/components/post/save-button";
 import { VisitedWithList } from "@/components/post/visited-with-list";
 import {
-  MOBILE_TAP_MAX_DURATION_MS,
   MOBILE_TAP_MAX_MOVEMENT_PX,
   MOBILE_TAP_NAVIGATION_DELAY_MS,
-  isDoubleTapCandidate,
   isTapWithinTolerance,
+  resolvePendingTapInterruption,
+  resolveTouchTapAction,
   type TapPoint
 } from "@/lib/post-tap-gesture";
 
@@ -34,6 +34,7 @@ export function PostCard({
   openOnBodyTap?: boolean;
 }) {
   const router = useRouter();
+  const bodyRef = useRef<HTMLDivElement>(null);
   const touchSessionRef = useRef<{
     pointerId: number;
     pointerType: string;
@@ -44,17 +45,58 @@ export function PostCard({
   } | null>(null);
   const lastTouchTapRef = useRef<TapPoint | null>(null);
   const pendingNavigationRef = useRef<number | null>(null);
+  const likeFeedbackTimeoutRef = useRef<number | null>(null);
   const suppressNextClickRef = useRef(false);
+  const [showDoubleTapLikeFeedback, setShowDoubleTapLikeFeedback] = useState(false);
   const commentsEnabled = post.user.settings?.commentsEnabled ?? true;
   const primaryCaption = post.caption.trim() || `Memory from ${post.placeName}`;
 
   useEffect(() => {
     return () => {
-      if (pendingNavigationRef.current !== null) {
-        window.clearTimeout(pendingNavigationRef.current);
-      }
+      clearPendingNavigation();
+      clearLikeFeedback();
     };
   }, []);
+
+  useEffect(() => {
+    if (!openOnBodyTap) {
+      return;
+    }
+
+    function handleGlobalPointerDown(event: globalThis.PointerEvent) {
+      if (pendingNavigationRef.current === null && lastTouchTapRef.current === null) {
+        return;
+      }
+
+      const target = event.target;
+      const interruption = resolvePendingTapInterruption({
+        targetIsSameSurface: Boolean(bodyRef.current && target instanceof Node && bodyRef.current.contains(target)),
+        targetIsInteractive: isInteractiveTarget(target)
+      });
+
+      if (interruption.cancelPendingNavigation) {
+        clearPendingNavigation();
+      }
+
+      if (interruption.resetTapCandidate) {
+        lastTouchTapRef.current = null;
+      }
+    }
+
+    function handleGlobalScroll() {
+      clearPendingNavigation();
+      lastTouchTapRef.current = null;
+      resetTouchGesture();
+    }
+
+    window.addEventListener("pointerdown", handleGlobalPointerDown, true);
+    window.addEventListener("scroll", handleGlobalScroll, true);
+
+    return () => {
+      window.removeEventListener("pointerdown", handleGlobalPointerDown, true);
+      window.removeEventListener("scroll", handleGlobalScroll, true);
+    };
+  }, [openOnBodyTap]);
 
   function clearPendingNavigation() {
     if (pendingNavigationRef.current !== null) {
@@ -63,13 +105,36 @@ export function PostCard({
     }
   }
 
+  function clearLikeFeedback() {
+    if (likeFeedbackTimeoutRef.current !== null) {
+      window.clearTimeout(likeFeedbackTimeoutRef.current);
+      likeFeedbackTimeoutRef.current = null;
+    }
+  }
+
+  function triggerDoubleTapLikeFeedback() {
+    clearLikeFeedback();
+    setShowDoubleTapLikeFeedback(true);
+    likeFeedbackTimeoutRef.current = window.setTimeout(() => {
+      likeFeedbackTimeoutRef.current = null;
+      setShowDoubleTapLikeFeedback(false);
+    }, 520);
+  }
+
   function openPost() {
     clearPendingNavigation();
+    lastTouchTapRef.current = null;
     router.push(`/posts/${post.id}`);
   }
 
   function dispatchDoubleTapLike() {
-    window.dispatchEvent(new CustomEvent(`like-post-${post.id}`));
+    window.dispatchEvent(
+      new CustomEvent(`like-post-${post.id}`, {
+        detail: {
+          source: "double-tap"
+        }
+      })
+    );
   }
 
   function isInteractiveTarget(target: EventTarget | null) {
@@ -77,9 +142,7 @@ export function PostCard({
       return false;
     }
 
-    return Boolean(
-      target.closest("a,button,input,select,textarea,summary,video,[role='button'],[role='link']")
-    );
+    return Boolean(target.closest("a,button,input,select,textarea,summary,[role='button'],[role='link']"));
   }
 
   function handleBodyPointerDown(event: PointerEvent<HTMLDivElement>) {
@@ -127,32 +190,38 @@ export function PostCard({
       return;
     }
 
-    if (session.pointerType === "mouse" || session.moved || isInteractiveTarget(event.target)) {
-      return;
-    }
-
     const tapPoint = {
       x: event.clientX,
       y: event.clientY,
       timestamp: Date.now()
     };
+    const tapResolution = resolveTouchTapAction({
+      previousTap: lastTouchTapRef.current,
+      currentTap: tapPoint,
+      pointerType: session.pointerType,
+      moved: session.moved,
+      durationMs: tapPoint.timestamp - session.startedAt,
+      isInteractiveTarget: isInteractiveTarget(event.target)
+    });
 
-    if (tapPoint.timestamp - session.startedAt > MOBILE_TAP_MAX_DURATION_MS) {
+    if (tapResolution.action === "ignore") {
+      lastTouchTapRef.current = null;
       return;
     }
 
     event.preventDefault();
     event.stopPropagation();
-    suppressNextClickRef.current = true;
+    suppressNextClickRef.current = tapResolution.suppressClick;
 
-    if (isDoubleTapCandidate(lastTouchTapRef.current, tapPoint)) {
+    if (tapResolution.action === "like") {
       clearPendingNavigation();
-      lastTouchTapRef.current = null;
+      lastTouchTapRef.current = tapResolution.nextTap;
+      triggerDoubleTapLikeFeedback();
       dispatchDoubleTapLike();
       return;
     }
 
-    lastTouchTapRef.current = tapPoint;
+    lastTouchTapRef.current = tapResolution.nextTap;
     clearPendingNavigation();
     pendingNavigationRef.current = window.setTimeout(() => {
       pendingNavigationRef.current = null;
@@ -188,7 +257,9 @@ export function PostCard({
 
   const body = (
     <div
-      className={openOnBodyTap ? "group block cursor-pointer touch-pan-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/50" : undefined}
+      ref={bodyRef}
+      data-post-card-body
+      className={openOnBodyTap ? "group block cursor-pointer select-none touch-pan-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/50" : undefined}
       onPointerDown={handleBodyPointerDown}
       onPointerMove={handleBodyPointerMove}
       onPointerUp={handleBodyPointerUp}
@@ -199,13 +270,21 @@ export function PostCard({
       tabIndex={openOnBodyTap ? 0 : undefined}
       aria-label={openOnBodyTap ? `Open ${primaryCaption}` : undefined}
     >
-      <div className={compact ? "aspect-[4/3]" : "aspect-[4/3]"}>
+      <div className={compact ? "relative aspect-[4/3]" : "relative aspect-[4/3]"}>
         <MediaView
           mediaType={post.mediaType}
           mediaUrl={post.mediaUrl}
           thumbnailUrl={post.thumbnailUrl}
           postId={openOnBodyTap ? undefined : post.id}
+          showVideoControls={!openOnBodyTap}
         />
+        {showDoubleTapLikeFeedback ? (
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/10">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/12 backdrop-blur-sm animate-in zoom-in-75 fade-in duration-200">
+              <Heart className="h-10 w-10 fill-white text-white drop-shadow-lg" />
+            </div>
+          </div>
+        ) : null}
       </div>
       <div className="space-y-3 p-4">
         <div className="flex items-center gap-3">
