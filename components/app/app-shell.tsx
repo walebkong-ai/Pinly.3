@@ -44,6 +44,7 @@ export function AppShell({ children, user }: AppShellProps) {
   const pathname = usePathname();
   const [unreadGroupsCount, setUnreadGroupsCount] = useState(0);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  const notificationsActive = isNavActive(pathname, "/notifications");
 
   useEffect(() => {
     let ignore = false;
@@ -153,16 +154,22 @@ export function AppShell({ children, user }: AppShellProps) {
           <Link
             href="/notifications"
             aria-label="Notifications"
+            aria-current={notificationsActive ? "page" : undefined}
             className={cn(
               "relative inline-flex h-11 w-11 items-center justify-center rounded-2xl border transition",
-              isNavActive(pathname, "/notifications")
-                ? "border-[rgba(24,85,56,0.14)] bg-[var(--foreground)] text-[var(--background)] shadow-sm"
+              notificationsActive
+                ? "border-[#185538] bg-[#185538] text-[#FCECDA] shadow-[0_14px_30px_rgba(24,85,56,0.22)]"
                 : "border-[rgba(24,85,56,0.08)] bg-[var(--surface-soft)] text-[var(--foreground)] hover:bg-[var(--surface-strong)]"
             )}
           >
             <Bell className="h-5 w-5" />
             {unreadNotificationsCount > 0 ? (
-              <div className="absolute -right-1.5 -top-1.5 z-30 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[var(--social-accent)] px-1 text-[10px] font-bold text-white shadow-sm ring-1 ring-[rgba(255,250,244,0.72)]">
+              <div
+                className={cn(
+                  "absolute -right-1.5 -top-1.5 z-30 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[var(--social-accent)] px-1 text-[10px] font-bold text-white shadow-sm ring-1",
+                  notificationsActive ? "ring-[#FCECDA]" : "ring-[rgba(255,250,244,0.72)]"
+                )}
+              >
                 {unreadNotificationsCount > 99 ? "99+" : unreadNotificationsCount}
               </div>
             ) : null}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type KeyboardEvent } from "react";
+import { startTransition, useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -94,10 +94,24 @@ export function NotificationsList({
 }) {
   const router = useRouter();
   const [notifications, setNotifications] = useState(initialNotifications);
-  const unreadCount = useMemo(
-    () => notifications.filter((notification) => !notification.readAt).length,
+  const visibleNotifications = useMemo(
+    () => notifications.filter((notification) => !notification.readAt),
     [notifications]
   );
+  const unreadCount = visibleNotifications.length;
+
+  useEffect(() => {
+    setNotifications(initialNotifications);
+  }, [initialNotifications]);
+
+  useEffect(() => {
+    function handleNotificationsUpdated() {
+      router.refresh();
+    }
+
+    window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, handleNotificationsUpdated);
+    return () => window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, handleNotificationsUpdated);
+  }, [router]);
 
   async function markNotificationsRead(notificationIds?: string[], markAll = false) {
     const response = await fetch("/api/notifications/read", {
@@ -115,25 +129,31 @@ export function NotificationsList({
 
   async function handleOpen(notification: NotificationSummary) {
     const href = getNotificationHref(notification);
+    const persistRead =
+      notification.readAt == null
+        ? (async () => {
+            const now = new Date().toISOString();
+            setNotifications((current) =>
+              current.map((item) => (item.id === notification.id ? { ...item, readAt: now } : item))
+            );
 
-    if (!notification.readAt) {
-      const now = new Date().toISOString();
-      setNotifications((current) =>
-        current.map((item) => (item.id === notification.id ? { ...item, readAt: now } : item))
-      );
-
-      try {
-        await markNotificationsRead([notification.id]);
-      } catch {
-        setNotifications((current) =>
-          current.map((item) => (item.id === notification.id ? { ...item, readAt: null } : item))
-        );
-      }
-    }
+            try {
+              await markNotificationsRead([notification.id]);
+            } catch {
+              setNotifications((current) =>
+                current.map((item) => (item.id === notification.id ? { ...item, readAt: null } : item))
+              );
+            }
+          })()
+        : Promise.resolve();
 
     if (href) {
-      router.push(href);
+      startTransition(() => {
+        router.push(href);
+      });
     }
+
+    await persistRead;
   }
 
   async function handleMarkAllRead() {
@@ -155,10 +175,11 @@ export function NotificationsList({
     }
   }
 
-  if (notifications.length === 0) {
+  if (visibleNotifications.length === 0) {
     return (
       <div className="rounded-[1.75rem] border bg-[var(--surface-strong)] p-6 text-center">
-        <p className="text-sm text-[var(--foreground)]/58">No notifications yet.</p>
+        <p className="text-sm font-medium text-[var(--foreground)]">You're all caught up.</p>
+        <p className="mt-2 text-xs text-[var(--foreground)]/58">Unread notifications disappear from this list as soon as they&apos;re read.</p>
       </div>
     );
   }
@@ -183,7 +204,7 @@ export function NotificationsList({
       </section>
 
       <section className="space-y-3">
-        {notifications.map((notification) => {
+        {visibleNotifications.map((notification) => {
           const copy = getNotificationCopy(notification);
           const Icon = getNotificationIcon(notification);
           const isUnread = !notification.readAt;

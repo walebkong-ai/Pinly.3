@@ -731,10 +731,19 @@ export async function getWantToGoPlaces(userId: string, limit = 64): Promise<Wan
   }
 }
 
-export async function getNotifications(userId: string, limit = 50): Promise<NotificationSummary[]> {
+export async function getNotifications(
+  userId: string,
+  limit = 50,
+  options?: {
+    includeRead?: boolean;
+  }
+): Promise<NotificationSummary[]> {
   try {
     const notifications = await prisma.notification.findMany({
-      where: { userId },
+      where: {
+        userId,
+        ...(options?.includeRead ? {} : { readAt: null })
+      },
       include: notificationInclude,
       orderBy: { createdAt: "desc" },
       take: limit

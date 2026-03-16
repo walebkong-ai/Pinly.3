@@ -36,18 +36,17 @@ export async function POST(request: Request) {
     return apiValidationError(parsed.error);
   }
 
-  const where =
-    parsed.data.markAll === true
-      ? {
-          userId: session.user.id,
-          readAt: null
-        }
+  const where = {
+    userId: session.user.id,
+    readAt: null,
+    ...(parsed.data.markAll === true
+      ? {}
       : {
-          userId: session.user.id,
           id: {
             in: parsed.data.notificationIds ?? []
           }
-        };
+        })
+  };
 
   const now = new Date();
 

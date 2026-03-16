@@ -68,6 +68,7 @@ describe("notifications routes", () => {
       expect.objectContaining({
         where: {
           userId: viewerId,
+          readAt: null,
           id: {
             in: ["ck11111111111111111111111", "ck22222222222222222222222"]
           }
