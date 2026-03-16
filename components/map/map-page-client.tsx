@@ -2,9 +2,10 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { startTransition, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { startTransition, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Filter, LoaderCircle, Plus, Search } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,18 +14,24 @@ import { CityContextPanel } from "@/components/map/city-context-panel";
 import { FilterSidebar } from "@/components/map/filter-sidebar";
 import { FriendActivityPanel } from "@/components/map/friend-activity-panel";
 import { LayerToggle } from "@/components/map/layer-toggle";
+import { MapModeToggle } from "@/components/map/map-mode-toggle";
 import { WelcomeCard } from "@/components/map/welcome-card";
 import { buildLightweightMapGroups } from "@/lib/map-groups";
+import { MAP_MODE_STORAGE_KEY, isSatelliteModeAvailable, parseStoredMapMode } from "@/lib/map-style";
 import { canonicalizeViewportForDataQuery, createViewportFingerprint, FULL_WORLD_BOUNDS, type MapViewport } from "@/lib/map-viewport";
-import type { LayerMode, MapCategory, MapGroupOption, MapResponse, PostSummary, TimeFilter } from "@/types/app";
+import type { LayerMode, MapCategory, MapGroupOption, MapResponse, MapVisualMode, PostSummary, TimeFilter } from "@/types/app";
 
-const DynamicMapCanvas = dynamic(() => import("@/components/map/map-canvas").then((mod) => mod.MapCanvas), {
-  ssr: false,
-  loading: () => (
+function MapCanvasLoader() {
+  return (
     <div className="flex h-[70vh] items-center justify-center rounded-[2rem] border bg-[var(--surface-soft)]">
       <LoaderCircle className="h-6 w-6 animate-spin text-[var(--map-accent)]" />
     </div>
-  )
+  );
+}
+
+const DynamicMapCanvas = dynamic(() => import("@/components/map/map-canvas").then((mod) => mod.MapCanvas), {
+  ssr: false,
+  loading: () => <MapCanvasLoader />
 });
 
 const emptyMap: MapResponse = {
@@ -33,14 +40,19 @@ const emptyMap: MapResponse = {
   cityContext: null,
   friendActivity: []
 };
+const satelliteApiKey = process.env.NEXT_PUBLIC_MAPTILER_API_KEY ?? "";
 
 export function MapPageClient() {
   const searchParams = useSearchParams();
+  const didToastSatelliteFallbackRef = useRef(false);
   const [mapData, setMapData] = useState<MapResponse>(emptyMap);
   const [loadingMap, setLoadingMap] = useState(true);
   const [groupOptions, setGroupOptions] = useState<MapGroupOption[]>([]);
   const [query, setQuery] = useState("");
   const [layer, setLayer] = useState<LayerMode>("both");
+  const [mapMode, setMapMode] = useState<MapVisualMode>("default");
+  const [mapModeHydrated, setMapModeHydrated] = useState(false);
+  const [satelliteFailed, setSatelliteFailed] = useState(false);
   const [time, setTime] = useState<TimeFilter>("all");
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<MapCategory[]>([]);
@@ -53,6 +65,36 @@ export function MapPageClient() {
     })
   );
   const deferredQuery = useDeferredValue(query);
+  const satelliteModeAvailable = isSatelliteModeAvailable(satelliteApiKey);
+  const satelliteToggleVisible = true;
+  const satelliteAvailability = satelliteFailed ? "failed" : "available";
+  const activeMapMode = satelliteModeAvailable && !satelliteFailed ? mapMode : "default";
+
+  useEffect(() => {
+    try {
+      const storedMapMode = parseStoredMapMode(window.localStorage.getItem(MAP_MODE_STORAGE_KEY));
+
+      if (storedMapMode) {
+        setMapMode(storedMapMode);
+      }
+    } catch {
+      // Ignore storage access issues in private browsing or restrictive environments.
+    } finally {
+      setMapModeHydrated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!mapModeHydrated) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(MAP_MODE_STORAGE_KEY, mapMode);
+    } catch {
+      // Ignore storage access issues in private browsing or restrictive environments.
+    }
+  }, [mapModeHydrated, mapMode]);
 
   useEffect(() => {
     let ignore = false;
@@ -179,7 +221,7 @@ export function MapPageClient() {
     [mapData.stage]
   );
 
-  function onViewportChange(nextViewport: MapViewport) {
+  const onViewportChange = useCallback((nextViewport: MapViewport) => {
     const nextQueryViewport = canonicalizeViewportForDataQuery(nextViewport);
     const nextFingerprint = createViewportFingerprint(nextQueryViewport);
 
@@ -188,7 +230,7 @@ export function MapPageClient() {
         createViewportFingerprint(currentViewport) === nextFingerprint ? currentViewport : nextQueryViewport
       );
     });
-  }
+  }, []);
 
   function toggleGroup(groupId: string) {
     setSelectedGroupIds((current) =>
@@ -208,14 +250,55 @@ export function MapPageClient() {
     setSelectedCategories([]);
   }
 
+  const handleMapModeChange = useCallback(
+    (nextMode: MapVisualMode) => {
+      if (nextMode === "default") {
+        setMapMode("default");
+        return;
+      }
+
+      if (satelliteFailed) {
+        toast.error("Satellite view is unavailable right now.");
+        return;
+      }
+
+      setMapMode(nextMode);
+    },
+    [satelliteFailed]
+  );
+
+  const handleMapError = useCallback(
+    (error: Error) => {
+      if (activeMapMode !== "satellite" || didToastSatelliteFallbackRef.current) {
+        return;
+      }
+
+      didToastSatelliteFallbackRef.current = true;
+      setSatelliteFailed(true);
+      setMapMode("default");
+      toast.error("Satellite view is unavailable right now. Switched back to Map.");
+
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Satellite map failed to load.", error);
+      }
+    },
+    [activeMapMode]
+  );
+
   return (
     <section className="relative min-h-[calc(100vh-7.5rem)] overflow-hidden rounded-[2.2rem] border bg-[var(--surface-soft)] shadow-2xl shadow-black/5">
-      <DynamicMapCanvas
-        markers={mapData.markers}
-        selectedPostId={selectedPost?.id ?? null}
-        onExpandPost={setSelectedPost}
-        onViewportChange={onViewportChange}
-      />
+      {mapModeHydrated ? (
+        <DynamicMapCanvas
+          markers={mapData.markers}
+          mapMode={activeMapMode}
+          selectedPostId={selectedPost?.id ?? null}
+          onExpandPost={setSelectedPost}
+          onMapError={handleMapError}
+          onViewportChange={onViewportChange}
+        />
+      ) : (
+        <MapCanvasLoader />
+      )}
 
       <div className="pointer-events-none absolute inset-0 z-[700]">
         <div className="pointer-events-none flex h-full flex-col justify-between p-4 md:p-5">
@@ -241,21 +324,26 @@ export function MapPageClient() {
                     </span>
                   ) : null}
                 </div>
-                {showControls ? (
-                  <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
-                    <button
-                      type="button"
-                      onClick={() => setFilterOpen(true)}
-                      className="flex items-center gap-1.5 md:gap-2 rounded-full px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-medium text-[var(--foreground)]/70 hover:bg-[var(--foreground)]/5 transition"
-                    >
-                      <Filter className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                      <span className="hidden sm:inline">Filters</span>
-                      {activeFilterCount > 0 && <span>({activeFilterCount})</span>}
-                    </button>
-                    <div className="mx-1 h-4 w-[1px] bg-[var(--foreground)]/10" />
-                    <LayerToggle value={layer} onChange={setLayer} />
-                  </div>
-                ) : null}
+                <div className="flex flex-wrap items-center gap-2">
+                  {showControls ? (
+                    <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
+                      <button
+                        type="button"
+                        onClick={() => setFilterOpen(true)}
+                        className="flex min-h-10 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-[var(--foreground)]/70 transition hover:bg-[var(--foreground)]/5 md:gap-2 md:px-4 md:text-sm"
+                      >
+                        <Filter className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                        <span className="hidden sm:inline">Filters</span>
+                        {activeFilterCount > 0 && <span>({activeFilterCount})</span>}
+                      </button>
+                    </div>
+                  ) : null}
+                  {showControls ? (
+                    <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
+                      <LayerToggle value={layer} onChange={setLayer} />
+                    </div>
+                  ) : null}
+                </div>
               </div>
               {showControls ? (
                 <Link href="/create" className="pointer-events-auto">
@@ -276,9 +364,18 @@ export function MapPageClient() {
 
         </div>
 
-        {(showControls || showWelcomeCard) && (
-          <div className="pointer-events-none absolute inset-x-4 bottom-20 grid gap-4 md:bottom-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-end xl:px-1 animate-in fade-in duration-500 ease-out">
-            <div className="pointer-events-none flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+        {(showControls || showWelcomeCard || satelliteToggleVisible) && (
+          <div className="pointer-events-none absolute inset-x-4 bottom-24 grid gap-4 md:bottom-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-end xl:px-1 animate-in fade-in duration-500 ease-out">
+            <div className="pointer-events-none flex flex-col-reverse gap-3 xl:flex-row xl:items-end xl:justify-between xl:gap-4">
+              {satelliteToggleVisible ? (
+                <div className="pointer-events-auto self-start xl:self-end">
+                  <MapModeToggle
+                    value={activeMapMode}
+                    onChange={handleMapModeChange}
+                    satelliteAvailability={satelliteAvailability}
+                  />
+                </div>
+              ) : null}
               <div className="pointer-events-auto max-w-md">
                 {mapData.cityContext ? (
                   <CityContextPanel cityContext={mapData.cityContext} />

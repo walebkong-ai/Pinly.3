@@ -117,6 +117,8 @@ export type PostSummary = {
 
 export type LayerMode = "friends" | "you" | "both";
 
+export type MapVisualMode = "default" | "satellite";
+
 export type TimeFilter = "all" | "30d" | "6m" | "1y";
 
 export type MapCategory = "photo" | "video" | "food" | "nature" | "landmark" | "neighborhood";
