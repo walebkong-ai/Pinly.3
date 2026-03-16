@@ -1,14 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useState, type KeyboardEvent } from "react";
+import { useRouter } from "next/navigation";
 import { MapPin, ChevronDown } from "lucide-react";
 import type { CityContext } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
+import { ProfileLink } from "@/components/profile/profile-link";
 import { formatVisitDate } from "@/lib/utils";
 
 export function CityContextPanel({ cityContext }: { cityContext: CityContext | null }) {
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(true);
+
+  function openPost(postId: string) {
+    router.push(`/posts/${postId}`);
+  }
+
+  function handlePostKeyDown(event: KeyboardEvent<HTMLDivElement>, postId: string) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openPost(postId);
+    }
+  }
+
   if (!cityContext) {
     return null;
   }
@@ -46,10 +60,14 @@ export function CityContextPanel({ cityContext }: { cityContext: CityContext | n
               <p className="text-sm font-semibold">Who visited</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {cityContext.visitors.map((visitor) => (
-                  <div key={visitor.id} className="flex items-center gap-2 rounded-full border bg-[var(--surface-soft)] px-3 py-2">
+                  <ProfileLink
+                    key={visitor.id}
+                    username={visitor.username}
+                    className="flex items-center gap-2 rounded-full border bg-[var(--surface-soft)] px-3 py-2 transition hover:bg-[var(--surface-strong)]"
+                  >
                     <Avatar name={visitor.name} src={visitor.avatarUrl} className="h-7 w-7" />
                     <span className="text-sm">{visitor.name}</span>
-                  </div>
+                  </ProfileLink>
                 ))}
               </div>
             </div>
@@ -58,17 +76,31 @@ export function CityContextPanel({ cityContext }: { cityContext: CityContext | n
               <p className="text-sm font-semibold">Recent trips</p>
               <div className="mt-3 space-y-3">
                 {cityContext.recentTrips.map((trip) => (
-                  <Link key={trip.id} href={`/posts/${trip.id}`} className="flex items-start gap-3 rounded-3xl border bg-[var(--surface-soft)] p-3">
-                    <Avatar name={trip.user.name} src={trip.user.avatarUrl} className="h-8 w-8" />
+                  <div
+                    key={trip.id}
+                    role="link"
+                    tabIndex={0}
+                    onClick={() => openPost(trip.id)}
+                    onKeyDown={(event) => handlePostKeyDown(event, trip.id)}
+                    className="flex cursor-pointer items-start gap-3 rounded-3xl border bg-[var(--surface-soft)] p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/40"
+                  >
+                    <ProfileLink username={trip.user.username} className="shrink-0 rounded-full">
+                      <Avatar name={trip.user.name} src={trip.user.avatarUrl} className="h-8 w-8" />
+                    </ProfileLink>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium">{trip.user.name}</p>
+                      <ProfileLink
+                        username={trip.user.username}
+                        className="rounded-md px-0.5 -ml-0.5 text-sm font-medium transition hover:text-[var(--foreground)]"
+                      >
+                        {trip.user.name}
+                      </ProfileLink>
                       <p className="mt-1 text-sm text-[var(--foreground)]/68">{trip.placeName}</p>
                       <p className="mt-1 inline-flex items-center gap-1 text-xs uppercase tracking-[0.12em] text-[var(--foreground)]/45">
                         <MapPin className="h-3.5 w-3.5 text-[var(--map-accent)]" />
                         {formatVisitDate(trip.visitedAt)}
                       </p>
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             </div>

@@ -7,6 +7,7 @@ import type { PostSummary } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { MediaView } from "@/components/post/media-view";
+import { ProfileLink } from "@/components/profile/profile-link";
 import { formatVisitDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -86,13 +87,16 @@ export function BottomSheet({
             </div>
             <div className="flex flex-col">
               <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-3">
+                <ProfileLink
+                  username={post.user.username}
+                  className="flex min-w-0 items-center gap-3 rounded-[1.25rem] p-1 -m-1 transition hover:bg-[var(--surface-soft)]"
+                >
                   <Avatar name={post.user.name} src={post.user.avatarUrl} />
-                  <div>
-                    <p className="text-sm font-medium text-[var(--foreground)]/84">{post.user.name}</p>
-                    <p className="text-xs text-[var(--foreground)]/54">@{post.user.username}</p>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-[var(--foreground)]/84">{post.user.name}</p>
+                    <p className="truncate text-xs text-[var(--foreground)]/54">@{post.user.username}</p>
                   </div>
-                </div>
+                </ProfileLink>
                 <Button
                   variant="ghost"
                   className="rounded-full p-2"

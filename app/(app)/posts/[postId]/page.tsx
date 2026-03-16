@@ -17,6 +17,7 @@ import { ShareSheet } from "@/components/post/share-sheet";
 import { VisitedWithList } from "@/components/post/visited-with-list";
 import { ManagePostCollectionsCard } from "@/components/collections/collection-picker";
 import { WantToGoButton } from "@/components/places/want-to-go-button";
+import { ProfileLink } from "@/components/profile/profile-link";
 
 type Props = {
   params: Promise<{ postId: string }>;
@@ -81,13 +82,16 @@ export default async function PostDetailPage({ params }: Props) {
           <div className="space-y-4 p-4">
             {/* Author row */}
             <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
+              <ProfileLink
+                username={post.user.username}
+                className="flex min-w-0 items-center gap-3 rounded-[1.25rem] p-1 -m-1 transition hover:bg-[var(--surface-soft)]"
+              >
                 <Avatar name={post.user.name} src={post.user.avatarUrl} />
-                <div>
-                  <p className="font-medium">{post.user.name}</p>
-                  <p className="text-sm text-[var(--foreground)]/58">@{post.user.username}</p>
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{post.user.name}</p>
+                  <p className="truncate text-sm text-[var(--foreground)]/58">@{post.user.username}</p>
                 </div>
-              </div>
+              </ProfileLink>
               {isOwnPost && (
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   <Link

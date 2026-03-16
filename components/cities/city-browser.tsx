@@ -7,6 +7,7 @@ import type { PostSummary } from "@/types/app";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PostCard } from "@/components/post/post-card";
+import { ProfileLink } from "@/components/profile/profile-link";
 
 type CityResult = {
   city: string;
@@ -87,10 +88,14 @@ export function CityBrowser({ showLikeCounts = true }: { showLikeCounts?: boolea
               <p className="text-sm font-semibold">Who visited</p>
               <div className="mt-3 space-y-2">
                 {result.visitors.map((visitor) => (
-                  <div key={visitor.id} className="flex min-w-0 items-center gap-1 text-sm text-[var(--foreground)]/68">
+                  <ProfileLink
+                    key={visitor.id}
+                    username={visitor.username}
+                    className="flex min-w-0 items-center gap-1 rounded-xl px-2 py-1 -mx-2 text-sm text-[var(--foreground)]/68 transition hover:bg-[var(--surface-strong)]"
+                  >
                     <span className="truncate">{visitor.name}</span>
                     <span className="max-w-[50%] shrink-0 truncate text-[var(--foreground)]/45">@{visitor.username}</span>
-                  </div>
+                  </ProfileLink>
                 ))}
               </div>
             </div>

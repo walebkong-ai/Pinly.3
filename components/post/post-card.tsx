@@ -13,6 +13,7 @@ import { CommentSection } from "@/components/post/comment-section";
 import { ShareSheet } from "@/components/post/share-sheet";
 import { SaveButton } from "@/components/post/save-button";
 import { VisitedWithList } from "@/components/post/visited-with-list";
+import { ProfileLink } from "@/components/profile/profile-link";
 import {
   MOBILE_TAP_MAX_MOVEMENT_PX,
   MOBILE_TAP_NAVIGATION_DELAY_MS,
@@ -298,11 +299,16 @@ export function PostCard({
       </div>
       <div className="space-y-3 p-4">
         <div className="flex items-center gap-3">
-          <Avatar name={post.user.name} src={post.user.avatarUrl} className="h-9 w-9 shrink-0" />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-[var(--foreground)]/84">{post.user.name}</p>
-            <p className="truncate text-[11px] text-[var(--foreground)]/50">@{post.user.username}</p>
-          </div>
+          <ProfileLink
+            username={post.user.username}
+            className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl p-1 -m-1 transition hover:bg-[var(--surface-soft)]"
+          >
+            <Avatar name={post.user.name} src={post.user.avatarUrl} className="h-9 w-9 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-[var(--foreground)]/84">{post.user.name}</p>
+              <p className="truncate text-[11px] text-[var(--foreground)]/50">@{post.user.username}</p>
+            </div>
+          </ProfileLink>
         </div>
         <div className="space-y-2.5">
           <p

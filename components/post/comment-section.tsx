@@ -5,6 +5,7 @@ import { formatDistanceToNow } from "date-fns";
 import { CornerDownRight, LoaderCircle, MessageCircle, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
+import { ProfileLink } from "@/components/profile/profile-link";
 import { cn } from "@/lib/utils";
 
 type ReplyData = {
@@ -256,11 +257,18 @@ export function CommentSection({
             {comments.map((comment) => (
               <div key={comment.id} className="space-y-2">
                 <div className="flex gap-2">
-                  <Avatar name={comment.user.name} src={comment.user.avatarUrl} className="h-7 w-7 shrink-0" />
+                  <ProfileLink username={comment.user.username} className="shrink-0 rounded-full">
+                    <Avatar name={comment.user.name} src={comment.user.avatarUrl} className="h-7 w-7 shrink-0" />
+                  </ProfileLink>
                   <div className="min-w-0 flex-1">
                     <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-                      <span className="font-semibold">{comment.user.name}</span>
-                      <span className="text-[var(--foreground)]/50">@{comment.user.username}</span>
+                      <ProfileLink
+                        username={comment.user.username}
+                        className="flex max-w-full items-center gap-x-2 gap-y-1 rounded-full px-1 -ml-1 text-left transition hover:bg-[var(--surface-soft)]"
+                      >
+                        <span className="truncate font-semibold">{comment.user.name}</span>
+                        <span className="truncate text-[var(--foreground)]/50">@{comment.user.username}</span>
+                      </ProfileLink>
                       <span className="text-[var(--foreground)]/40">
                         {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
                       </span>
@@ -349,11 +357,18 @@ export function CommentSection({
                   <div className="ml-9 space-y-2 border-l border-[var(--foreground)]/10 pl-3">
                     {comment.replies.map((reply) => (
                       <div key={reply.id} className="flex gap-2">
-                        <Avatar name={reply.user.name} src={reply.user.avatarUrl} className="h-6 w-6 shrink-0" />
+                        <ProfileLink username={reply.user.username} className="shrink-0 rounded-full">
+                          <Avatar name={reply.user.name} src={reply.user.avatarUrl} className="h-6 w-6 shrink-0" />
+                        </ProfileLink>
                         <div className="min-w-0">
                           <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-                            <span className="font-semibold">{reply.user.name}</span>
-                            <span className="text-[var(--foreground)]/50">@{reply.user.username}</span>
+                            <ProfileLink
+                              username={reply.user.username}
+                              className="flex max-w-full items-center gap-x-2 gap-y-1 rounded-full px-1 -ml-1 text-left transition hover:bg-[var(--surface-soft)]"
+                            >
+                              <span className="truncate font-semibold">{reply.user.name}</span>
+                              <span className="truncate text-[var(--foreground)]/50">@{reply.user.username}</span>
+                            </ProfileLink>
                             <span className="text-[var(--foreground)]/40">
                               {formatDistanceToNow(new Date(reply.createdAt), { addSuffix: true })}
                             </span>

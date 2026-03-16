@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useState, type KeyboardEvent } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import type { FriendActivityItem, LayerMode } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
+import { ProfileLink } from "@/components/profile/profile-link";
 import { formatVisitDate } from "@/lib/utils";
 
 export function FriendActivityPanel({
@@ -14,7 +15,20 @@ export function FriendActivityPanel({
   items: FriendActivityItem[];
   layer: LayerMode;
 }) {
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(true);
+
+  function openPost(postId: string) {
+    router.push(`/posts/${postId}`);
+  }
+
+  function handlePostKeyDown(event: KeyboardEvent<HTMLDivElement>, postId: string) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openPost(postId);
+    }
+  }
+
   return (
     <div 
       className={`glass-panel w-full max-w-sm transition-all ${
@@ -51,10 +65,24 @@ export function FriendActivityPanel({
         )}
         {layer !== "you" &&
           items.map((item) => (
-            <Link key={item.id} href={`/posts/${item.postId}`} className="flex items-center gap-2 rounded-2xl border bg-[var(--surface-soft)] p-2 md:gap-3 md:rounded-3xl md:p-3">
-              <Avatar name={item.user.name} src={item.user.avatarUrl} className="h-8 w-8 md:h-9 md:w-9" />
+            <div
+              key={item.id}
+              role="link"
+              tabIndex={0}
+              onClick={() => openPost(item.postId)}
+              onKeyDown={(event) => handlePostKeyDown(event, item.postId)}
+              className="flex cursor-pointer items-center gap-2 rounded-2xl border bg-[var(--surface-soft)] p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/40 md:gap-3 md:rounded-3xl md:p-3"
+            >
+              <ProfileLink username={item.user.username} className="shrink-0 rounded-full">
+                <Avatar name={item.user.name} src={item.user.avatarUrl} className="h-8 w-8 md:h-9 md:w-9" />
+              </ProfileLink>
               <div className="min-w-0">
-                <p className="text-xs md:text-sm font-medium">{item.user.name}</p>
+                <ProfileLink
+                  username={item.user.username}
+                  className="rounded-md px-0.5 -ml-0.5 text-xs font-medium transition hover:text-[var(--foreground)] md:text-sm"
+                >
+                  {item.user.name}
+                </ProfileLink>
                 <p className="truncate text-xs md:text-sm text-[var(--foreground)]/64">
                   {item.placeName}, {item.city}
                 </p>
@@ -62,7 +90,7 @@ export function FriendActivityPanel({
                   {formatVisitDate(item.visitedAt)}
                 </p>
               </div>
-            </Link>
+            </div>
           ))}
       </div>
     </div>

@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { Avatar } from "@/components/ui/avatar";
 import { Brand } from "@/components/brand";
 import { SignOutButton } from "@/components/sign-out-button";
+import { ProfileLink } from "@/components/profile/profile-link";
 import { MESSAGES_UPDATED_EVENT, NOTIFICATIONS_UPDATED_EVENT } from "@/lib/notification-events";
 import { cn } from "@/lib/utils";
 
@@ -155,13 +156,17 @@ export function AppShell({ children, user }: AppShellProps) {
               </div>
             ) : null}
           </Link>
-          <div className="hidden items-center gap-3 rounded-full bg-[var(--surface-soft)] px-3 py-2 sm:flex">
+          <ProfileLink
+            username={user.username ?? "me"}
+            className="hidden items-center gap-3 rounded-full bg-[var(--surface-soft)] px-3 py-2 transition hover:bg-[var(--surface-strong)] sm:flex"
+            stopPropagation={false}
+          >
             <Avatar name={user.name ?? user.username ?? "Me"} src={user.avatarUrl} className="h-9 w-9" />
             <div className="pr-2">
               <p className="text-sm font-medium">{user.name}</p>
               <p className="text-xs text-[var(--foreground)]/55">@{user.username}</p>
             </div>
-          </div>
+          </ProfileLink>
           <SignOutButton />
         </div>
       </header>

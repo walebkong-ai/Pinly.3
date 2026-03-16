@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ProfileLink } from "@/components/profile/profile-link";
 import { rankBySearch } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
@@ -348,11 +349,16 @@ export function ShareSheet({
                           key={person.id}
                           className="flex items-center gap-3 rounded-2xl border bg-[var(--surface-soft)] p-3"
                         >
-                          <Avatar name={person.name} src={person.avatarUrl} className="h-10 w-10 shrink-0" />
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium">{person.name}</p>
-                            <p className="truncate text-xs text-[var(--foreground)]/58">@{person.username}</p>
-                          </div>
+                          <ProfileLink
+                            username={person.username}
+                            className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl p-1 -m-1 transition hover:bg-[var(--surface-strong)]"
+                          >
+                            <Avatar name={person.name} src={person.avatarUrl} className="h-10 w-10 shrink-0" />
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium">{person.name}</p>
+                              <p className="truncate text-xs text-[var(--foreground)]/58">@{person.username}</p>
+                            </div>
+                          </ProfileLink>
                           {person.requestStatus === "friends" ? (
                             <Button
                               type="button"
