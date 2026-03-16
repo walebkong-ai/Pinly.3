@@ -155,7 +155,7 @@ export function GroupsList() {
               >
                 <div className="flex items-center gap-4">
                   {group.isDirect && group.directUser ? (
-                    <ProfileLink username={group.directUser.username} className="shrink-0 rounded-full">
+                    <ProfileLink username={group.directUser.username} disableProfileNavigation>
                       <Avatar
                         name={group.directUser.name}
                         src={group.directUser.avatarUrl}
@@ -172,6 +172,7 @@ export function GroupsList() {
                       {group.isDirect && group.directUser ? (
                         <ProfileLink
                           username={group.directUser.username}
+                          disableProfileNavigation
                           className="min-w-0 rounded-xl px-1 py-1 -ml-1 transition hover:bg-[var(--surface-strong)]"
                         >
                           <h3 className="truncate text-lg font-semibold">{group.directUser.name}</h3>
@@ -193,9 +194,10 @@ export function GroupsList() {
                       {group.isDirect && group.directUser ? (
                         <ProfileLink
                           username={group.directUser.username}
+                          disableProfileNavigation
                           className="rounded-md px-0.5 -ml-0.5 transition hover:text-[var(--foreground)]"
                         >
-                          @{group.directUser.username}
+                          <span>@{group.directUser.username}</span>
                         </ProfileLink>
                       ) : (
                         `${group._count.members} members`

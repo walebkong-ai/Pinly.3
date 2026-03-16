@@ -1,7 +1,8 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
-import { type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode } from "react";
+import { cloneElement, isValidElement, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactElement, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 type ProfileLinkProps = {
@@ -10,6 +11,7 @@ type ProfileLinkProps = {
   className?: string;
   ariaLabel?: string;
   stopPropagation?: boolean;
+  disableProfileNavigation?: boolean;
 };
 
 export function ProfileLink({
@@ -17,8 +19,21 @@ export function ProfileLink({
   children,
   className,
   ariaLabel,
-  stopPropagation = true
+  stopPropagation = true,
+  disableProfileNavigation = false
 }: ProfileLinkProps) {
+  if (disableProfileNavigation) {
+    if (className && isValidElement(children)) {
+      const child = children as ReactElement<{ className?: string }>;
+
+      return cloneElement(child, {
+        className: cn(child.props.className, className)
+      });
+    }
+
+    return <>{children}</>;
+  }
+
   function maybeStopPropagation(
     event:
       | MouseEvent<HTMLAnchorElement>
