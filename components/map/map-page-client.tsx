@@ -41,6 +41,7 @@ const satelliteApiKey = process.env.NEXT_PUBLIC_MAPTILER_API_KEY ?? "";
 export function MapPageClient() {
   const searchParams = useSearchParams();
   const didToastSatelliteFallbackRef = useRef(false);
+  const didToastSatelliteMissingRef = useRef(false);
   const [mapData, setMapData] = useState<MapResponse>(emptyMap);
   const [loadingMap, setLoadingMap] = useState(true);
   const [groupOptions, setGroupOptions] = useState<MapGroupOption[]>([]);
@@ -62,8 +63,8 @@ export function MapPageClient() {
   );
   const deferredQuery = useDeferredValue(query);
   const satelliteModeAvailable = isSatelliteModeAvailable(satelliteApiKey);
-  const satelliteToggleVisible = satelliteModeAvailable;
-  const satelliteOptionDisabled = satelliteFailed;
+  const satelliteToggleVisible = true;
+  const satelliteAvailability = !satelliteModeAvailable ? "missing" : satelliteFailed ? "failed" : "available";
   const activeMapMode = satelliteModeAvailable && !satelliteFailed ? mapMode : "default";
   const mapStyle = useMemo(
     () =>
@@ -256,13 +257,27 @@ export function MapPageClient() {
 
   const handleMapModeChange = useCallback(
     (nextMode: MapVisualMode) => {
-      if (nextMode === "satellite" && satelliteOptionDisabled) {
+      if (nextMode === "default") {
+        setMapMode("default");
+        return;
+      }
+
+      if (!satelliteModeAvailable) {
+        if (!didToastSatelliteMissingRef.current) {
+          didToastSatelliteMissingRef.current = true;
+          toast.error("Satellite view is not configured in this build yet.");
+        }
+        return;
+      }
+
+      if (satelliteFailed) {
+        toast.error("Satellite view is unavailable right now.");
         return;
       }
 
       setMapMode(nextMode);
     },
-    [satelliteOptionDisabled]
+    [satelliteFailed, satelliteModeAvailable]
   );
 
   const handleMapError = useCallback(
@@ -354,7 +369,7 @@ export function MapPageClient() {
                 <MapModeToggle
                   value={activeMapMode}
                   onChange={handleMapModeChange}
-                  satelliteDisabled={satelliteOptionDisabled}
+                  satelliteAvailability={satelliteAvailability}
                 />
               </div>
             ) : null}
