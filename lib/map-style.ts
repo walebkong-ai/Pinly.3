@@ -3,10 +3,15 @@ import type { MapVisualMode } from "@/types/app";
 
 export const DEFAULT_MAP_STYLE_URL = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 export const MAPTILER_SATELLITE_TILESET_ID = "satellite-v2";
+export const MAP_MODE_STORAGE_KEY = "pinly:map-visual-mode";
 export type MapStyleValue = string | StyleSpecification;
 
 export function isSatelliteModeAvailable(apiKey?: string | null) {
   return Boolean(apiKey?.trim());
+}
+
+export function parseStoredMapMode(value?: string | null): MapVisualMode | null {
+  return value === "default" || value === "satellite" ? value : null;
 }
 
 export function getSatelliteTileJsonUrl(apiKey: string) {

@@ -65,6 +65,7 @@ export function MapCanvas({
   mapMode,
   mapStyle,
   onExpandPost,
+  onMapError,
   onViewportChange
 }: {
   markers: MapMarker[];
@@ -72,6 +73,7 @@ export function MapCanvas({
   mapStyle: MapStyleValue;
   selectedPostId: string | null;
   onExpandPost: (post: PostSummary) => void;
+  onMapError: (error: Error) => void;
   onViewportChange: (viewport: {
     bounds: { north: number; south: number; east: number; west: number };
     zoom: number;
@@ -140,11 +142,21 @@ export function MapCanvas({
   }
 
   return (
-    <div className="absolute inset-0 bg-[var(--background)]">
+    <div
+      className={cn(
+        "pinly-map-canvas absolute inset-0 bg-[var(--background)]",
+        mapMode === "satellite" && "pinly-map-canvas--satellite"
+      )}
+    >
       <Map
         ref={mapRef}
         initialViewState={defaultCenter}
         style={{ width: "100%", height: "100%", backgroundColor: "transparent" }}
+        onError={(event) => {
+          if (event.error) {
+            onMapError(event.error);
+          }
+        }}
         onMoveEnd={handleMoveEnd}
         onClick={(e) => {
           // Explicitly prevent bubbling to ensure blank map taps never trigger undocumented layout/global hooks

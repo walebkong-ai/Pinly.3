@@ -2,9 +2,10 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { startTransition, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { startTransition, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Filter, LoaderCircle, Plus, Search } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +17,7 @@ import { LayerToggle } from "@/components/map/layer-toggle";
 import { MapModeToggle } from "@/components/map/map-mode-toggle";
 import { WelcomeCard } from "@/components/map/welcome-card";
 import { buildLightweightMapGroups } from "@/lib/map-groups";
-import { getMapStyle, isSatelliteModeAvailable } from "@/lib/map-style";
+import { MAP_MODE_STORAGE_KEY, getMapStyle, isSatelliteModeAvailable, parseStoredMapMode } from "@/lib/map-style";
 import { canonicalizeViewportForDataQuery, createViewportFingerprint, FULL_WORLD_BOUNDS, type MapViewport } from "@/lib/map-viewport";
 import type { LayerMode, MapCategory, MapGroupOption, MapResponse, MapVisualMode, PostSummary, TimeFilter } from "@/types/app";
 
@@ -39,12 +40,15 @@ const satelliteApiKey = process.env.NEXT_PUBLIC_MAPTILER_API_KEY ?? "";
 
 export function MapPageClient() {
   const searchParams = useSearchParams();
+  const didToastSatelliteFallbackRef = useRef(false);
   const [mapData, setMapData] = useState<MapResponse>(emptyMap);
   const [loadingMap, setLoadingMap] = useState(true);
   const [groupOptions, setGroupOptions] = useState<MapGroupOption[]>([]);
   const [query, setQuery] = useState("");
   const [layer, setLayer] = useState<LayerMode>("both");
   const [mapMode, setMapMode] = useState<MapVisualMode>("default");
+  const [mapModeHydrated, setMapModeHydrated] = useState(false);
+  const [satelliteFailed, setSatelliteFailed] = useState(false);
   const [time, setTime] = useState<TimeFilter>("all");
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<MapCategory[]>([]);
@@ -58,15 +62,43 @@ export function MapPageClient() {
   );
   const deferredQuery = useDeferredValue(query);
   const satelliteModeAvailable = isSatelliteModeAvailable(satelliteApiKey);
-  const activeMapMode = satelliteModeAvailable ? mapMode : "default";
+  const satelliteToggleVisible = satelliteModeAvailable;
+  const satelliteOptionDisabled = satelliteFailed;
+  const activeMapMode = satelliteModeAvailable && !satelliteFailed ? mapMode : "default";
   const mapStyle = useMemo(
     () =>
       getMapStyle({
         mode: activeMapMode,
         satelliteApiKey
       }),
-    [activeMapMode]
+    [activeMapMode, satelliteApiKey]
   );
+
+  useEffect(() => {
+    try {
+      const storedMapMode = parseStoredMapMode(window.localStorage.getItem(MAP_MODE_STORAGE_KEY));
+
+      if (storedMapMode) {
+        setMapMode(storedMapMode);
+      }
+    } catch {
+      // Ignore storage access issues in private browsing or restrictive environments.
+    } finally {
+      setMapModeHydrated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!mapModeHydrated) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(MAP_MODE_STORAGE_KEY, mapMode);
+    } catch {
+      // Ignore storage access issues in private browsing or restrictive environments.
+    }
+  }, [mapModeHydrated, mapMode]);
 
   useEffect(() => {
     let ignore = false;
@@ -222,6 +254,35 @@ export function MapPageClient() {
     setSelectedCategories([]);
   }
 
+  const handleMapModeChange = useCallback(
+    (nextMode: MapVisualMode) => {
+      if (nextMode === "satellite" && satelliteOptionDisabled) {
+        return;
+      }
+
+      setMapMode(nextMode);
+    },
+    [satelliteOptionDisabled]
+  );
+
+  const handleMapError = useCallback(
+    (error: Error) => {
+      if (activeMapMode !== "satellite" || didToastSatelliteFallbackRef.current) {
+        return;
+      }
+
+      didToastSatelliteFallbackRef.current = true;
+      setSatelliteFailed(true);
+      setMapMode("default");
+      toast.error("Satellite view is unavailable right now. Switched back to Map.");
+
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Satellite map failed to load.", error);
+      }
+    },
+    [activeMapMode]
+  );
+
   return (
     <section className="relative min-h-[calc(100vh-7.5rem)] overflow-hidden rounded-[2.2rem] border bg-[var(--surface-soft)] shadow-2xl shadow-black/5">
       <DynamicMapCanvas
@@ -230,6 +291,7 @@ export function MapPageClient() {
         mapStyle={mapStyle}
         selectedPostId={selectedPost?.id ?? null}
         onExpandPost={setSelectedPost}
+        onMapError={handleMapError}
         onViewportChange={onViewportChange}
       />
 
@@ -258,9 +320,13 @@ export function MapPageClient() {
                   ) : null}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  {satelliteModeAvailable ? (
+                  {satelliteToggleVisible ? (
                     <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
-                      <MapModeToggle value={activeMapMode} onChange={setMapMode} />
+                      <MapModeToggle
+                        value={activeMapMode}
+                        onChange={handleMapModeChange}
+                        satelliteDisabled={satelliteOptionDisabled}
+                      />
                     </div>
                   ) : null}
                   {showControls ? (
