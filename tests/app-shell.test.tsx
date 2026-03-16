@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
   AppShell,
   NOTIFICATION_BUTTON_ACTIVE_BACKGROUND,
-  NOTIFICATION_BUTTON_ACTIVE_INNER,
+  NOTIFICATION_BUTTON_ACTIVE_ICON,
   isNavActive
 } from "@/components/app/app-shell";
 
@@ -56,7 +56,7 @@ describe("AppShell notification toggle", () => {
     expect(isNavActive("/feed", "/notifications")).toBe(false);
   });
 
-  test("applies the exact active green button and cream inner icon treatment on the notifications route", () => {
+  test("applies the exact active green button and cream bell icon treatment on the notifications route", () => {
     mockedUsePathname.mockReturnValue("/notifications");
 
     const html = renderToStaticMarkup(
@@ -69,8 +69,8 @@ describe("AppShell notification toggle", () => {
     expect(html).toContain('aria-current="page"');
     expect(html).toContain(`background-color:${NOTIFICATION_BUTTON_ACTIVE_BACKGROUND}`);
     expect(html).toContain(`border-color:${NOTIFICATION_BUTTON_ACTIVE_BACKGROUND}`);
-    expect(html).toContain(`background-color:${NOTIFICATION_BUTTON_ACTIVE_INNER}`);
-    expect(html).toContain(`color:${NOTIFICATION_BUTTON_ACTIVE_BACKGROUND}`);
+    expect(html).toContain(`color:${NOTIFICATION_BUTTON_ACTIVE_ICON}`);
+    expect(html).not.toContain(`background-color:${NOTIFICATION_BUTTON_ACTIVE_ICON}`);
   });
 
   test("drops back to the inactive notification styling when another route is open", () => {
@@ -83,7 +83,7 @@ describe("AppShell notification toggle", () => {
     );
 
     expect(html).not.toContain('aria-current="page"');
-    expect(html).not.toContain(`background-color:${NOTIFICATION_BUTTON_ACTIVE_INNER}`);
+    expect(html).not.toContain(`color:${NOTIFICATION_BUTTON_ACTIVE_ICON}`);
     expect(html).not.toContain(`border-color:${NOTIFICATION_BUTTON_ACTIVE_BACKGROUND}`);
   });
 });

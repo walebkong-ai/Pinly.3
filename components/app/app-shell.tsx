@@ -37,7 +37,7 @@ const secondaryNavItems = [
 ];
 
 export const NOTIFICATION_BUTTON_ACTIVE_BACKGROUND = "#185538";
-export const NOTIFICATION_BUTTON_ACTIVE_INNER = "#FCECDA";
+export const NOTIFICATION_BUTTON_ACTIVE_ICON = "#FCECDA";
 
 export function isNavActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -51,13 +51,8 @@ export function AppShell({ children, user }: AppShellProps) {
   const notificationButtonStyle: CSSProperties | undefined = notificationsActive
     ? {
         backgroundColor: NOTIFICATION_BUTTON_ACTIVE_BACKGROUND,
-        borderColor: NOTIFICATION_BUTTON_ACTIVE_BACKGROUND
-      }
-    : undefined;
-  const notificationIconStyle: CSSProperties | undefined = notificationsActive
-    ? {
-        backgroundColor: NOTIFICATION_BUTTON_ACTIVE_INNER,
-        color: NOTIFICATION_BUTTON_ACTIVE_BACKGROUND
+        borderColor: NOTIFICATION_BUTTON_ACTIVE_BACKGROUND,
+        color: NOTIFICATION_BUTTON_ACTIVE_ICON
       }
     : undefined;
 
@@ -181,10 +176,9 @@ export function AppShell({ children, user }: AppShellProps) {
             <span
               aria-hidden="true"
               className={cn(
-                "flex h-7 w-7 items-center justify-center rounded-full transition-[background-color,color,box-shadow]",
-                notificationsActive ? "shadow-[inset_0_1px_0_rgba(255,255,255,0.34)]" : "text-current"
+                "flex h-7 w-7 items-center justify-center rounded-full transition-[color,box-shadow]",
+                notificationsActive ? "shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]" : "text-current"
               )}
-              style={notificationIconStyle}
             >
               <Bell className="h-4 w-4" />
             </span>
