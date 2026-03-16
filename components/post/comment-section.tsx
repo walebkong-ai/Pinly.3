@@ -232,6 +232,7 @@ export function CommentSection({
       <button
         type="button"
         onClick={() => setExpanded((value) => !value)}
+        data-post-card-control
         className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-[var(--foreground)]/55 transition hover:text-[var(--foreground)]/80"
       >
         <MessageCircle className="h-5 w-5" />

@@ -3,6 +3,8 @@ export const MOBILE_TAP_NAVIGATION_DELAY_MS = MOBILE_DOUBLE_TAP_MAX_DELAY_MS;
 export const MOBILE_TAP_MAX_MOVEMENT_PX = 12;
 export const MOBILE_TAP_MAX_DURATION_MS = 280;
 export const MOBILE_DOUBLE_TAP_TOLERANCE_PX = 28;
+export const POST_CARD_INTERACTIVE_TARGET_SELECTOR =
+  "a,button,input,select,textarea,summary,[role='button'],[role='link'],[data-post-card-control]";
 
 export type TapPoint = {
   x: number;
@@ -19,6 +21,10 @@ export type TouchTapResolution = {
 export type PendingTapInterruption = {
   cancelPendingNavigation: boolean;
   resetTapCandidate: boolean;
+};
+
+type ClosestCapableTarget = EventTarget & {
+  closest?: (selector: string) => EventTarget | null;
 };
 
 export function isTapWithinTolerance(
@@ -106,6 +112,29 @@ export function resolvePendingTapInterruption({
     cancelPendingNavigation: true,
     resetTapCandidate: !targetIsSameSurface
   };
+}
+
+export function getGestureBlockingInteractiveTarget({
+  target,
+  gestureSurface
+}: {
+  target: EventTarget | null;
+  gestureSurface?: EventTarget | null;
+}) {
+  if (!target) {
+    return null;
+  }
+
+  const interactiveAncestor =
+    typeof (target as ClosestCapableTarget).closest === "function"
+      ? (target as ClosestCapableTarget).closest?.(POST_CARD_INTERACTIVE_TARGET_SELECTOR) ?? null
+      : null;
+
+  if (!interactiveAncestor || interactiveAncestor === gestureSurface) {
+    return null;
+  }
+
+  return interactiveAncestor;
 }
 
 export function shouldDispatchGestureLike({

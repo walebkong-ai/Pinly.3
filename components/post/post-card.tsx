@@ -16,6 +16,7 @@ import { VisitedWithList } from "@/components/post/visited-with-list";
 import {
   MOBILE_TAP_MAX_MOVEMENT_PX,
   MOBILE_TAP_NAVIGATION_DELAY_MS,
+  getGestureBlockingInteractiveTarget,
   isTapWithinTolerance,
   resolvePendingTapInterruption,
   resolveTouchTapAction,
@@ -46,7 +47,6 @@ export function PostCard({
   const lastTouchTapRef = useRef<TapPoint | null>(null);
   const pendingNavigationRef = useRef<number | null>(null);
   const likeFeedbackTimeoutRef = useRef<number | null>(null);
-  const suppressNextClickRef = useRef(false);
   const [showDoubleTapLikeFeedback, setShowDoubleTapLikeFeedback] = useState(false);
   const commentsEnabled = post.user.settings?.commentsEnabled ?? true;
   const primaryCaption = post.caption.trim() || `Memory from ${post.placeName}`;
@@ -138,11 +138,12 @@ export function PostCard({
   }
 
   function isInteractiveTarget(target: EventTarget | null) {
-    if (!(target instanceof HTMLElement)) {
-      return false;
-    }
-
-    return Boolean(target.closest("a,button,input,select,textarea,summary,[role='button'],[role='link']"));
+    return (
+      getGestureBlockingInteractiveTarget({
+        target,
+        gestureSurface: bodyRef.current
+      }) !== null
+    );
   }
 
   function handleBodyPointerDown(event: PointerEvent<HTMLDivElement>) {
@@ -190,6 +191,17 @@ export function PostCard({
       return;
     }
 
+    if (session.pointerType === "mouse") {
+      if (session.moved || isInteractiveTarget(event.target)) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      openPost();
+      return;
+    }
+
     const tapPoint = {
       x: event.clientX,
       y: event.clientY,
@@ -211,7 +223,6 @@ export function PostCard({
 
     event.preventDefault();
     event.stopPropagation();
-    suppressNextClickRef.current = tapResolution.suppressClick;
 
     if (tapResolution.action === "like") {
       clearPendingNavigation();
@@ -235,8 +246,7 @@ export function PostCard({
       return;
     }
 
-    if (suppressNextClickRef.current) {
-      suppressNextClickRef.current = false;
+    if (typeof window !== "undefined" && "PointerEvent" in window) {
       event.preventDefault();
       return;
     }

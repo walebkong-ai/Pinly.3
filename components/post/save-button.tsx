@@ -51,6 +51,7 @@ export function SaveButton({
         onClick={toggleSave}
         disabled={isPending}
         aria-pressed={saved}
+        data-post-card-control
         className={cn(
           "inline-flex min-h-11 items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium shadow-sm transition active:scale-[0.98]",
           saved
@@ -77,6 +78,7 @@ export function SaveButton({
       onClick={toggleSave}
       disabled={isPending}
       aria-pressed={saved}
+      data-post-card-control
       className={cn(
         "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-all active:scale-95",
         saved

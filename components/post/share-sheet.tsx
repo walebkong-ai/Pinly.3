@@ -281,6 +281,7 @@ export function ShareSheet({
       <Drawer.Trigger asChild>
         <button
           type="button"
+          data-post-card-control
           className={cn(
             triggerStyle === "inline" &&
               "flex h-8 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-[var(--foreground)]/60 transition-colors hover:bg-[var(--foreground)]/5 active:scale-95",

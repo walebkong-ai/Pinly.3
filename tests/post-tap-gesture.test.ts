@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   MOBILE_DOUBLE_TAP_TOLERANCE_PX,
   MOBILE_TAP_NAVIGATION_DELAY_MS,
+  getGestureBlockingInteractiveTarget,
   isDoubleTapCandidate,
   isTapWithinTolerance,
   resolvePendingTapInterruption,
@@ -161,5 +162,34 @@ describe("post tap gesture helpers", () => {
       cancelPendingNavigation: true,
       resetTapCandidate: true
     });
+  });
+
+  test("does not block taps when the closest interactive match is the gesture surface itself", () => {
+    const gestureSurface = new EventTarget();
+    const targetInsideSurface = {
+      closest: () => gestureSurface
+    } as EventTarget & { closest: (selector: string) => EventTarget | null };
+
+    expect(
+      getGestureBlockingInteractiveTarget({
+        target: targetInsideSurface,
+        gestureSurface
+      })
+    ).toBeNull();
+  });
+
+  test("still blocks nested controls inside the gesture surface", () => {
+    const gestureSurface = new EventTarget();
+    const nestedControl = new EventTarget();
+    const targetInsideControl = {
+      closest: () => nestedControl
+    } as EventTarget & { closest: (selector: string) => EventTarget | null };
+
+    expect(
+      getGestureBlockingInteractiveTarget({
+        target: targetInsideControl,
+        gestureSurface
+      })
+    ).toBe(nestedControl);
   });
 });
