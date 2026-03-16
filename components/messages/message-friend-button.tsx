@@ -46,7 +46,6 @@ export function MessageFriendButton({
 
       const data = await response.json();
       router.push(`/messages/${data.groupId}`);
-      router.refresh();
       onConversationOpened?.();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not open this conversation.");

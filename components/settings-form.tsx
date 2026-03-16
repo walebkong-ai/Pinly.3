@@ -47,9 +47,15 @@ export function SettingsForm({ initialProfile, initialSettings }: SettingsFormPr
       }
 
       const data = await res.json();
-      setShowLikeCounts(data.showLikeCounts ?? true);
-      setCommentsEnabled(data.commentsEnabled ?? true);
-      router.refresh();
+
+      if ("showLikeCounts" in updates && typeof data.showLikeCounts === "boolean") {
+        setShowLikeCounts(data.showLikeCounts);
+      }
+
+      if ("commentsEnabled" in updates && typeof data.commentsEnabled === "boolean") {
+        setCommentsEnabled(data.commentsEnabled);
+      }
+
       toast.success("Settings saved");
       return true;
     } catch {

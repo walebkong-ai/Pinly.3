@@ -111,6 +111,7 @@ export type PostSummary = {
   savedByViewer?: boolean;
   likedByViewer?: boolean;
   likeCount?: number;
+  commentCount?: number;
   visitedWith?: UserSummary[];
   user: UserSummary;
 };

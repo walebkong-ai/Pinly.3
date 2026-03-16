@@ -92,6 +92,7 @@ type ViewerPostState = {
   savedPostIds: Set<string>;
   likedPostIds: Set<string>;
   likeCountByPostId: Map<string, number>;
+  commentCountByPostId: Map<string, number>;
 };
 
 function normalizeCollectionSummary(collection: IncludedCollection): CollectionSummary {
@@ -132,11 +133,31 @@ async function getViewerPostState(viewerId: string, postIds: string[]): Promise<
     return {
       savedPostIds: new Set<string>(),
       likedPostIds: new Set<string>(),
-      likeCountByPostId: new Map<string, number>()
+      likeCountByPostId: new Map<string, number>(),
+      commentCountByPostId: new Map<string, number>()
     };
   }
 
   const savedPostIds = await getSavedPostIdSet(viewerId, postIds);
+  let commentCountByPostId = new Map<string, number>();
+
+  try {
+    const commentCounts = await prisma.comment.groupBy({
+      by: ["postId"],
+      where: {
+        postId: { in: postIds }
+      },
+      _count: {
+        _all: true
+      }
+    });
+
+    commentCountByPostId = new Map(
+      commentCounts.map((entry) => [entry.postId, entry._count._all])
+    );
+  } catch {
+    commentCountByPostId = new Map<string, number>();
+  }
 
   try {
     const [likedPosts, likeCounts] = await Promise.all([
@@ -165,13 +186,15 @@ async function getViewerPostState(viewerId: string, postIds: string[]): Promise<
       likedPostIds: new Set(likedPosts.map((like) => like.postId)),
       likeCountByPostId: new Map(
         likeCounts.map((entry) => [entry.postId, entry._count._all])
-      )
+      ),
+      commentCountByPostId
     };
   } catch {
     return {
       savedPostIds,
       likedPostIds: new Set<string>(),
-      likeCountByPostId: new Map<string, number>()
+      likeCountByPostId: new Map<string, number>(),
+      commentCountByPostId
     };
   }
 }
@@ -185,7 +208,8 @@ function normalizeIncludedPost(
     visitedWith: post.visitedWith.map((tag) => tag.user),
     savedByViewer: viewerState ? viewerState.savedPostIds.has(post.id) : undefined,
     likedByViewer: viewerState ? viewerState.likedPostIds.has(post.id) : undefined,
-    likeCount: viewerState ? viewerState.likeCountByPostId.get(post.id) ?? 0 : undefined
+    likeCount: viewerState ? viewerState.likeCountByPostId.get(post.id) ?? 0 : undefined,
+    commentCount: viewerState ? viewerState.commentCountByPostId.get(post.id) ?? 0 : 0
   };
 }
 
@@ -209,7 +233,18 @@ export async function getVisibleUserIds(viewerId: string) {
     }
   });
 
-  return buildVisibleUserIds(viewerId, friendships);
+  const blocks = await prisma.block.findMany({
+    where: {
+      OR: [{ blockerId: viewerId }, { blockedId: viewerId }]
+    }
+  });
+
+  const blockedIds = new Set(
+    blocks.map((b) => (b.blockerId === viewerId ? b.blockedId : b.blockerId))
+  );
+
+  const potentialVisibleIds = buildVisibleUserIds(viewerId, friendships);
+  return potentialVisibleIds.filter((id) => !blockedIds.has(id));
 }
 
 export async function getFriendIds(viewerId: string) {
@@ -219,7 +254,19 @@ export async function getFriendIds(viewerId: string) {
     }
   });
 
-  return friendships.map((friendship) => (friendship.userAId === viewerId ? friendship.userBId : friendship.userAId));
+  const blocks = await prisma.block.findMany({
+    where: {
+      OR: [{ blockerId: viewerId }, { blockedId: viewerId }]
+    }
+  });
+
+  const blockedIds = new Set(
+    blocks.map((b) => (b.blockerId === viewerId ? b.blockedId : b.blockerId))
+  );
+
+  return friendships
+    .map((friendship) => (friendship.userAId === viewerId ? friendship.userBId : friendship.userAId))
+    .filter((id) => !blockedIds.has(id));
 }
 
 export async function getLayerUserIds(viewerId: string, layer: LayerMode) {

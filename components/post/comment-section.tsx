@@ -21,13 +21,16 @@ type CommentData = ReplyData & {
 
 export function CommentSection({
   postId,
+  initialCount = 0,
   showCount = true
 }: {
   postId: string;
+  initialCount?: number;
   showCount?: boolean;
 }) {
   const [comments, setComments] = useState<CommentData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [commentsDisabled, setCommentsDisabled] = useState(false);
   const [input, setInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -41,15 +44,22 @@ export function CommentSection({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!expanded || hasLoaded || commentsDisabled) {
+      return;
+    }
+
     let ignore = false;
 
     async function load() {
+      setLoading(true);
+
       try {
         const res = await fetch(`/api/posts/${postId}/comments`);
         if (res.status === 403) {
           if (!ignore) {
             setCommentsDisabled(true);
             setComments([]);
+            setHasLoaded(true);
           }
           return;
         }
@@ -60,6 +70,7 @@ export function CommentSection({
             setComments(data.comments ?? []);
             setCurrentUserId(data.currentUserId ?? null);
             setPostOwnerId(data.postOwnerId ?? null);
+            setHasLoaded(true);
           }
         }
       } catch {
@@ -76,7 +87,7 @@ export function CommentSection({
     return () => {
       ignore = true;
     };
-  }, [postId]);
+  }, [commentsDisabled, expanded, hasLoaded, postId]);
 
   async function submitComment(parentId?: string) {
     const draft = (parentId ? replyInput : input).trim();
@@ -218,7 +229,10 @@ export function CommentSection({
     }
   }
 
-  const commentCount = comments.reduce((total, comment) => total + 1 + comment.replies.length, 0);
+  const commentCount = hasLoaded
+    ? comments.reduce((total, comment) => total + 1 + comment.replies.length, 0)
+    : initialCount;
+  const awaitingInitialLoad = loading && !hasLoaded;
 
   if (commentsDisabled) {
     return (
@@ -237,7 +251,7 @@ export function CommentSection({
         className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-[var(--foreground)]/55 transition hover:text-[var(--foreground)]/80"
       >
         <MessageCircle className="h-5 w-5" />
-        {showCount ? <span>{loading ? "…" : commentCount}</span> : null}
+        {showCount ? <span>{commentCount}</span> : null}
         {!showCount && !expanded ? <span>Comments</span> : null}
       </button>
 
@@ -420,11 +434,12 @@ export function CommentSection({
               onChange={(event) => setInput(event.target.value)}
               placeholder="Add a comment…"
               maxLength={1000}
+              disabled={awaitingInitialLoad}
               className="min-w-0 flex-1 rounded-full border bg-[var(--surface-soft)] px-4 py-2 text-sm outline-none transition focus:border-[var(--foreground)] focus:ring-1 focus:ring-[var(--foreground)]/20"
             />
             <button
               type="submit"
-              disabled={!input.trim() || submitting}
+              disabled={!input.trim() || submitting || awaitingInitialLoad}
               className={cn(
                 "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition",
                 input.trim()

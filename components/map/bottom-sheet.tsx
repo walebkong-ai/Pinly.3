@@ -58,6 +58,11 @@ export function BottomSheet({
     requestClose();
   }
 
+  function handleBackdropClick(event: SyntheticEvent) {
+    consumeInteraction(event);
+    requestClose();
+  }
+
   return (
     <div
       className={cn(
@@ -69,9 +74,9 @@ export function BottomSheet({
         <div
           aria-hidden="true"
           className="pointer-events-auto absolute inset-0 bg-black/10"
-          onPointerDown={consumeInteraction}
-          onPointerUp={consumeInteraction}
-          onClick={consumeInteraction}
+          onPointerDown={(event) => event.stopPropagation()}
+          onPointerUp={(event) => event.stopPropagation()}
+          onClick={handleBackdropClick}
         />
       ) : null}
 

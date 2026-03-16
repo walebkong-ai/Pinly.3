@@ -19,6 +19,10 @@ export function MarkerPreview({
   onZoomIn: () => void;
   onClosePreview: () => void;
 }) {
+  function consumePreviewInteraction(event: SyntheticEvent) {
+    event.stopPropagation();
+  }
+
   function handleClose(event: SyntheticEvent) {
     event.preventDefault();
     event.stopPropagation();
@@ -27,7 +31,11 @@ export function MarkerPreview({
 
   if (marker.type === "cityCluster") {
     return (
-      <div className="relative w-56 space-y-3 rounded-2xl border bg-[var(--surface-strong)] p-3 shadow-xl backdrop-blur-xl">
+      <div
+        className="relative w-56 space-y-3 rounded-2xl border bg-[var(--surface-strong)] p-3 shadow-xl backdrop-blur-xl"
+        onPointerDown={consumePreviewInteraction}
+        onClick={consumePreviewInteraction}
+      >
         <Button
           variant="ghost"
           className="absolute right-2 top-2 z-10 h-9 w-9 rounded-full bg-[rgba(24,85,56,0.82)] p-0 text-[var(--background)] hover:bg-[rgba(24,85,56,0.96)] hover:text-[var(--background)]"
@@ -60,7 +68,11 @@ export function MarkerPreview({
 
   if (marker.type === "placeCluster") {
     return (
-      <div className="relative w-60 space-y-3 rounded-2xl border bg-[var(--surface-strong)] p-3 shadow-xl backdrop-blur-xl">
+      <div
+        className="relative w-60 space-y-3 rounded-2xl border bg-[var(--surface-strong)] p-3 shadow-xl backdrop-blur-xl"
+        onPointerDown={consumePreviewInteraction}
+        onClick={consumePreviewInteraction}
+      >
         <Button
           variant="ghost"
           className="absolute right-2 top-2 z-10 h-9 w-9 rounded-full bg-[rgba(24,85,56,0.82)] p-0 text-[var(--background)] hover:bg-[rgba(24,85,56,0.96)] hover:text-[var(--background)]"
@@ -91,7 +103,11 @@ export function MarkerPreview({
   const primaryCaption = post.caption.trim() || `Memory from ${post.placeName}`;
 
   return (
-    <div className="relative w-60 overflow-hidden rounded-2xl border bg-[var(--surface-strong)] shadow-2xl shadow-black/20 backdrop-blur-xl">
+    <div
+      className="relative w-60 overflow-hidden rounded-2xl border bg-[var(--surface-strong)] shadow-2xl shadow-black/20 backdrop-blur-xl"
+      onPointerDown={consumePreviewInteraction}
+      onClick={consumePreviewInteraction}
+    >
       <Button
         variant="ghost"
         className="absolute right-2 top-2 z-10 h-9 w-9 rounded-full bg-[rgba(24,85,56,0.82)] p-0 text-[var(--background)] hover:bg-[rgba(24,85,56,0.96)] hover:text-[var(--background)]"

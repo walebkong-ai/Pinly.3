@@ -118,6 +118,7 @@ export function MapCanvas({
         onClick={(e) => {
           // Explicitly prevent bubbling to ensure blank map taps never trigger undocumented layout/global hooks
           e.originalEvent.stopPropagation();
+          setPopupInfo(null);
         }}
         mapStyle={mapStyle}
         interactiveLayerIds={[]}
@@ -125,6 +126,7 @@ export function MapCanvas({
         maxPitch={85}
         projection="globe"
       >
+        {markers.map((marker) => {
         {markers.map((marker) => {
           const isSelected = marker.id === popupInfo?.id || ("post" in marker && marker.post.id === selectedPostId);
 

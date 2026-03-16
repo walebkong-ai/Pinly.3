@@ -29,42 +29,46 @@ enum NotificationType {
 }
 
 model User {
-  id               String          @id @default(cuid())
-  name             String
-  username         String          @unique
-  email            String          @unique
-  passwordHash     String
-  avatarUrl        String?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  posts            Post[]
-  postCollections  PostCollection[]
-  wantToGoPlaces   WantToGoPlace[]
-  visitTags        PostVisitTag[]
-  likes            Like[]
-  savedPosts       SavedPost[]
-  comments         Comment[]
-  notifications    Notification[]  @relation("UserNotifications")
-  actorNotifications Notification[] @relation("ActorNotifications")
-  settings         UserSettings?
-  sentRequests     FriendRequest[] @relation("SentFriendRequests")
-  receivedRequests FriendRequest[] @relation("ReceivedFriendRequests")
-  friendshipsA     Friendship[]    @relation("FriendshipA")
-  friendshipsB     Friendship[]    @relation("FriendshipB")
-  groupMembers     GroupMember[]
-  groupMessages    GroupMessage[]
-  inviteLinks      InviteLink[]
+  id                 String           @id @default(cuid())
+  name               String
+  username           String           @unique
+  email              String           @unique
+  passwordHash       String
+  avatarUrl          String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  posts              Post[]
+  postCollections    PostCollection[]
+  wantToGoPlaces     WantToGoPlace[]
+  visitTags          PostVisitTag[]
+  likes              Like[]
+  savedPosts         SavedPost[]
+  comments           Comment[]
+  notifications      Notification[]   @relation("UserNotifications")
+  actorNotifications Notification[]   @relation("ActorNotifications")
+  settings           UserSettings?
+  sentRequests       FriendRequest[]  @relation("SentFriendRequests")
+  receivedRequests   FriendRequest[]  @relation("ReceivedFriendRequests")
+  friendshipsA       Friendship[]     @relation("FriendshipA")
+  friendshipsB       Friendship[]     @relation("FriendshipB")
+  groupMembers       GroupMember[]
+  groupMessages      GroupMessage[]
+  inviteLinks        InviteLink[]
+  blocksGiven        Block[]          @relation("BlocksGiven")
+  blocksReceived     Block[]          @relation("BlocksReceived")
+  reportsGiven       Report[]         @relation("ReportsGiven")
+  reportsReceived    Report[]         @relation("ReportsReceived")
 }
 
 model FriendRequest {
-  id         String              @id @default(cuid())
-  fromUserId String
-  toUserId   String
-  status     FriendRequestStatus @default(PENDING)
-  createdAt  DateTime            @default(now())
-  updatedAt  DateTime            @updatedAt
-  fromUser   User                @relation("SentFriendRequests", fields: [fromUserId], references: [id], onDelete: Cascade)
-  toUser     User                @relation("ReceivedFriendRequests", fields: [toUserId], references: [id], onDelete: Cascade)
+  id            String              @id @default(cuid())
+  fromUserId    String
+  toUserId      String
+  status        FriendRequestStatus @default(PENDING)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  fromUser      User                @relation("SentFriendRequests", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser        User                @relation("ReceivedFriendRequests", fields: [toUserId], references: [id], onDelete: Cascade)
   notifications Notification[]
 
   @@unique([fromUserId, toUserId])
@@ -86,28 +90,28 @@ model Friendship {
 }
 
 model Post {
-  id           String    @id @default(cuid())
-  userId       String
-  mediaType    MediaType
-  mediaUrl     String
-  thumbnailUrl String?
-  caption      String    @db.Text
-  placeName    String
-  city         String
-  country      String
-  latitude     Float
-  longitude    Float
-  visitedAt    DateTime
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  isArchived   Boolean   @default(false)
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String               @id @default(cuid())
+  userId            String
+  mediaType         MediaType
+  mediaUrl          String
+  thumbnailUrl      String?
+  caption           String               @db.Text
+  placeName         String
+  city              String
+  country           String
+  latitude          Float
+  longitude         Float
+  visitedAt         DateTime
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  isArchived        Boolean              @default(false)
+  user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   collectionEntries PostCollectionItem[]
-  visitedWith  PostVisitTag[]
-  likes        Like[]
-  saves        SavedPost[]
-  comments     Comment[]
-  notifications Notification[]
+  visitedWith       PostVisitTag[]
+  likes             Like[]
+  saves             SavedPost[]
+  comments          Comment[]
+  notifications     Notification[]
 
   @@index([userId, createdAt])
   @@index([userId, visitedAt])
@@ -224,16 +228,16 @@ model WantToGoPlace {
 }
 
 model Comment {
-  id        String   @id @default(cuid())
-  postId    String
-  userId    String
-  parentId  String?
-  content   String   @db.Text
-  createdAt DateTime @default(now())
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   Comment[] @relation("CommentReplies")
+  id            String         @id @default(cuid())
+  postId        String
+  userId        String
+  parentId      String?
+  content       String         @db.Text
+  createdAt     DateTime       @default(now())
+  post          Post           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent        Comment?       @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies       Comment[]      @relation("CommentReplies")
   notifications Notification[]
 
   @@index([postId, createdAt])
@@ -256,25 +260,25 @@ enum GroupRole {
 }
 
 model Group {
-  id        String         @id @default(cuid())
-  name      String
-  isDirect  Boolean        @default(false)
-  directPairKey String?    @unique
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  members   GroupMember[]
-  messages  GroupMessage[]
+  id            String         @id @default(cuid())
+  name          String
+  isDirect      Boolean        @default(false)
+  directPairKey String?        @unique
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  members       GroupMember[]
+  messages      GroupMessage[]
 }
 
 model GroupMember {
-  id       String    @id @default(cuid())
-  groupId  String
-  userId   String
-  role     GroupRole @default(MEMBER)
-  joinedAt DateTime  @default(now())
-  lastReadAt DateTime @default(now())
-  group    Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String    @id @default(cuid())
+  groupId    String
+  userId     String
+  role       GroupRole @default(MEMBER)
+  joinedAt   DateTime  @default(now())
+  lastReadAt DateTime  @default(now())
+  group      Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([groupId, userId])
   @@index([userId])
@@ -312,4 +316,30 @@ model PasswordResetToken {
 
   @@index([email])
   @@index([token])
+}
+
+model Block {
+  id        String   @id @default(cuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+  blocker   User     @relation("BlocksGiven", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("BlocksReceived", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+}
+
+model Report {
+  id         String   @id @default(cuid())
+  reporterId String
+  reportedId String
+  reason     String?  @db.Text
+  createdAt  DateTime @default(now())
+  reporter   User     @relation("ReportsGiven", fields: [reporterId], references: [id], onDelete: Cascade)
+  reported   User     @relation("ReportsReceived", fields: [reportedId], references: [id], onDelete: Cascade)
+
+  @@index([reporterId])
+  @@index([reportedId])
 }

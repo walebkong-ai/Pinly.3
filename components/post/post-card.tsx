@@ -350,7 +350,7 @@ export function PostCard({
           showCount={showLikeCounts}
         />
         {commentsEnabled ? (
-          <CommentSection postId={post.id} />
+          <CommentSection postId={post.id} initialCount={post.commentCount} />
         ) : (
           <span className="inline-flex items-center rounded-full bg-[var(--surface-soft)] px-3 py-1.5 text-sm font-medium text-[var(--foreground)]/50">
             Comments off

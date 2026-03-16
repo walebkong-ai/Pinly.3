@@ -8,6 +8,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { MediaView } from "@/components/post/media-view";
 import { formatVisitDate } from "@/lib/utils";
 import { DeletePostButton } from "@/components/post/delete-post-button";
+import { ArchivePostButton } from "@/components/post/archive-post-button";
 import { BackButton } from "@/components/post/back-button";
 import { LikeButton } from "@/components/post/like-button";
 import { CommentSection } from "@/components/post/comment-section";
@@ -102,6 +103,7 @@ export default async function PostDetailPage({ params }: Props) {
                     <PencilLine className="h-4 w-4" />
                     Edit
                   </Link>
+                  <ArchivePostButton postId={post.id} initialArchived={post.isArchived ?? false} />
                   <DeletePostButton postId={post.id} redirectToMap />
                 </div>
               )}
@@ -113,6 +115,12 @@ export default async function PostDetailPage({ params }: Props) {
                 {primaryCaption}
               </h1>
             </div>
+
+            {post.isArchived ? (
+              <div className="rounded-[1.35rem] border border-[rgba(56,182,201,0.18)] bg-[rgba(56,182,201,0.08)] px-3.5 py-3 text-sm text-[var(--foreground)]/74">
+                This memory is archived, so it stays hidden from your feed, map, and normal profile until you restore it.
+              </div>
+            ) : null}
 
             {/* Place info */}
             <div>
@@ -151,12 +159,12 @@ export default async function PostDetailPage({ params }: Props) {
 
             {isOwnPost ? <ManagePostCollectionsCard postId={post.id} initialCollections={postCollections} /> : null}
 
-            {/* Like + Comment actions */}
+            {/* Primary post actions */}
             <div className="border-t pt-4">
               <div className="flex flex-wrap items-center gap-1">
                 <LikeButton postId={post.id} initialLiked={liked} initialCount={likeCount} showCount={showLikeCounts} />
                 {commentsEnabled ? (
-                  <CommentSection postId={post.id} />
+                  <CommentSection postId={post.id} initialCount={post.commentCount} />
                 ) : (
                   <span className="inline-flex items-center rounded-full bg-[var(--surface-soft)] px-3 py-1.5 text-sm font-medium text-[var(--foreground)]/50">
                     Comments off

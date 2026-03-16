@@ -122,6 +122,7 @@ export function StartDirectMessageSheet() {
                     >
                       <ProfileLink
                         username={friend.username}
+                        disableProfileNavigation
                         className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl p-1 -m-1 transition hover:bg-[var(--surface-strong)]"
                       >
                         <Avatar name={friend.name} src={friend.avatarUrl} className="h-10 w-10 shrink-0" />

@@ -31,6 +31,9 @@ export function ProfileLink({
       });
     }
 
+    if (className) {
+      return <div className={cn(className)}>{children}</div>;
+    }
     return <>{children}</>;
   }
 

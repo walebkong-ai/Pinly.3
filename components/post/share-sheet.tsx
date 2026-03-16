@@ -351,6 +351,7 @@ export function ShareSheet({
                         >
                           <ProfileLink
                             username={person.username}
+                            disableProfileNavigation
                             className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl p-1 -m-1 transition hover:bg-[var(--surface-strong)]"
                           >
                             <Avatar name={person.name} src={person.avatarUrl} className="h-10 w-10 shrink-0" />

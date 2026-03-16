@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Map, { Marker, MapRef, ViewStateChangeEvent } from "react-map-gl/maplibre";
+import { useEffect, useRef } from "react";
+import Map, { Marker, MapRef } from "react-map-gl/maplibre";
 
 const initialViewState = {
   longitude: 10,
@@ -19,7 +19,6 @@ export function LocationPicker({
   onSelect: (coordinates: { latitude: number; longitude: number }) => void;
 }) {
   const mapRef = useRef<MapRef | null>(null);
-  const [viewState, setViewState] = useState(initialViewState);
 
   useEffect(() => {
     if (position && mapRef.current) {
@@ -43,9 +42,8 @@ export function LocationPicker({
     <div className="h-[320px] w-full overflow-hidden rounded-[1.75rem]">
       <Map
         ref={mapRef}
-        {...viewState}
+        initialViewState={initialViewState}
         style={{ width: "100%", height: "100%", backgroundColor: "transparent" }}
-        onMove={(e: ViewStateChangeEvent) => setViewState(e.viewState)}
         onClick={handleMapClick}
         mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
         interactiveLayerIds={[]}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle, Upload, Check, X, Edit2 } from "lucide-react";
 import { toast } from "sonner";
@@ -31,6 +31,13 @@ export function EditProfile({
   const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
 
   const [usernameError, setUsernameError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setUsername(initialUsername);
+      setAvatarUrl(initialAvatarUrl);
+    }
+  }, [initialAvatarUrl, initialUsername, isEditing]);
 
   async function uploadFile(file: File) {
     const formData = new FormData();
@@ -138,7 +145,7 @@ export function EditProfile({
   if (!isEditing) {
     return (
       <div className="flex items-center gap-4 min-w-0">
-        <Avatar name={initialName} src={initialAvatarUrl} className="h-16 w-16 shrink-0" />
+        <Avatar name={initialName} src={avatarUrl} className="h-16 w-16 shrink-0" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-3">
             <h1 className="font-[var(--font-serif)] text-3xl md:text-4xl truncate">{initialName}</h1>
@@ -146,7 +153,7 @@ export function EditProfile({
               <Edit2 className="h-4 w-4" />
             </Button>
           </div>
-          <p className="text-sm text-[var(--foreground)]/62 truncate">@{initialUsername}</p>
+          <p className="text-sm text-[var(--foreground)]/62 truncate">@{username}</p>
         </div>
       </div>
     );
