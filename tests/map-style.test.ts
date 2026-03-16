@@ -1,5 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
+  ARCGIS_WORLD_IMAGERY_ATTRIBUTION,
+  ARCGIS_WORLD_IMAGERY_TILE_URL,
   DEFAULT_MAP_STYLE_URL,
   MAP_MODE_STORAGE_KEY,
   MAPTILER_SATELLITE_TILESET_ID,
@@ -18,9 +20,9 @@ describe("map style helpers", () => {
     ).toBe(DEFAULT_MAP_STYLE_URL);
   });
 
-  test("reports satellite mode availability only when a key is configured", () => {
-    expect(isSatelliteModeAvailable("")).toBe(false);
-    expect(isSatelliteModeAvailable("   ")).toBe(false);
+  test("reports satellite mode availability for the built-in fallback and keyed providers", () => {
+    expect(isSatelliteModeAvailable("")).toBe(true);
+    expect(isSatelliteModeAvailable("   ")).toBe(true);
     expect(isSatelliteModeAvailable("demo-key")).toBe(true);
   });
 
@@ -33,13 +35,29 @@ describe("map style helpers", () => {
     expect(parseStoredMapMode(null)).toBeNull();
   });
 
-  test("falls back to default style when satellite mode has no key", () => {
-    expect(
-      getMapStyle({
-        mode: "satellite",
-        satelliteApiKey: ""
-      })
-    ).toBe(DEFAULT_MAP_STYLE_URL);
+  test("builds a raster satellite style backed by ArcGIS World Imagery when no key is configured", () => {
+    const mapStyle = getMapStyle({
+      mode: "satellite",
+      satelliteApiKey: ""
+    });
+
+    expect(mapStyle).toMatchObject({
+      version: 8,
+      name: "Pinly Satellite",
+      sources: {
+        "pinly-satellite": {
+          type: "raster",
+          attribution: ARCGIS_WORLD_IMAGERY_ATTRIBUTION,
+          tiles: [ARCGIS_WORLD_IMAGERY_TILE_URL],
+          tileSize: 256,
+          maxzoom: 23
+        }
+      },
+      layers: [
+        { id: "pinly-satellite-background", type: "background" },
+        { id: "pinly-satellite-layer", type: "raster", source: "pinly-satellite" }
+      ]
+    });
   });
 
   test("builds a raster satellite style backed by MapTiler TileJSON", () => {

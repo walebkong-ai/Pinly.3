@@ -4,10 +4,12 @@ import type { MapVisualMode } from "@/types/app";
 export const DEFAULT_MAP_STYLE_URL = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 export const MAPTILER_SATELLITE_TILESET_ID = "satellite-v2";
 export const MAP_MODE_STORAGE_KEY = "pinly:map-visual-mode";
+export const ARCGIS_WORLD_IMAGERY_TILE_URL = "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+export const ARCGIS_WORLD_IMAGERY_ATTRIBUTION = "Source: Esri, Vantor, Earthstar Geographics, and the GIS User Community";
 export type MapStyleValue = string | StyleSpecification;
 
-export function isSatelliteModeAvailable(apiKey?: string | null) {
-  return Boolean(apiKey?.trim());
+export function isSatelliteModeAvailable(_apiKey?: string | null) {
+  return true;
 }
 
 export function parseStoredMapMode(value?: string | null): MapVisualMode | null {
@@ -32,7 +34,33 @@ export function getMapStyle({
   const trimmedApiKey = satelliteApiKey?.trim();
 
   if (!trimmedApiKey) {
-    return DEFAULT_MAP_STYLE_URL;
+    return {
+      version: 8,
+      name: "Pinly Satellite",
+      sources: {
+        "pinly-satellite": {
+          type: "raster",
+          tiles: [ARCGIS_WORLD_IMAGERY_TILE_URL],
+          tileSize: 256,
+          maxzoom: 23,
+          attribution: ARCGIS_WORLD_IMAGERY_ATTRIBUTION
+        }
+      },
+      layers: [
+        {
+          id: "pinly-satellite-background",
+          type: "background",
+          paint: {
+            "background-color": "#08111a"
+          }
+        },
+        {
+          id: "pinly-satellite-layer",
+          type: "raster",
+          source: "pinly-satellite"
+        }
+      ]
+    } satisfies StyleSpecification;
   }
 
   return {

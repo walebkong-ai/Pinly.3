@@ -41,7 +41,6 @@ const satelliteApiKey = process.env.NEXT_PUBLIC_MAPTILER_API_KEY ?? "";
 export function MapPageClient() {
   const searchParams = useSearchParams();
   const didToastSatelliteFallbackRef = useRef(false);
-  const didToastSatelliteMissingRef = useRef(false);
   const [mapData, setMapData] = useState<MapResponse>(emptyMap);
   const [loadingMap, setLoadingMap] = useState(true);
   const [groupOptions, setGroupOptions] = useState<MapGroupOption[]>([]);
@@ -64,7 +63,7 @@ export function MapPageClient() {
   const deferredQuery = useDeferredValue(query);
   const satelliteModeAvailable = isSatelliteModeAvailable(satelliteApiKey);
   const satelliteToggleVisible = true;
-  const satelliteAvailability = !satelliteModeAvailable ? "missing" : satelliteFailed ? "failed" : "available";
+  const satelliteAvailability = satelliteFailed ? "failed" : "available";
   const activeMapMode = satelliteModeAvailable && !satelliteFailed ? mapMode : "default";
   const mapStyle = useMemo(
     () =>
@@ -262,14 +261,6 @@ export function MapPageClient() {
         return;
       }
 
-      if (!satelliteModeAvailable) {
-        if (!didToastSatelliteMissingRef.current) {
-          didToastSatelliteMissingRef.current = true;
-          toast.error("Satellite view is not configured in this build yet.");
-        }
-        return;
-      }
-
       if (satelliteFailed) {
         toast.error("Satellite view is unavailable right now.");
         return;
@@ -277,7 +268,7 @@ export function MapPageClient() {
 
       setMapMode(nextMode);
     },
-    [satelliteFailed, satelliteModeAvailable]
+    [satelliteFailed]
   );
 
   const handleMapError = useCallback(
@@ -364,15 +355,6 @@ export function MapPageClient() {
                 </Link>
               ) : null}
             </div>
-            {satelliteToggleVisible ? (
-              <div className="pointer-events-auto flex justify-end">
-                <MapModeToggle
-                  value={activeMapMode}
-                  onChange={handleMapModeChange}
-                  satelliteAvailability={satelliteAvailability}
-                />
-              </div>
-            ) : null}
             {showEmptySearchState ? (
               <div className="pointer-events-auto inline-flex max-w-lg items-center gap-2 rounded-2xl border bg-[var(--surface-strong)] px-4 py-2 text-sm text-[var(--foreground)]/68 shadow-sm">
                 <Search className="h-4 w-4 text-[var(--map-accent)]" />
@@ -383,9 +365,18 @@ export function MapPageClient() {
 
         </div>
 
-        {(showControls || showWelcomeCard) && (
-          <div className="pointer-events-none absolute inset-x-4 bottom-20 grid gap-4 md:bottom-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-end xl:px-1 animate-in fade-in duration-500 ease-out">
-            <div className="pointer-events-none flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+        {(showControls || showWelcomeCard || satelliteToggleVisible) && (
+          <div className="pointer-events-none absolute inset-x-4 bottom-24 grid gap-4 md:bottom-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-end xl:px-1 animate-in fade-in duration-500 ease-out">
+            <div className="pointer-events-none flex flex-col-reverse gap-3 xl:flex-row xl:items-end xl:justify-between xl:gap-4">
+              {satelliteToggleVisible ? (
+                <div className="pointer-events-auto self-start xl:self-end">
+                  <MapModeToggle
+                    value={activeMapMode}
+                    onChange={handleMapModeChange}
+                    satelliteAvailability={satelliteAvailability}
+                  />
+                </div>
+              ) : null}
               <div className="pointer-events-auto max-w-md">
                 {mapData.cityContext ? (
                   <CityContextPanel cityContext={mapData.cityContext} />

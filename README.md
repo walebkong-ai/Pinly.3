@@ -27,7 +27,7 @@ Pinly is a private, friends-only social travel MVP built with Next.js, Prisma, P
 - World city clusters, city hybrid view, pins, and avatar bubbles
 - Popup preview to bottom-sheet to full post flow
 - Layer toggle for Friends / You / Both
-- Optional Default / Satellite map mode on the main map when `NEXT_PUBLIC_MAPTILER_API_KEY` is configured
+- Default / Satellite map mode on the main map, with optional `NEXT_PUBLIC_MAPTILER_API_KEY` override for MapTiler imagery
 - Time filter sidebar
 - Feed tab with recent visible posts
 - City search and browse
@@ -97,7 +97,7 @@ After seeding, sign in with any of these and password `password123`:
 - `GOOGLE_CLIENT_ID`: required if enabling Google auth
 - `GOOGLE_CLIENT_SECRET`: required if enabling Google auth
 - `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED`: optional fallback to show Google button in UI (`true`/`false`)
-- `NEXT_PUBLIC_MAPTILER_API_KEY`: optional, enables the satellite basemap mode on the main map
+- `NEXT_PUBLIC_MAPTILER_API_KEY`: optional, switches the satellite basemap to MapTiler; when unset, the app falls back to Esri World Imagery
 - `STORAGE_DRIVER`: `local` for dev or `vercel-blob` for Vercel
 - `BLOB_READ_WRITE_TOKEN`: required when `STORAGE_DRIVER=vercel-blob`
 - `BLOB_UPLOAD_PREFIX`: optional blob folder prefix
