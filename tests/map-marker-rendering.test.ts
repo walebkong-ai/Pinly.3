@@ -126,6 +126,12 @@ describe("map marker rendering", () => {
     expect(html).toContain("drop-shadow(0 18px 24px rgba(3, 14, 22, 0.46))");
   });
 
+  test("uses a tighter non-selected shadow so big pins do not visually swallow nearby markers", () => {
+    const html = getMarkerHtml(makePlaceClusterMarker(7), false, "default");
+
+    expect(html).toContain("drop-shadow(0 10px 14px rgba(56, 182, 201, 0.18))");
+  });
+
   test("renders count markers inside the pin head instead of standalone circles", () => {
     const cityHtml = getMarkerHtml(makeCityClusterMarker(), false, "default");
     const placeHtml = getMarkerHtml(makePlaceClusterMarker(), true, "default");
@@ -144,9 +150,24 @@ describe("map marker rendering", () => {
 
     expect(singlePinSize).toEqual({ width: 32, height: 44 });
     expect(mediumClusterSize.height - singlePinSize.height).toBeGreaterThanOrEqual(24);
-    expect(mediumClusterSize.width - singlePinSize.width).toBeGreaterThanOrEqual(17);
+    expect(mediumClusterSize.width - singlePinSize.width).toBeGreaterThanOrEqual(12);
     expect(largeClusterSize.height - mediumClusterSize.height).toBeGreaterThanOrEqual(20);
-    expect(largeClusterSize.width - mediumClusterSize.width).toBeGreaterThanOrEqual(14);
+    expect(largeClusterSize.width - mediumClusterSize.width).toBeGreaterThanOrEqual(12);
+  });
+
+  test("keeps lateral growth more restrained than vertical growth so nearby pins stay visible", () => {
+    const singlePinSize = getMarkerVisualSize(makePinMarker());
+    const mediumClusterSize = getMarkerVisualSize(makePlaceClusterMarker(5));
+    const largeClusterSize = getMarkerVisualSize(makeCityClusterMarker(14));
+
+    expect(mediumClusterSize.height - singlePinSize.height).toBeGreaterThan(
+      mediumClusterSize.width - singlePinSize.width
+    );
+    expect(largeClusterSize.height - singlePinSize.height).toBeGreaterThan(
+      largeClusterSize.width - singlePinSize.width
+    );
+    expect(mediumClusterSize.width).toBeLessThan(48);
+    expect(largeClusterSize.width).toBeLessThan(62);
   });
 
   test("assigns higher render priority to bigger, higher-memory markers", () => {

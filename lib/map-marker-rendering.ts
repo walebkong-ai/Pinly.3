@@ -44,6 +44,22 @@ function scalePinWidth(height: number) {
   return Math.round((height / PIN_VIEWBOX_HEIGHT) * PIN_VIEWBOX_WIDTH);
 }
 
+function getBaseMarkerHeight(marker: MapMarker) {
+  if (marker.type === "cityCluster") {
+    return 50;
+  }
+
+  if (marker.type === "placeCluster" || marker.type === "profileBubble") {
+    return 48;
+  }
+
+  return 44;
+}
+
+function getBaseMarkerWidth(marker: MapMarker) {
+  return scalePinWidth(getBaseMarkerHeight(marker));
+}
+
 function getMarkerTypePriority(marker: MapMarker) {
   if (marker.type === "cityCluster") {
     return 4;
@@ -88,28 +104,48 @@ function getMemoryScaleBoost(memoryCount: number) {
   return 0;
 }
 
+function getMemoryWidthBoost(memoryCount: number) {
+  if (memoryCount >= 11) {
+    return 20;
+  }
+
+  if (memoryCount >= 7) {
+    return 15;
+  }
+
+  if (memoryCount >= 4) {
+    return 10;
+  }
+
+  if (memoryCount >= 2) {
+    return 5;
+  }
+
+  return 0;
+}
+
 function getShadow(mapMode: MapVisualMode, tone: ShadowTone, selected: boolean) {
   if (mapMode === "satellite") {
     return selected
       ? "drop-shadow(0 18px 24px rgba(3, 14, 22, 0.46)) drop-shadow(0 6px 10px rgba(3, 14, 22, 0.32))"
-      : "drop-shadow(0 14px 20px rgba(3, 14, 22, 0.36)) drop-shadow(0 4px 8px rgba(3, 14, 22, 0.24))";
+      : "drop-shadow(0 11px 16px rgba(3, 14, 22, 0.28)) drop-shadow(0 3px 6px rgba(3, 14, 22, 0.18))";
   }
 
   if (tone === "blue") {
     return selected
       ? "drop-shadow(0 18px 24px rgba(15, 128, 145, 0.3)) drop-shadow(0 6px 10px rgba(8, 52, 61, 0.18))"
-      : "drop-shadow(0 14px 18px rgba(56, 182, 201, 0.22)) drop-shadow(0 4px 8px rgba(8, 52, 61, 0.12))";
+      : "drop-shadow(0 10px 14px rgba(56, 182, 201, 0.18)) drop-shadow(0 3px 6px rgba(8, 52, 61, 0.1))";
   }
 
   if (tone === "accent") {
     return selected
       ? "drop-shadow(0 18px 24px rgba(56, 182, 201, 0.3)) drop-shadow(0 6px 10px rgba(24, 85, 56, 0.16))"
-      : "drop-shadow(0 14px 18px rgba(56, 182, 201, 0.2)) drop-shadow(0 4px 8px rgba(24, 85, 56, 0.1))";
+      : "drop-shadow(0 10px 14px rgba(56, 182, 201, 0.16)) drop-shadow(0 3px 6px rgba(24, 85, 56, 0.08))";
   }
 
   return selected
     ? "drop-shadow(0 18px 24px rgba(24, 85, 56, 0.28)) drop-shadow(0 6px 10px rgba(24, 85, 56, 0.16))"
-    : "drop-shadow(0 14px 18px rgba(24, 85, 56, 0.22)) drop-shadow(0 4px 8px rgba(24, 85, 56, 0.12))";
+    : "drop-shadow(0 10px 14px rgba(24, 85, 56, 0.18)) drop-shadow(0 3px 6px rgba(24, 85, 56, 0.1))";
 }
 
 function getCountSizeExtra(count: number) {
@@ -132,18 +168,16 @@ function getPinRenderSpec(marker: MapMarker, selected: boolean): MarkerRenderSpe
   const profileMarker = marker.type === "profileBubble";
   const representedMemoryCount = getRepresentedMemoryCount(marker);
   const memoryScaleBoost = getMemoryScaleBoost(representedMemoryCount);
+  const memoryWidthBoost = getMemoryWidthBoost(representedMemoryCount);
   const countSizeExtra = cityCluster || placeCluster ? getCountSizeExtra(representedMemoryCount) : 0;
+  const baseHeight = getBaseMarkerHeight(marker);
+  const baseWidth = getBaseMarkerWidth(marker);
 
-  const height = cityCluster
-    ? 50 + memoryScaleBoost + countSizeExtra + (selected ? 4 : 0)
-    : placeCluster
-      ? 48 + memoryScaleBoost + countSizeExtra + (selected ? 4 : 0)
-      : profileMarker
-        ? 48 + memoryScaleBoost + (selected ? 4 : 0)
-        : 44 + memoryScaleBoost + (selected ? 4 : 0);
+  const height = baseHeight + memoryScaleBoost + countSizeExtra + (selected ? 4 : 0);
+  const width = baseWidth + memoryWidthBoost + Math.min(countSizeExtra, 2) + (selected ? 2 : 0);
   const contentSize = cityCluster || placeCluster || profileMarker
-    ? Math.round(height * 0.46)
-    : Math.round(height * 0.41);
+    ? Math.round(Math.min(width * 0.72, height * 0.46))
+    : Math.round(Math.min(width * 0.66, height * 0.41));
   const fill = cityCluster
     ? selected
       ? "#236A47"
@@ -157,14 +191,14 @@ function getPinRenderSpec(marker: MapMarker, selected: boolean): MarkerRenderSpe
         : "#185538";
 
   return {
-    width: scalePinWidth(height),
+    width,
     height,
     contentSize,
     contentTop: Math.round(height * PIN_HEAD_CENTER_Y_RATIO - contentSize / 2),
     popupOffset: Math.round(height * 0.74),
     fill,
     stroke: selected ? "#FFF8F0" : "#FFF3E6",
-    strokeWidth: (selected ? 3 : 2.6) + Math.min(memoryScaleBoost, 44) * 0.022,
+    strokeWidth: (selected ? 3 : 2.6) + Math.min(memoryWidthBoost, 20) * 0.02,
     contentBackground: placeCluster && selected ? "#F2FDFF" : "#FFF8F0",
     contentBorder: placeCluster ? "rgba(8, 52, 61, 0.12)" : "rgba(24, 85, 56, 0.12)",
     contentColor: cityCluster
