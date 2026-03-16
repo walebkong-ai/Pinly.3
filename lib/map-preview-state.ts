@@ -68,6 +68,38 @@ export function findPlaceClusterMarker(markers: MapMarker[], markerId: string) {
   return markers.find((marker): marker is PlaceClusterMarker => marker.type === "placeCluster" && marker.id === markerId) ?? null;
 }
 
+export function findFocusedPostPreview(markers: MapMarker[], postId: string) {
+  for (const marker of markers) {
+    if (marker.type === "placeCluster") {
+      const groupedPost = marker.posts.find((post) => post.id === postId);
+
+      if (groupedPost) {
+        return {
+          post: groupedPost,
+          returnMarkerId: marker.id
+        };
+      }
+
+      continue;
+    }
+
+    if ("post" in marker && marker.post.id === postId) {
+      return {
+        post: marker.post,
+        returnMarkerId: null
+      };
+    }
+  }
+
+  return null;
+}
+
+export function openFocusedPostPreview(markers: MapMarker[], postId: string) {
+  const previewTarget = findFocusedPostPreview(markers, postId);
+
+  return previewTarget ? openPostPreview(previewTarget.post, previewTarget.returnMarkerId) : null;
+}
+
 function hasStandalonePostMarker(markers: MapMarker[], postId: string) {
   return markers.some((marker) => "post" in marker && marker.post.id === postId);
 }

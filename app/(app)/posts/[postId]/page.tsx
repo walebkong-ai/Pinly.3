@@ -20,6 +20,7 @@ import { ManagePostCollectionsCard } from "@/components/collections/collection-p
 import { WantToGoButton } from "@/components/places/want-to-go-button";
 import { ProfileLink } from "@/components/profile/profile-link";
 import { LocationCountryText } from "@/components/ui/country-flag";
+import { buildPostLocationMapHref } from "@/lib/map-post-navigation";
 
 type Props = {
   params: Promise<{ postId: string }>;
@@ -64,6 +65,7 @@ export default async function PostDetailPage({ params }: Props) {
 
   const commentsEnabled = post.user.settings?.commentsEnabled ?? true;
   const primaryCaption = post.caption.trim() || `Memory from ${post.placeName}`;
+  const mapLocationHref = buildPostLocationMapHref(post);
 
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
@@ -125,7 +127,12 @@ export default async function PostDetailPage({ params }: Props) {
             {/* Place info */}
             <div>
               <div className="grid gap-2 sm:grid-cols-2">
-                <div className="rounded-[1.4rem] border border-[rgba(56,182,201,0.2)] bg-[rgba(56,182,201,0.1)] px-3.5 py-3">
+                <Link
+                  href={mapLocationHref}
+                  scroll={false}
+                  className="rounded-[1.4rem] border border-[rgba(56,182,201,0.2)] bg-[rgba(56,182,201,0.1)] px-3.5 py-3 transition hover:bg-[rgba(56,182,201,0.14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/40"
+                  aria-label={`Open ${post.placeName} on the map`}
+                >
                   <div className="flex items-start gap-3">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[var(--map-accent)] text-white shadow-sm">
                       <MapPin className="h-4 w-4" />
@@ -138,9 +145,12 @@ export default async function PostDetailPage({ params }: Props) {
                         country={post.country}
                         className="mt-1 w-full min-w-0 text-xs text-[var(--foreground)]/62"
                       />
+                      <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--map-accent)]">
+                        Open on map
+                      </p>
                     </div>
                   </div>
-                </div>
+                </Link>
                 <div className="rounded-[1.4rem] border border-[rgba(255,159,28,0.22)] bg-[var(--accent-soft)] px-3.5 py-3">
                   <div className="flex items-start gap-3">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent)] text-[var(--accent-foreground)] shadow-sm">

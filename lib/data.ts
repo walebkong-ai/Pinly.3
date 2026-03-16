@@ -266,6 +266,8 @@ export type MessageConversationMessage = {
     placeName: string;
     city: string;
     country: string;
+    latitude: number;
+    longitude: number;
     thumbnailUrl: string;
   } | null;
 };
@@ -435,6 +437,8 @@ async function getVisiblePostsByIds(viewerId: string, postIds: string[]) {
         placeName: string;
         city: string;
         country: string;
+        latitude: number;
+        longitude: number;
         thumbnailUrl: string;
       }
     >();
@@ -461,6 +465,8 @@ async function getVisiblePostsByIds(viewerId: string, postIds: string[]) {
       placeName: true,
       city: true,
       country: true,
+      latitude: true,
+      longitude: true,
       thumbnailUrl: true,
       mediaUrl: true
     }
@@ -475,6 +481,8 @@ async function getVisiblePostsByIds(viewerId: string, postIds: string[]) {
         placeName: post.placeName,
         city: post.city,
         country: post.country,
+        latitude: post.latitude,
+        longitude: post.longitude,
         thumbnailUrl: post.thumbnailUrl ?? post.mediaUrl
       }
     ])

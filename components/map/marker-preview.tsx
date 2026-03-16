@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ChevronRight, MapPin, X, ZoomIn } from "lucide-react";
 import type { SyntheticEvent } from "react";
 import type { MapMarker, PostSummary } from "@/types/app";
@@ -6,6 +7,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { LocationCountryText } from "@/components/ui/country-flag";
 import { MediaView } from "@/components/post/media-view";
 import { ProfileLink } from "@/components/profile/profile-link";
+import { buildPostLocationMapHref } from "@/lib/map-post-navigation";
 import { formatVisitDate } from "@/lib/utils";
 
 export function MarkerPreview({
@@ -127,13 +129,18 @@ export function MarkerPreview({
           {primaryCaption}
         </p>
         <div className="flex flex-wrap gap-2 text-[11px] text-[var(--foreground)]/56">
-          <span className="inline-flex items-center gap-1 rounded-full border bg-[var(--surface-soft)] px-2.5 py-1">
+          <Link
+            href={buildPostLocationMapHref(post)}
+            scroll={false}
+            className="inline-flex min-h-10 items-center gap-1 rounded-full border bg-[var(--surface-soft)] px-2.5 py-1 transition hover:bg-[var(--foreground)]/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/35"
+            aria-label={`Focus ${post.placeName} on the map`}
+          >
             <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--map-accent)]" />
             <span className="flex min-w-0 max-w-full items-center gap-1 truncate">
               <span className="truncate">{post.placeName},</span>
               <LocationCountryText city={post.city} country={post.country} className="min-w-0 max-w-full" />
             </span>
-          </span>
+          </Link>
           <span className="inline-flex items-center rounded-full border bg-[var(--surface-soft)] px-2.5 py-1 uppercase tracking-[0.14em] text-[var(--foreground)]/48">
             {formatVisitDate(post.visitedAt)}
           </span>

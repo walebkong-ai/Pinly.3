@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { LocationCountryText } from "@/components/ui/country-flag";
 import { MediaView } from "@/components/post/media-view";
 import { ProfileLink } from "@/components/profile/profile-link";
+import { buildPostLocationMapHref } from "@/lib/map-post-navigation";
 import { formatVisitDate } from "@/lib/utils";
 
 export function BottomSheet({
@@ -138,13 +139,18 @@ export function BottomSheet({
                     {primaryCopy}
                   </p>
                   <div className="flex flex-wrap gap-2 text-xs text-[var(--foreground)]/62">
-                    <span className="inline-flex items-center gap-2 rounded-full border bg-[var(--surface-soft)] px-3 py-1.5">
+                    <Link
+                      href={buildPostLocationMapHref(post)}
+                      scroll={false}
+                      className="inline-flex min-h-11 items-center gap-2 rounded-full border bg-[var(--surface-soft)] px-3 py-1.5 transition hover:bg-[var(--foreground)]/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/35"
+                      aria-label={`Focus ${post.placeName} on the map`}
+                    >
                       <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--map-accent)]" />
                       <span className="flex min-w-0 max-w-full items-center gap-1">
                         <span className="truncate">{post.placeName},</span>
                         <LocationCountryText city={post.city} country={post.country} className="min-w-0 max-w-full" />
                       </span>
-                    </span>
+                    </Link>
                     <span className="inline-flex items-center gap-2 rounded-full border bg-[var(--surface-soft)] px-3 py-1.5">
                       <CalendarDays className="h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
                       <span>Visited {formatVisitDate(post.visitedAt)}</span>

@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   backFromPostPreview,
   closeMapPreview,
+  openFocusedPostPreview,
   openLocationPreview,
   openPostPreview,
   syncPreviewStateWithMarkers
@@ -98,5 +99,24 @@ describe("map preview state", () => {
     const post = createPostSummary();
 
     expect(backFromPostPreview(openPostPreview(post, "cluster-1"))).toEqual(openLocationPreview("cluster-1"));
+  });
+
+  test("opens the grouped same-location post preview with a return marker", () => {
+    const post = createPostSummary();
+
+    expect(openFocusedPostPreview([createLocationCluster(post)], post.id)).toEqual(openPostPreview(post, "cluster-1"));
+  });
+
+  test("opens the standalone focused post preview when the marker is not grouped", () => {
+    const post = createPostSummary();
+    const standaloneMarker: MapMarker = {
+      type: "profileBubble",
+      id: "bubble-1",
+      latitude: post.latitude,
+      longitude: post.longitude,
+      post
+    };
+
+    expect(openFocusedPostPreview([standaloneMarker], post.id)).toEqual(openPostPreview(post));
   });
 });

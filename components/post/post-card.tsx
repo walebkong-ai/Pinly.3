@@ -15,6 +15,7 @@ import { SaveButton } from "@/components/post/save-button";
 import { VisitedWithList } from "@/components/post/visited-with-list";
 import { ProfileLink } from "@/components/profile/profile-link";
 import { LocationCountryText } from "@/components/ui/country-flag";
+import { buildPostLocationMapHref } from "@/lib/map-post-navigation";
 import {
   MOBILE_TAP_MAX_MOVEMENT_PX,
   MOBILE_TAP_NAVIGATION_DELAY_MS,
@@ -52,6 +53,7 @@ export function PostCard({
   const [showDoubleTapLikeFeedback, setShowDoubleTapLikeFeedback] = useState(false);
   const commentsEnabled = post.user.settings?.commentsEnabled ?? true;
   const primaryCaption = post.caption.trim() || `Memory from ${post.placeName}`;
+  const mapLocationHref = buildPostLocationMapHref(post);
 
   useEffect(() => {
     return () => {
@@ -321,13 +323,21 @@ export function PostCard({
           >
             {primaryCaption}
           </p>
-          <div className="flex items-start gap-2 text-xs text-[var(--foreground)]/58 min-w-0">
+          <Link
+            href={mapLocationHref}
+            scroll={false}
+            data-post-card-control
+            className="flex min-h-11 min-w-0 items-start gap-2 rounded-[1.1rem] p-2 -m-2 text-left text-xs text-[var(--foreground)]/58 transition hover:bg-[var(--surface-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/40"
+            aria-label={`Open ${post.placeName} on the map`}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
+          >
             <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--map-accent)]" />
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium text-[var(--foreground)]/66">{post.placeName}</p>
               <LocationCountryText city={post.city} country={post.country} className="mt-0.5 w-full min-w-0" />
             </div>
-          </div>
+          </Link>
           <VisitedWithList friends={post.visitedWith} compact />
           <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--foreground)]/42">
             Visited {formatVisitDate(post.visitedAt)}

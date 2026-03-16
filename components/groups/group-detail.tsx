@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Send, Users, X, UserPlus, CheckCircle2, LoaderCircle, Share2, Image as ImageIcon } from "lucide-react";
+import { Send, Users, X, UserPlus, CheckCircle2, LoaderCircle, MapPin, Share2, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { LocationCountryText } from "@/components/ui/country-flag";
 import { Input } from "@/components/ui/input";
 import { ProfileLink } from "@/components/profile/profile-link";
 import type { MessageConversationDetails, MessageConversationMessage } from "@/lib/data";
+import { buildPostLocationMapHref } from "@/lib/map-post-navigation";
 import { MESSAGES_UPDATED_EVENT } from "@/lib/notification-events";
 import { cn } from "@/lib/utils";
 
@@ -302,38 +303,53 @@ export function GroupDetail({
                         {msg.user.id === viewerId ? "You shared a post" : "Shared a post"}
                       </div>
                       {msg.sharedPost ? (
-                        <Link href={`/posts/${msg.sharedPost.id}`} className="group relative block">
-                          <div className="aspect-[4/3] w-full bg-black/5 relative">
-                            {msg.sharedPost.thumbnailUrl ? (
-                              <img 
-                                src={msg.sharedPost.thumbnailUrl} 
-                                alt={msg.sharedPost.caption?.trim() || msg.sharedPost.placeName || "Shared post"}
-                                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center">
-                                <ImageIcon size={32} className="text-[var(--foreground)]/20" />
+                        <div className="group">
+                          <Link href={`/posts/${msg.sharedPost.id}`} className="relative block">
+                            <div className="relative aspect-[4/3] w-full bg-black/5">
+                              {msg.sharedPost.thumbnailUrl ? (
+                                <img
+                                  src={msg.sharedPost.thumbnailUrl}
+                                  alt={msg.sharedPost.caption?.trim() || msg.sharedPost.placeName || "Shared post"}
+                                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center">
+                                  <ImageIcon size={32} className="text-[var(--foreground)]/20" />
+                                </div>
+                              )}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                              <div className="absolute bottom-3 left-3 right-3 text-white">
+                                <p className="line-clamp-2 font-[var(--font-serif)] text-base leading-tight drop-shadow-sm">
+                                  {msg.sharedPost.caption?.trim() || `Memory from ${msg.sharedPost.placeName}`}
+                                </p>
                               </div>
-                            )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                            <div className="absolute bottom-3 left-3 right-3 text-white">
-                              <p className="line-clamp-2 font-[var(--font-serif)] text-base leading-tight drop-shadow-sm">
-                                {msg.sharedPost.caption?.trim() || `Memory from ${msg.sharedPost.placeName}`}
-                              </p>
-                              <div className="mt-1 flex min-w-0 max-w-full items-center gap-1 text-xs text-white/80">
+                            </div>
+                          </Link>
+                          <div className="space-y-2 bg-white p-3">
+                            <Link
+                              href={buildPostLocationMapHref(msg.sharedPost)}
+                              scroll={false}
+                              className="flex min-h-11 items-center gap-2 rounded-2xl border bg-[var(--surface-soft)] px-3 py-2.5 text-xs text-[var(--foreground)]/70 transition hover:bg-[var(--foreground)]/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/35"
+                              aria-label={`Open ${msg.sharedPost.placeName} on the map`}
+                            >
+                              <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--map-accent)]" />
+                              <span className="flex min-w-0 max-w-full items-center gap-1">
                                 <span className="truncate">{msg.sharedPost.placeName},</span>
                                 <LocationCountryText
                                   city={msg.sharedPost.city}
                                   country={msg.sharedPost.country}
                                   className="min-w-0 max-w-full"
                                 />
-                              </div>
-                            </div>
+                              </span>
+                            </Link>
+                            <Link
+                              href={`/posts/${msg.sharedPost.id}`}
+                              className="block rounded-2xl p-3 text-center text-sm font-medium text-[var(--accent)] transition-colors hover:bg-[var(--accent)]/5"
+                            >
+                              Open memory
+                            </Link>
                           </div>
-                          <div className="p-3 bg-white text-center text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent)]/5 transition-colors">
-                            Open memory
-                          </div>
-                        </Link>
+                        </div>
                       ) : (
                         <div className="p-4 text-center text-sm text-[var(--foreground)]/60">
                           Post unavailable or you do not have permission to view it.

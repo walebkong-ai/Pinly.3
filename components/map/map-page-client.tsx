@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { startTransition, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Filter, LoaderCircle, Plus, Search } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
@@ -27,11 +27,17 @@ import {
   getExpandedPreviewPost,
   hasOpenMapPreview,
   IDLE_MAP_PREVIEW_STATE,
+  openFocusedPostPreview,
   openLocationPreview,
   openPostPreview,
   syncPreviewStateWithMarkers,
   type MapPreviewState
 } from "@/lib/map-preview-state";
+import {
+  buildMapPathWithoutFocusedPost,
+  createFocusedPostViewport,
+  parseMapFocusedPostTarget
+} from "@/lib/map-post-navigation";
 import { MAP_MODE_STORAGE_KEY, getMapStyle, isSatelliteModeAvailable, parseStoredMapMode } from "@/lib/map-style";
 import { canonicalizeViewportForDataQuery, createViewportFingerprint, FULL_WORLD_BOUNDS, type MapViewport } from "@/lib/map-viewport";
 import type { LayerMode, MapCategory, MapGroupOption, MapResponse, MapVisualMode, PlaceClusterMarker, PostSummary, TimeFilter } from "@/types/app";
@@ -58,8 +64,12 @@ function hasRenderableMapData(mapData: MapResponse) {
 }
 
 export function MapPageClient() {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
+  const focusedPostFromQuery = useMemo(() => parseMapFocusedPostTarget(searchParams), [searchParams]);
   const didToastSatelliteFallbackRef = useRef(false);
+  const lastAppliedFocusedPostKeyRef = useRef<string | null>(null);
   const latestMapDataRef = useRef<MapResponse>(emptyMap);
   const mapRequestIdRef = useRef(0);
   const [mapData, setMapData] = useState<MapResponse>(emptyMap);
@@ -75,11 +85,14 @@ export function MapPageClient() {
   const [selectedCategories, setSelectedCategories] = useState<MapCategory[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
   const [previewState, setPreviewState] = useState<MapPreviewState>(IDLE_MAP_PREVIEW_STATE);
+  const [pendingFocusedPost, setPendingFocusedPost] = useState(focusedPostFromQuery);
   const [viewport, setViewport] = useState<MapViewport>(() =>
-    canonicalizeViewportForDataQuery({
-      zoom: 2,
-      bounds: FULL_WORLD_BOUNDS
-    })
+    focusedPostFromQuery
+      ? createFocusedPostViewport(focusedPostFromQuery)
+      : canonicalizeViewportForDataQuery({
+          zoom: 2,
+          bounds: FULL_WORLD_BOUNDS
+        })
   );
   const deferredQuery = useDeferredValue(query);
   const satelliteModeAvailable = isSatelliteModeAvailable(satelliteApiKey);
@@ -106,6 +119,25 @@ export function MapPageClient() {
   useEffect(() => {
     latestMapDataRef.current = mapData;
   }, [mapData]);
+
+  useEffect(() => {
+    if (!focusedPostFromQuery) {
+      lastAppliedFocusedPostKeyRef.current = null;
+      setPendingFocusedPost(null);
+      return;
+    }
+
+    if (lastAppliedFocusedPostKeyRef.current === focusedPostFromQuery.key) {
+      return;
+    }
+
+    lastAppliedFocusedPostKeyRef.current = focusedPostFromQuery.key;
+    setLoadingMap(true);
+    setFilterOpen(false);
+    setPreviewState(closeMapPreview());
+    setPendingFocusedPost(focusedPostFromQuery);
+    setViewport(createFocusedPostViewport(focusedPostFromQuery));
+  }, [focusedPostFromQuery]);
 
   useEffect(() => {
     try {
@@ -243,6 +275,34 @@ export function MapPageClient() {
   }, [mapData.markers]);
 
   useEffect(() => {
+    if (!pendingFocusedPost) {
+      return;
+    }
+
+    const nextPreviewState = openFocusedPostPreview(mapData.markers, pendingFocusedPost.postId);
+
+    if (nextPreviewState) {
+      setFilterOpen(false);
+      setPreviewState(nextPreviewState);
+      setPendingFocusedPost(null);
+
+      if (focusedPostFromQuery?.key === pendingFocusedPost.key) {
+        router.replace(buildMapPathWithoutFocusedPost(pathname, searchParams), { scroll: false });
+      }
+
+      return;
+    }
+
+    if (!loadingMap) {
+      setPendingFocusedPost(null);
+
+      if (focusedPostFromQuery?.key === pendingFocusedPost.key) {
+        router.replace(buildMapPathWithoutFocusedPost(pathname, searchParams), { scroll: false });
+      }
+    }
+  }, [focusedPostFromQuery, loadingMap, mapData.markers, pathname, pendingFocusedPost, router, searchParams]);
+
+  useEffect(() => {
     if (previewSurfaceOpen && filterOpen) {
       setFilterOpen(false);
     }
@@ -361,6 +421,26 @@ export function MapPageClient() {
         mapStyle={mapStyle}
         expandedPostId={expandedPost?.id ?? null}
         selectedLocationMarkerId={activeLocationMarkerId}
+        initialViewState={
+          focusedPostFromQuery
+            ? {
+                longitude: focusedPostFromQuery.longitude,
+                latitude: focusedPostFromQuery.latitude,
+                zoom: 13,
+                pitch: 45,
+                bearing: 0
+              }
+            : undefined
+        }
+        focusedCoordinates={
+          pendingFocusedPost
+            ? {
+                latitude: pendingFocusedPost.latitude,
+                longitude: pendingFocusedPost.longitude,
+                key: pendingFocusedPost.key
+              }
+            : null
+        }
         onExpandPost={handleExpandPost}
         onOpenLocationCluster={handleOpenLocationCluster}
         onMapError={handleMapError}

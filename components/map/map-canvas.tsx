@@ -60,6 +60,8 @@ const MapMarkerNode = memo(
 
 export function MapCanvas({
   expandedPostId,
+  focusedCoordinates,
+  initialViewState,
   selectedLocationMarkerId,
   markers,
   mapMode,
@@ -73,6 +75,14 @@ export function MapCanvas({
   mapMode: MapVisualMode;
   mapStyle: MapStyleValue;
   expandedPostId: string | null;
+  focusedCoordinates: { latitude: number; longitude: number; key: string } | null;
+  initialViewState?: {
+    longitude: number;
+    latitude: number;
+    zoom: number;
+    pitch?: number;
+    bearing?: number;
+  };
   selectedLocationMarkerId: string | null;
   onExpandPost: (post: PostSummary) => void;
   onOpenLocationCluster: (marker: PlaceClusterMarker) => void;
@@ -83,6 +93,7 @@ export function MapCanvas({
   }) => void;
 }) {
   const mapRef = useRef<MapRef | null>(null);
+  const lastFocusedCoordinateKeyRef = useRef<string | null>(null);
   const [popupInfo, setPopupInfo] = useState<MapMarker | null>(null);
 
   // Stable callback ref to avoid stale closures
@@ -132,15 +143,42 @@ export function MapCanvas({
     }
   }, [markers, popupInfo]);
 
+  useEffect(() => {
+    if (!focusedCoordinates) {
+      lastFocusedCoordinateKeyRef.current = null;
+      return;
+    }
+
+    if (!mapRef.current || lastFocusedCoordinateKeyRef.current === focusedCoordinates.key) {
+      return;
+    }
+
+    lastFocusedCoordinateKeyRef.current = focusedCoordinates.key;
+    setPopupInfo(null);
+    mapRef.current.easeTo({
+      center: [focusedCoordinates.longitude, focusedCoordinates.latitude],
+      zoom: Math.max(mapRef.current.getZoom(), 13),
+      duration: 850
+    });
+  }, [focusedCoordinates]);
+
   const handleMoveEnd = useCallback(() => {
     reportViewport();
   }, [reportViewport]);
 
+  const orderedMarkers = useMemo(() => sortMarkersForRender(markers), [markers]);
+  const expandedPostMarkerId = useMemo(
+    () =>
+      expandedPostId
+        ? orderedMarkers.find((marker) => "post" in marker && marker.post.id === expandedPostId)?.id ?? null
+        : null,
+    [expandedPostId, orderedMarkers]
+  );
   const selectedMarkerId = getSelectedMapMarkerId({
+    expandedPostMarkerId,
     popupMarkerId: popupInfo?.id ?? null,
     selectedLocationMarkerId
   });
-  const orderedMarkers = useMemo(() => sortMarkersForRender(markers), [markers]);
   const selectedMarker = useMemo(
     () => (selectedMarkerId ? orderedMarkers.find((marker) => marker.id === selectedMarkerId) ?? null : null),
     [orderedMarkers, selectedMarkerId]
@@ -212,7 +250,7 @@ export function MapCanvas({
     >
       <Map
         ref={mapRef}
-        initialViewState={defaultCenter}
+        initialViewState={initialViewState ?? defaultCenter}
         style={{ width: "100%", height: "100%", backgroundColor: "transparent" }}
         onError={(event) => {
           if (event.error) {
