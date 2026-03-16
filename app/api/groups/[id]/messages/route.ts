@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { apiError } from "@/lib/api";
 import { z } from "zod";
+import { getGroupConversation } from "@/lib/data";
 
 export const runtime = "nodejs";
 
@@ -19,66 +20,17 @@ export async function GET(request: Request, props: { params: Promise<{ id: strin
 
   const userId = session.user.id;
   const groupId = params.id;
+  const result = await getGroupConversation(userId, groupId);
 
-  // Check membership
-  const member = await prisma.groupMember.findUnique({
-    where: {
-      groupId_userId: {
-        groupId,
-        userId
-      }
-    }
-  });
+  if (result.status === "not_found") {
+    return apiError("Group not found", 404);
+  }
 
-  if (!member) {
+  if (result.status === "forbidden") {
     return apiError("Forbidden", 403);
   }
 
-  await prisma.groupMember.update({
-    where: { groupId_userId: { groupId, userId } },
-    data: { lastReadAt: new Date() }
-  });
-
-  const messages = await prisma.groupMessage.findMany({
-    where: { groupId },
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          username: true,
-          avatarUrl: true
-        }
-      }
-    },
-    orderBy: { createdAt: "asc" }
-  });
-
-  // Hydrate shared posts if they exist and the user has permission to see them
-  // We do this manually to enforce the visibility rules from `getVisiblePostById`
-  const { getVisiblePostById } = await import("@/lib/data");
-  
-  const hydratedMessages = await Promise.all(messages.map(async (msg) => {
-    if (msg.content.startsWith("[SHARED_POST]:")) {
-      const postId = msg.content.replace("[SHARED_POST]:", "");
-      const post = await getVisiblePostById(userId, postId);
-      
-      return {
-        ...msg,
-        sharedPost: post ? {
-          id: post.id,
-          caption: post.caption,
-          placeName: post.placeName,
-          city: post.city,
-          country: post.country,
-          thumbnailUrl: post.thumbnailUrl || post.mediaUrl,
-        } : null // If null, the user doesn't have access or it was deleted
-      };
-    }
-    return msg;
-  }));
-
-  return Response.json({ messages: hydratedMessages });
+  return Response.json({ messages: result.messages });
 }
 
 export async function POST(request: Request, props: { params: Promise<{ id: string }> }) {

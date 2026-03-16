@@ -52,7 +52,11 @@ export function canReturnToLocationPreview(
   return state.kind === "post" && state.returnMarkerId !== null;
 }
 
-export function backFromPostPreview(state: Extract<MapPreviewState, { kind: "post" }>): MapPreviewState {
+export function backFromPostPreview(state: MapPreviewState): MapPreviewState {
+  if (state.kind !== "post") {
+    return state;
+  }
+
   if (state.returnMarkerId) {
     return openLocationPreview(state.returnMarkerId);
   }

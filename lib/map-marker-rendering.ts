@@ -23,6 +23,17 @@ type MarkerRenderSpec = {
   shadowTone: ShadowTone;
 };
 
+const MARKER_CACHE_LIMIT = 2_500;
+const markerHtmlCache = new Map<string, string>();
+const markerSpecCache = new Map<string, MarkerRenderSpec>();
+const markerPriorityCache = new Map<string, number>();
+
+function pruneMarkerCache(cache: Map<string, unknown>) {
+  if (cache.size > MARKER_CACHE_LIMIT) {
+    cache.clear();
+  }
+}
+
 function escapeHtml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -162,7 +173,19 @@ function getCountSizeExtra(count: number) {
   return 0;
 }
 
-function getPinRenderSpec(marker: MapMarker, selected: boolean): MarkerRenderSpec {
+function getMarkerVisualCacheKey(marker: MapMarker) {
+  if (marker.type === "cityCluster" || marker.type === "placeCluster") {
+    return `${marker.type}:${marker.id}:${marker.postCount}`;
+  }
+
+  if (marker.type === "profileBubble") {
+    return `${marker.type}:${marker.id}:${marker.post.user.avatarUrl ?? ""}:${marker.post.user.name}`;
+  }
+
+  return `${marker.type}:${marker.id}`;
+}
+
+function createPinRenderSpec(marker: MapMarker, selected: boolean): MarkerRenderSpec {
   const cityCluster = marker.type === "cityCluster";
   const placeCluster = marker.type === "placeCluster";
   const profileMarker = marker.type === "profileBubble";
@@ -210,6 +233,20 @@ function getPinRenderSpec(marker: MapMarker, selected: boolean): MarkerRenderSpe
           : "#185538",
     shadowTone: placeCluster ? "blue" : selected && !cityCluster ? "accent" : "green"
   };
+}
+
+function getPinRenderSpec(marker: MapMarker, selected: boolean): MarkerRenderSpec {
+  const cacheKey = `${getMarkerVisualCacheKey(marker)}:${selected ? 1 : 0}`;
+  const cached = markerSpecCache.get(cacheKey);
+
+  if (cached) {
+    return cached;
+  }
+
+  const spec = createPinRenderSpec(marker, selected);
+  markerSpecCache.set(cacheKey, spec);
+  pruneMarkerCache(markerSpecCache);
+  return spec;
 }
 
 function renderCountContent(count: number, spec: MarkerRenderSpec) {
@@ -273,7 +310,17 @@ function renderPinMarker(marker: MapMarker, selected: boolean, mapMode: MapVisua
 }
 
 export function getMarkerHtml(marker: MapMarker, isSelected: boolean, mapMode: MapVisualMode) {
-  return renderPinMarker(marker, isSelected, mapMode);
+  const cacheKey = `${getMarkerVisualCacheKey(marker)}:${isSelected ? 1 : 0}:${mapMode}`;
+  const cached = markerHtmlCache.get(cacheKey);
+
+  if (cached) {
+    return cached;
+  }
+
+  const html = renderPinMarker(marker, isSelected, mapMode);
+  markerHtmlCache.set(cacheKey, html);
+  pruneMarkerCache(markerHtmlCache);
+  return html;
 }
 
 export function getMarkerVisualSize(marker: MapMarker, isSelected = false) {
@@ -286,12 +333,22 @@ export function getMarkerVisualSize(marker: MapMarker, isSelected = false) {
 }
 
 export function getMarkerRenderPriority(marker: MapMarker, isSelected = false) {
+  const cacheKey = `${getMarkerVisualCacheKey(marker)}:${isSelected ? 1 : 0}`;
+  const cached = markerPriorityCache.get(cacheKey);
+
+  if (cached !== undefined) {
+    return cached;
+  }
+
   const memoryCount = getRepresentedMemoryCount(marker);
   const visualSize = getMarkerVisualSize(marker, isSelected);
   const typePriority = getMarkerTypePriority(marker);
   const basePriority = memoryCount * 1000 + visualSize.height * 10 + typePriority;
 
-  return isSelected ? basePriority + 1_000_000 : basePriority;
+  const priority = isSelected ? basePriority + 1_000_000 : basePriority;
+  markerPriorityCache.set(cacheKey, priority);
+  pruneMarkerCache(markerPriorityCache);
+  return priority;
 }
 
 export function sortMarkersForRender(markers: MapMarker[], selectedMarkerId?: string | null) {

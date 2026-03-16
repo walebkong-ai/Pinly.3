@@ -10,56 +10,26 @@ import { Button } from "@/components/ui/button";
 import { LocationCountryText } from "@/components/ui/country-flag";
 import { Input } from "@/components/ui/input";
 import { ProfileLink } from "@/components/profile/profile-link";
+import type { MessageConversationDetails, MessageConversationMessage } from "@/lib/data";
 import { MESSAGES_UPDATED_EVENT } from "@/lib/notification-events";
 import { cn } from "@/lib/utils";
 
-type GroupDetails = {
-  id: string;
-  name: string;
-  isDirect?: boolean;
-  directUser?: {
-    id: string;
-    name: string;
-    username: string;
-    avatarUrl: string | null;
-  } | null;
-  members: Array<{
-    user: {
-      id: string;
-      name: string;
-      username: string;
-      avatarUrl: string | null;
-    };
-    role: string;
-    joinedAt: string;
-  }>;
-};
-
-type Message = {
-  id: string;
-  content: string;
-  createdAt: string;
-  user: {
-    id: string;
-    name: string;
-    username: string;
-    avatarUrl: string | null;
-  };
-  sharedPost?: {
-    id: string;
-    caption: string;
-    placeName: string;
-    city: string;
-    country: string;
-    thumbnailUrl: string;
-  } | null;
-};
-
-export function GroupDetail({ groupId, viewerId }: { groupId: string; viewerId: string }) {
-  const [group, setGroup] = useState<GroupDetails | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+export function GroupDetail({
+  groupId,
+  viewerId,
+  initialGroup,
+  initialMessages
+}: {
+  groupId: string;
+  viewerId: string;
+  initialGroup?: MessageConversationDetails | null;
+  initialMessages?: MessageConversationMessage[];
+}) {
+  const hasInitialData = initialGroup !== undefined && initialMessages !== undefined;
+  const [group, setGroup] = useState<MessageConversationDetails | null>(initialGroup ?? null);
+  const [messages, setMessages] = useState<MessageConversationMessage[]>(initialMessages ?? []);
   const [content, setContent] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!hasInitialData);
   const [sending, setSending] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [friends, setFriends] = useState<Array<{ id: string; name: string; username: string; avatarUrl: string | null }>>([]);
@@ -74,6 +44,14 @@ export function GroupDetail({ groupId, viewerId }: { groupId: string; viewerId: 
   }
 
   useEffect(() => {
+    if (hasInitialData) {
+      setGroup(initialGroup ?? null);
+      setMessages(initialMessages ?? []);
+      setLoading(false);
+      scrollToBottom("auto");
+      return;
+    }
+
     async function fetchAll() {
       try {
         const [groupRes, msgRes] = await Promise.all([
@@ -86,20 +64,25 @@ export function GroupDetail({ groupId, viewerId }: { groupId: string; viewerId: 
           const msgData = await msgRes.json();
           setGroup(groupData.group);
           setMessages(msgData.messages);
-          scrollToBottom();
-          emitMessagesUpdated();
+          scrollToBottom("auto");
         }
       } finally {
         setLoading(false);
       }
     }
     void fetchAll();
-  }, [groupId]);
+  }, [groupId, hasInitialData, initialGroup, initialMessages]);
 
-  const scrollToBottom = () => {
-    setTimeout(() => {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
+  useEffect(() => {
+    if (!loading && group) {
+      emitMessagesUpdated();
+    }
+  }, [group, loading]);
+
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+    requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({ behavior, block: "end" });
+    });
   };
 
   const openAddModal = async () => {

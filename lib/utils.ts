@@ -5,12 +5,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const visitDateFormatter = new Intl.DateTimeFormat("en", {
+  month: "short",
+  day: "numeric",
+  year: "numeric"
+});
+
 export function formatVisitDate(value: string | Date) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric"
-  }).format(new Date(value));
+  return visitDateFormatter.format(new Date(value));
 }
 
 export function slugifyCity(city: string, country: string) {

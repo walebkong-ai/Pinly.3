@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { Marker, Popup, MapRef } from "react-map-gl/maplibre";
 import type { MapMarker, MapVisualMode, PlaceClusterMarker, PostSummary } from "@/types/app";
 import { MarkerPreview } from "@/components/map/marker-preview";
@@ -22,6 +22,41 @@ const defaultCenter = {
   pitch: 45,
   bearing: 0
 };
+
+const MapMarkerNode = memo(
+  function MapMarkerNode({
+    marker,
+    isSelected,
+    mapMode,
+    onSelect
+  }: {
+    marker: MapMarker;
+    isSelected: boolean;
+    mapMode: MapVisualMode;
+    onSelect: (marker: MapMarker, event: { originalEvent: MouseEvent }) => void;
+  }) {
+    return (
+      <Marker
+        longitude={marker.longitude}
+        latitude={marker.latitude}
+        anchor={getMarkerAnchor(marker)}
+        opacityWhenCovered="0"
+        subpixelPositioning
+        style={{ zIndex: getMarkerRenderPriority(marker, isSelected) }}
+        onClick={(event) => onSelect(marker, event)}
+      >
+        <div
+          dangerouslySetInnerHTML={{ __html: getMarkerHtml(marker, isSelected, mapMode) }}
+          className="cursor-pointer leading-none"
+        />
+      </Marker>
+    );
+  },
+  (prevProps, nextProps) =>
+    prevProps.marker === nextProps.marker &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.mapMode === nextProps.mapMode
+);
 
 export function MapCanvas({
   expandedPostId,
@@ -105,9 +140,14 @@ export function MapCanvas({
     popupMarkerId: popupInfo?.id ?? null,
     selectedLocationMarkerId
   });
-  const orderedMarkers = useMemo(
-    () => sortMarkersForRender(markers, selectedMarkerId),
-    [markers, selectedMarkerId]
+  const orderedMarkers = useMemo(() => sortMarkersForRender(markers), [markers]);
+  const selectedMarker = useMemo(
+    () => (selectedMarkerId ? orderedMarkers.find((marker) => marker.id === selectedMarkerId) ?? null : null),
+    [orderedMarkers, selectedMarkerId]
+  );
+  const unselectedMarkers = useMemo(
+    () => (selectedMarkerId ? orderedMarkers.filter((marker) => marker.id !== selectedMarkerId) : orderedMarkers),
+    [orderedMarkers, selectedMarkerId]
   );
 
   const handleExpandPost = useCallback(
@@ -118,7 +158,7 @@ export function MapCanvas({
     [onExpandPost]
   );
 
-  function zoomToMarker(marker: MapMarker) {
+  const zoomToMarker = useCallback((marker: MapMarker) => {
     if (!mapRef.current) return;
     const currentZoom = mapRef.current.getZoom();
     if (marker.type === "cityCluster") {
@@ -129,7 +169,39 @@ export function MapCanvas({
       mapRef.current.easeTo({ center: [marker.longitude, marker.latitude], zoom: Math.max(currentZoom + 2, 13), duration: 800 });
     }
     setPopupInfo(null);
-  }
+  }, []);
+
+  const handleMarkerSelect = useCallback(
+    (marker: MapMarker, event: { originalEvent: MouseEvent }) => {
+      event.originalEvent.stopPropagation();
+
+      if (marker.type === "placeCluster") {
+        setPopupInfo(null);
+        onOpenLocationCluster(marker);
+        return;
+      }
+
+      if (mapRef.current) {
+        const currentZoom = mapRef.current.getZoom();
+        let targetZoom = currentZoom;
+
+        if (marker.type === "cityCluster") {
+          targetZoom = Math.max(currentZoom + 2, 6);
+        } else {
+          targetZoom = Math.max(currentZoom + 1, 14);
+        }
+
+        mapRef.current.easeTo({
+          center: [marker.longitude, marker.latitude],
+          zoom: targetZoom,
+          duration: 800
+        });
+      }
+
+      setPopupInfo(marker);
+    },
+    [onOpenLocationCluster]
+  );
 
   return (
     <div
@@ -159,51 +231,24 @@ export function MapCanvas({
         maxPitch={85}
         projection="globe"
       >
-        {orderedMarkers.map((marker) => {
-          const isSelected = marker.id === selectedMarkerId;
-
-          return (
-            <Marker
-              key={marker.id}
-              longitude={marker.longitude}
-              latitude={marker.latitude}
-              anchor={getMarkerAnchor(marker)}
-              opacityWhenCovered="0"
-              subpixelPositioning
-              style={{ zIndex: getMarkerRenderPriority(marker, isSelected) }}
-              onClick={(e) => {
-                e.originalEvent.stopPropagation();
-
-                if (marker.type === "placeCluster") {
-                  setPopupInfo(null);
-                  onOpenLocationCluster(marker);
-                  return;
-                }
-
-                if (mapRef.current) {
-                  const currentZoom = mapRef.current.getZoom();
-                  let targetZoom = currentZoom;
-
-                  if (marker.type === "cityCluster") targetZoom = Math.max(currentZoom + 2, 6);
-                  else targetZoom = Math.max(currentZoom + 1, 14);
-
-                  mapRef.current.easeTo({
-                    center: [marker.longitude, marker.latitude],
-                    zoom: targetZoom,
-                    duration: 800
-                  });
-                }
-
-                setPopupInfo(marker);
-              }}
-            >
-              <div
-                dangerouslySetInnerHTML={{ __html: getMarkerHtml(marker, isSelected, mapMode) }}
-                className="cursor-pointer leading-none"
-              />
-            </Marker>
-          );
-        })}
+        {unselectedMarkers.map((marker) => (
+          <MapMarkerNode
+            key={marker.id}
+            marker={marker}
+            isSelected={false}
+            mapMode={mapMode}
+            onSelect={handleMarkerSelect}
+          />
+        ))}
+        {selectedMarker ? (
+          <MapMarkerNode
+            key={selectedMarker.id}
+            marker={selectedMarker}
+            isSelected
+            mapMode={mapMode}
+            onSelect={handleMarkerSelect}
+          />
+        ) : null}
 
         {popupInfo && (
           <Popup

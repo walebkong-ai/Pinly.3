@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, Clock3, LoaderCircle, Search, Send, Share2, UserPlus, Users } from "lucide-react";
 import { Drawer } from "vaul";
 import { toast } from "sonner";
@@ -24,6 +24,15 @@ type PersonOption = {
   avatarUrl: string | null;
   requestStatus: "friends" | "pending_sent" | "pending_received" | "none";
 };
+
+const SHARE_OPTIONS_CACHE_TTL_MS = 10_000;
+let shareOptionsCache:
+  | {
+      groups: GroupOption[];
+      friends: PersonOption[];
+      expiresAt: number;
+    }
+  | null = null;
 
 interface ShareSheetProps {
   postId: string;
@@ -49,6 +58,18 @@ export function ShareSheet({
   const [sendingGroups, setSendingGroups] = useState(false);
   const [sendingUserId, setSendingUserId] = useState<string | null>(null);
   const [requestingUserId, setRequestingUserId] = useState<string | null>(null);
+  const peopleSearchAbortRef = useRef<AbortController | null>(null);
+  const peopleSearchTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      peopleSearchAbortRef.current?.abort();
+
+      if (peopleSearchTimerRef.current !== null) {
+        window.clearTimeout(peopleSearchTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (open && groups.length === 0 && friends.length === 0) {
@@ -61,6 +82,12 @@ export function ShareSheet({
       setSearch("");
       setSelectedGroups(new Set());
       setSearchResults([]);
+      peopleSearchAbortRef.current?.abort();
+      if (peopleSearchTimerRef.current !== null) {
+        window.clearTimeout(peopleSearchTimerRef.current);
+        peopleSearchTimerRef.current = null;
+      }
+      setLoadingPeople(false);
       return;
     }
 
@@ -70,40 +97,64 @@ export function ShareSheet({
       const query = search.trim();
       if (query.length < 2) {
         setSearchResults([]);
+        setLoadingPeople(false);
         return;
       }
 
-      setLoadingPeople(true);
-
-      try {
-        const response = await fetch(`/api/friends/search?q=${encodeURIComponent(query)}`);
-        if (!response.ok) {
-          throw new Error("Could not search people.");
-        }
-
-        const data = await response.json();
-        if (!ignore) {
-          setSearchResults(data.users ?? []);
-        }
-      } catch {
-        if (!ignore) {
-          toast.error("Could not search people right now.");
-        }
-      } finally {
-        if (!ignore) {
-          setLoadingPeople(false);
-        }
+      peopleSearchAbortRef.current?.abort();
+      if (peopleSearchTimerRef.current !== null) {
+        window.clearTimeout(peopleSearchTimerRef.current);
       }
+
+      const controller = new AbortController();
+      peopleSearchAbortRef.current = controller;
+      setLoadingPeople(true);
+      peopleSearchTimerRef.current = window.setTimeout(async () => {
+        try {
+          const response = await fetch(`/api/friends/search?q=${encodeURIComponent(query)}`, {
+            signal: controller.signal
+          });
+          if (!response.ok) {
+            throw new Error("Could not search people.");
+          }
+
+          const data = await response.json();
+          if (!ignore && !controller.signal.aborted) {
+            setSearchResults(data.users ?? []);
+          }
+        } catch {
+          if (!ignore && !controller.signal.aborted) {
+            toast.error("Could not search people right now.");
+          }
+        } finally {
+          if (!ignore && !controller.signal.aborted) {
+            setLoadingPeople(false);
+          }
+        }
+      }, 220);
     }
 
     void loadPeopleSearch();
 
     return () => {
       ignore = true;
+      peopleSearchAbortRef.current?.abort();
+      if (peopleSearchTimerRef.current !== null) {
+        window.clearTimeout(peopleSearchTimerRef.current);
+        peopleSearchTimerRef.current = null;
+      }
     };
   }, [open, search]);
 
   async function loadInitialData() {
+    const now = Date.now();
+
+    if (shareOptionsCache && shareOptionsCache.expiresAt > now) {
+      setGroups(shareOptionsCache.groups);
+      setFriends(shareOptionsCache.friends);
+      return;
+    }
+
     setLoadingInitial(true);
     try {
       const [groupsResponse, friendsResponse] = await Promise.all([
@@ -120,21 +171,26 @@ export function ShareSheet({
         friendsResponse.json()
       ]);
 
-      setGroups(
-        (groupsData.groups ?? [])
-          .filter((group: any) => !group.isDirect)
-          .map((group: any) => ({
-            id: group.id,
-            name: group.name,
-            memberCount: group._count.members
-          }))
-      );
-      setFriends(
-        (friendsData.friends ?? []).map((friend: any) => ({
-          ...friend,
-          requestStatus: "friends" as const
-        }))
-      );
+      const nextGroups = (groupsData.groups ?? [])
+        .filter((group: any) => !group.isDirect)
+        .map((group: any) => ({
+          id: group.id,
+          name: group.name,
+          memberCount: group._count.members
+        }));
+      const nextFriends = (friendsData.friends ?? []).map((friend: any) => ({
+        ...friend,
+        requestStatus: "friends" as const
+      }));
+
+      shareOptionsCache = {
+        groups: nextGroups,
+        friends: nextFriends,
+        expiresAt: now + SHARE_OPTIONS_CACHE_TTL_MS
+      };
+
+      setGroups(nextGroups);
+      setFriends(nextFriends);
     } catch {
       toast.error("Failed to load share options.");
     } finally {

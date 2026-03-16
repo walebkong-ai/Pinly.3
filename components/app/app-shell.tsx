@@ -1,6 +1,6 @@
 "use client";
 
-import React, { type CSSProperties, useEffect, useState } from "react";
+import React, { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Bell, Map, Newspaper, Plus, Search, Settings, UserRound, UsersRound, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
@@ -20,6 +20,8 @@ type AppShellProps = {
     email?: string | null;
     avatarUrl?: string | null;
   };
+  initialUnreadGroupsCount?: number;
+  initialUnreadNotificationsCount?: number;
 };
 
 const primaryNavItems = [
@@ -43,10 +45,19 @@ export function isNavActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function AppShell({ children, user }: AppShellProps) {
+const UNREAD_COUNTS_REFRESH_INTERVAL_MS = 15_000;
+
+export function AppShell({
+  children,
+  user,
+  initialUnreadGroupsCount = 0,
+  initialUnreadNotificationsCount = 0
+}: AppShellProps) {
   const pathname = usePathname();
-  const [unreadGroupsCount, setUnreadGroupsCount] = useState(0);
-  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  const [unreadGroupsCount, setUnreadGroupsCount] = useState(initialUnreadGroupsCount);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(initialUnreadNotificationsCount);
+  const lastUnreadRefreshAtRef = useRef(0);
+  const pendingUnreadRefreshRef = useRef<Promise<void> | null>(null);
   const notificationsActive = isNavActive(pathname, "/notifications");
   const notificationButtonStyle: CSSProperties | undefined = notificationsActive
     ? {
@@ -57,56 +68,80 @@ export function AppShell({ children, user }: AppShellProps) {
     : undefined;
 
   useEffect(() => {
-    let ignore = false;
+    setUnreadGroupsCount(initialUnreadGroupsCount);
+    lastUnreadRefreshAtRef.current = Date.now();
+  }, [initialUnreadGroupsCount]);
 
-    async function loadUnreadCounts() {
+  useEffect(() => {
+    setUnreadNotificationsCount(initialUnreadNotificationsCount);
+    lastUnreadRefreshAtRef.current = Date.now();
+  }, [initialUnreadNotificationsCount]);
+
+  const refreshUnreadCounts = useCallback(async (force = false) => {
+    const now = Date.now();
+
+    if (!force && now - lastUnreadRefreshAtRef.current < UNREAD_COUNTS_REFRESH_INTERVAL_MS) {
+      return;
+    }
+
+    if (pendingUnreadRefreshRef.current) {
+      return pendingUnreadRefreshRef.current;
+    }
+
+    const request = (async () => {
       try {
         const [groupsResponse, notificationsResponse] = await Promise.all([
-          fetch("/api/groups/unread"),
-          fetch("/api/notifications/unread")
+          fetch("/api/groups/unread", { cache: "no-store" }),
+          fetch("/api/notifications/unread", { cache: "no-store" })
         ]);
 
         if (groupsResponse.ok) {
           const data = await groupsResponse.json();
-          if (!ignore) {
-            setUnreadGroupsCount(data.unreadCount || 0);
-          }
+          setUnreadGroupsCount(data.unreadCount || 0);
         }
 
         if (notificationsResponse.ok) {
           const data = await notificationsResponse.json();
-          if (!ignore) {
-            setUnreadNotificationsCount(data.unreadCount || 0);
-          }
+          setUnreadNotificationsCount(data.unreadCount || 0);
         }
+
+        lastUnreadRefreshAtRef.current = Date.now();
       } catch {
         // ignore
+      } finally {
+        pendingUnreadRefreshRef.current = null;
       }
-    }
+    })();
 
+    pendingUnreadRefreshRef.current = request;
+    return request;
+  }, []);
+
+  useEffect(() => {
     const handleUnreadDataUpdated = () => {
-      void loadUnreadCounts();
+      void refreshUnreadCounts(true);
+    };
+    const handleWindowFocus = () => {
+      void refreshUnreadCounts();
     };
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        void loadUnreadCounts();
+        void refreshUnreadCounts();
       }
     };
 
-    void loadUnreadCounts();
     window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, handleUnreadDataUpdated);
     window.addEventListener(MESSAGES_UPDATED_EVENT, handleUnreadDataUpdated);
-    window.addEventListener("focus", handleUnreadDataUpdated);
+    window.addEventListener("focus", handleWindowFocus);
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      ignore = true;
       window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, handleUnreadDataUpdated);
       window.removeEventListener(MESSAGES_UPDATED_EVENT, handleUnreadDataUpdated);
-      window.removeEventListener("focus", handleUnreadDataUpdated);
+      window.removeEventListener("focus", handleWindowFocus);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, []);
+  }, [refreshUnreadCounts]);
 
   return (
     <div className="min-h-screen px-2 py-2 md:px-6 md:py-4">

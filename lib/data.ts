@@ -10,7 +10,16 @@ import { isPrismaSchemaNotReadyError } from "@/lib/prisma-errors";
 import { getSearchTerms, rankBySearch } from "@/lib/search";
 import { buildWantToGoPlaceKey, type WantToGoLocation } from "@/lib/want-to-go";
 import { notificationInclude } from "@/lib/notifications";
-import type { CollectionChip, CollectionSummary, LayerMode, MapCategory, NotificationSummary, TimeFilter, WantToGoPlaceSummary } from "@/types/app";
+import type {
+  CollectionChip,
+  CollectionSummary,
+  LayerMode,
+  MapCategory,
+  NotificationSummary,
+  PostSummary,
+  TimeFilter,
+  WantToGoPlaceSummary
+} from "@/types/app";
 
 export const postSummaryInclude = Prisma.validator<Prisma.PostInclude>()({
   user: {
@@ -42,6 +51,34 @@ export const postSummaryInclude = Prisma.validator<Prisma.PostInclude>()({
 
 type IncludedPost = Prisma.PostGetPayload<{
   include: typeof postSummaryInclude;
+}>;
+
+const mapPostSelect = Prisma.validator<Prisma.PostSelect>()({
+  id: true,
+  userId: true,
+  mediaType: true,
+  mediaUrl: true,
+  thumbnailUrl: true,
+  caption: true,
+  placeName: true,
+  city: true,
+  country: true,
+  latitude: true,
+  longitude: true,
+  visitedAt: true,
+  createdAt: true,
+  user: {
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      avatarUrl: true
+    }
+  }
+});
+
+type MapQueryPost = Prisma.PostGetPayload<{
+  select: typeof mapPostSelect;
 }>;
 
 const collectionSummaryInclude = Prisma.validator<Prisma.PostCollectionInclude>()({
@@ -87,6 +124,160 @@ type IncludedCollection = Prisma.PostCollectionGetPayload<{
 type IncludedNotification = Prisma.NotificationGetPayload<{
   include: typeof notificationInclude;
 }>;
+
+const messageGroupSummaryInclude = Prisma.validator<Prisma.GroupInclude>()({
+  members: {
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          avatarUrl: true
+        }
+      }
+    }
+  },
+  _count: {
+    select: {
+      members: true,
+      messages: true
+    }
+  },
+  messages: {
+    orderBy: { createdAt: "desc" },
+    take: 1,
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true
+        }
+      }
+    }
+  }
+});
+
+type IncludedMessageGroup = Prisma.GroupGetPayload<{
+  include: typeof messageGroupSummaryInclude;
+}>;
+
+const messageConversationGroupInclude = Prisma.validator<Prisma.GroupInclude>()({
+  members: {
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          avatarUrl: true
+        }
+      }
+    }
+  }
+});
+
+type IncludedConversationGroup = Prisma.GroupGetPayload<{
+  include: typeof messageConversationGroupInclude;
+}>;
+
+const messageConversationMessageInclude = Prisma.validator<Prisma.GroupMessageInclude>()({
+  user: {
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      avatarUrl: true
+    }
+  }
+});
+
+type IncludedConversationMessage = Prisma.GroupMessageGetPayload<{
+  include: typeof messageConversationMessageInclude;
+}>;
+
+export type MessageGroupSummary = {
+  id: string;
+  name: string;
+  isDirect?: boolean;
+  updatedAt: string | Date;
+  members: Array<{
+    user: {
+      id: string;
+      name: string;
+      username: string;
+      avatarUrl: string | null;
+    };
+  }>;
+  directUser?: {
+    id: string;
+    name: string;
+    username: string;
+    avatarUrl: string | null;
+  } | null;
+  lastMessage?: {
+    id: string;
+    createdAt: string | Date;
+    senderName: string;
+    content: string;
+  } | null;
+  hasUnread?: boolean;
+  _count: {
+    members: number;
+    messages: number;
+  };
+};
+
+export type MessageConversationDetails = {
+  id: string;
+  name: string;
+  isDirect?: boolean;
+  directUser?: {
+    id: string;
+    name: string;
+    username: string;
+    avatarUrl: string | null;
+  } | null;
+  members: Array<{
+    user: {
+      id: string;
+      name: string;
+      username: string;
+      avatarUrl: string | null;
+    };
+    role: string;
+    joinedAt: string | Date;
+  }>;
+};
+
+export type MessageConversationMessage = {
+  id: string;
+  content: string;
+  createdAt: string | Date;
+  user: {
+    id: string;
+    name: string;
+    username: string;
+    avatarUrl: string | null;
+  };
+  sharedPost?: {
+    id: string;
+    caption: string;
+    placeName: string;
+    city: string;
+    country: string;
+    thumbnailUrl: string;
+  } | null;
+};
+
+export type MessageConversationResult =
+  | {
+      status: "ok";
+      group: MessageConversationDetails;
+      messages: MessageConversationMessage[];
+    }
+  | { status: "not_found" }
+  | { status: "forbidden" };
 
 type ViewerPostState = {
   savedPostIds: Set<string>;
@@ -224,6 +415,126 @@ async function attachViewerPostState(viewerId: string, posts: IncludedPost[]) {
 
 function normalizePostSummaries(posts: IncludedPost[]) {
   return posts.map((post) => normalizeIncludedPost(post));
+}
+
+function normalizeMapQueryPost(post: MapQueryPost): PostSummary {
+  return post;
+}
+
+function getSharedPostIdFromMessage(content: string) {
+  return content.startsWith("[SHARED_POST]:") ? content.replace("[SHARED_POST]:", "") : null;
+}
+
+async function getVisiblePostsByIds(viewerId: string, postIds: string[]) {
+  if (postIds.length === 0) {
+    return new Map<
+      string,
+      {
+        id: string;
+        caption: string;
+        placeName: string;
+        city: string;
+        country: string;
+        thumbnailUrl: string;
+      }
+    >();
+  }
+
+  const visibleUserIds = await getVisibleUserIds(viewerId);
+  const friendIds = visibleUserIds.filter((id) => id !== viewerId);
+  const posts = await prisma.post.findMany({
+    where: {
+      id: { in: postIds },
+      OR: [
+        {
+          userId: viewerId
+        },
+        {
+          userId: { in: friendIds },
+          isArchived: false
+        }
+      ]
+    },
+    select: {
+      id: true,
+      caption: true,
+      placeName: true,
+      city: true,
+      country: true,
+      thumbnailUrl: true,
+      mediaUrl: true
+    }
+  });
+
+  return new Map(
+    posts.map((post) => [
+      post.id,
+      {
+        id: post.id,
+        caption: post.caption,
+        placeName: post.placeName,
+        city: post.city,
+        country: post.country,
+        thumbnailUrl: post.thumbnailUrl ?? post.mediaUrl
+      }
+    ])
+  );
+}
+
+function normalizeMessageGroupSummary(group: IncludedMessageGroup, userId: string): MessageGroupSummary {
+  const directUser = group.isDirect ? group.members.find((member) => member.user.id !== userId)?.user ?? null : null;
+  const viewerMembership = group.members.find((member) => member.user.id === userId) ?? null;
+  const latestMessage = group.messages[0] ?? null;
+
+  return {
+    ...group,
+    directUser,
+    hasUnread:
+      Boolean(
+        latestMessage &&
+          viewerMembership &&
+          new Date(latestMessage.createdAt).getTime() > new Date(viewerMembership.lastReadAt).getTime() &&
+          latestMessage.user.id !== userId
+      ),
+    lastMessage: latestMessage
+      ? {
+          id: latestMessage.id,
+          createdAt: latestMessage.createdAt,
+          senderName: latestMessage.user.id === userId ? "You" : latestMessage.user.name,
+          content: getSharedPostIdFromMessage(latestMessage.content) ? "Shared a post" : latestMessage.content
+        }
+      : null
+  };
+}
+
+function normalizeConversationGroup(group: IncludedConversationGroup, userId: string): MessageConversationDetails {
+  return {
+    ...group,
+    directUser: group.isDirect ? group.members.find((member) => member.user.id !== userId)?.user ?? null : null
+  };
+}
+
+async function hydrateConversationMessages(
+  viewerId: string,
+  messages: IncludedConversationMessage[]
+): Promise<MessageConversationMessage[]> {
+  const sharedPostIds = Array.from(
+    new Set(messages.map((message) => getSharedPostIdFromMessage(message.content)).filter(Boolean))
+  ) as string[];
+  const sharedPostsById = await getVisiblePostsByIds(viewerId, sharedPostIds);
+
+  return messages.map((message) => {
+    const sharedPostId = getSharedPostIdFromMessage(message.content);
+
+    if (!sharedPostId) {
+      return message;
+    }
+
+    return {
+      ...message,
+      sharedPost: sharedPostsById.get(sharedPostId) ?? null
+    };
+  });
 }
 
 async function getViewerFriendships(viewerId: string) {
@@ -368,15 +679,16 @@ export async function getMapData({
     where: {
       AND: whereClauses
     },
-    include: postSummaryInclude,
+    select: mapPostSelect,
     orderBy: [{ visitedAt: "desc" }],
     take: 500
   });
+  const normalizedPosts = posts.map(normalizeMapQueryPost);
 
   const rankedPosts =
     searchTerms.length > 0
       ? rankBySearch(
-          normalizePostSummaries(posts),
+          normalizedPosts,
           query ?? "",
           (post) => [
             { value: post.placeName, weight: 4.5 },
@@ -388,7 +700,7 @@ export async function getMapData({
           ],
           (post) => new Date(post.visitedAt).getTime()
         )
-      : normalizePostSummaries(posts);
+      : normalizedPosts;
 
   const filteredPosts = filterPostsByCategories(rankedPosts, categories);
 
@@ -729,6 +1041,122 @@ export async function getWantToGoPlaces(userId: string, limit = 64): Promise<Wan
 
     throw error;
   }
+}
+
+export async function getUnreadNotificationCount(userId: string) {
+  try {
+    return await prisma.notification.count({
+      where: {
+        userId,
+        readAt: null
+      }
+    });
+  } catch (error) {
+    if (isPrismaSchemaNotReadyError(error)) {
+      return 0;
+    }
+
+    throw error;
+  }
+}
+
+export async function getUnreadGroupMessageCount(userId: string) {
+  try {
+    const memberships = await prisma.groupMember.findMany({
+      where: { userId },
+      select: { groupId: true, lastReadAt: true }
+    });
+
+    if (memberships.length === 0) {
+      return 0;
+    }
+
+    const unreadCounts = await Promise.all(
+      memberships.map((member) =>
+        prisma.groupMessage.count({
+          where: {
+            groupId: member.groupId,
+            userId: {
+              not: userId
+            },
+            createdAt: {
+              gt: member.lastReadAt
+            }
+          }
+        })
+      )
+    );
+
+    return unreadCounts.reduce((total, count) => total + count, 0);
+  } catch (error) {
+    if (isPrismaSchemaNotReadyError(error)) {
+      return 0;
+    }
+
+    throw error;
+  }
+}
+
+export async function getMessageGroups(userId: string): Promise<MessageGroupSummary[]> {
+  const groups = await prisma.group.findMany({
+    where: {
+      members: {
+        some: {
+          userId
+        }
+      }
+    },
+    include: messageGroupSummaryInclude,
+    orderBy: { updatedAt: "desc" }
+  });
+
+  return groups.map((group) => normalizeMessageGroupSummary(group, userId));
+}
+
+export async function getGroupConversation(
+  userId: string,
+  groupId: string,
+  options?: { markRead?: boolean }
+): Promise<MessageConversationResult> {
+  const group = await prisma.group.findUnique({
+    where: { id: groupId },
+    include: messageConversationGroupInclude
+  });
+
+  if (!group) {
+    return { status: "not_found" };
+  }
+
+  const viewerMembership = group.members.find((member) => member.userId === userId);
+
+  if (!viewerMembership) {
+    return { status: "forbidden" };
+  }
+
+  const shouldMarkRead = options?.markRead !== false;
+  const messagesPromise = prisma.groupMessage.findMany({
+    where: { groupId },
+    include: messageConversationMessageInclude,
+    orderBy: { createdAt: "asc" }
+  });
+
+  await Promise.all([
+    messagesPromise,
+    shouldMarkRead
+      ? prisma.groupMember.update({
+          where: { groupId_userId: { groupId, userId } },
+          data: { lastReadAt: new Date() }
+        })
+      : Promise.resolve(null)
+  ]);
+
+  const messages = await messagesPromise;
+
+  return {
+    status: "ok",
+    group: normalizeConversationGroup(group, userId),
+    messages: await hydrateConversationMessages(userId, messages)
+  };
 }
 
 export async function getNotifications(

@@ -9,47 +9,22 @@ import { Avatar } from "@/components/ui/avatar";
 import { StartDirectMessageSheet } from "@/components/messages/start-direct-message-sheet";
 import { ProfileLink } from "@/components/profile/profile-link";
 import { Input } from "@/components/ui/input";
+import type { MessageGroupSummary } from "@/lib/data";
 import { rankBySearch } from "@/lib/search";
 
-type Group = {
-  id: string;
-  name: string;
-  isDirect?: boolean;
-  updatedAt: string;
-  members: Array<{
-    user: {
-      id: string;
-      name: string;
-      username: string;
-      avatarUrl: string | null;
-    };
-  }>;
-  directUser?: {
-    id: string;
-    name: string;
-    username: string;
-    avatarUrl: string | null;
-  } | null;
-  lastMessage?: {
-    id: string;
-    createdAt: string;
-    senderName: string;
-    content: string;
-  } | null;
-  hasUnread?: boolean;
-  _count: {
-    members: number;
-    messages: number;
-  };
-};
-
-export function GroupsList() {
+export function GroupsList({ initialGroups }: { initialGroups?: MessageGroupSummary[] }) {
   const router = useRouter();
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [groups, setGroups] = useState<MessageGroupSummary[]>(initialGroups ?? []);
+  const [loading, setLoading] = useState(initialGroups === undefined);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
+    if (initialGroups !== undefined) {
+      setGroups(initialGroups);
+      setLoading(false);
+      return;
+    }
+
     async function load() {
       try {
         const response = await fetch("/api/groups");
@@ -62,7 +37,7 @@ export function GroupsList() {
       }
     }
     void load();
-  }, []);
+  }, [initialGroups]);
 
   const visibleGroups = useMemo(() => {
     const trimmedQuery = query.trim();
