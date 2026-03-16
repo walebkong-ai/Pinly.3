@@ -100,6 +100,7 @@ model Post {
   visitedAt    DateTime
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+  isArchived   Boolean   @default(false)
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   collectionEntries PostCollectionItem[]
   visitedWith  PostVisitTag[]
@@ -110,6 +111,8 @@ model Post {
 
   @@index([userId, createdAt])
   @@index([userId, visitedAt])
+  @@index([userId, isArchived, createdAt])
+  @@index([userId, isArchived, visitedAt])
   @@index([city, country])
   @@index([city, country, visitedAt])
   @@index([latitude, longitude])

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bookmark, Folders, MapPinned, Settings2 } from "lucide-react";
+import { Archive, Bookmark, Folders, MapPinned, Settings2 } from "lucide-react";
 import type { CollectionSummary, PostSummary, ProfileTravelSummary } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
 import { PostCard } from "@/components/post/post-card";
@@ -82,7 +82,14 @@ export function ProfileView({
                   <Settings2 className="h-4 w-4" />
                   Settings
                 </Link>
-                <p className="text-xs text-[var(--foreground)]/55">Likes, comments, and profile photo.</p>
+                <Link
+                  href="/archived"
+                  className="inline-flex items-center gap-2 rounded-full border bg-[var(--surface-strong)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--muted)]"
+                >
+                  <Archive className="h-4 w-4" />
+                  Archived
+                </Link>
+                <p className="text-xs text-[var(--foreground)]/55">Likes, comments, archived posts, and profile photo.</p>
               </div>
               <InstallAppCard className="mt-4 max-w-xl" />
             </div>

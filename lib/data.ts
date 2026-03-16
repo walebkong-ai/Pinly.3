@@ -47,10 +47,21 @@ type IncludedPost = Prisma.PostGetPayload<{
 const collectionSummaryInclude = Prisma.validator<Prisma.PostCollectionInclude>()({
   _count: {
     select: {
-      posts: true
+      posts: {
+        where: {
+          post: {
+            isArchived: false
+          }
+        }
+      }
     }
   },
   posts: {
+    where: {
+      post: {
+        isArchived: false
+      }
+    },
     orderBy: { createdAt: "desc" },
     take: 1,
     include: {
@@ -253,6 +264,9 @@ export async function getMapData({
       userId: { in: scopedUserIds }
     },
     {
+      isArchived: false
+    },
+    {
       latitude: { lte: queryBounds.north, gte: queryBounds.south }
     }
   ];
@@ -346,6 +360,9 @@ export async function getCityData({
   const searchClauses: Prisma.PostWhereInput[] = [
     {
       userId: { in: visibleUserIds }
+    },
+    {
+      isArchived: false
     }
   ];
 
@@ -431,7 +448,15 @@ export async function getVisiblePostById(viewerId: string, postId: string) {
   const post = await prisma.post.findFirst({
     where: {
       id: postId,
-      userId: { in: visibleUserIds }
+      OR: [
+        {
+          userId: viewerId
+        },
+        {
+          userId: { in: visibleUserIds.filter((id) => id !== viewerId) },
+          isArchived: false
+        }
+      ]
     },
     include: postSummaryInclude
   });
@@ -467,7 +492,10 @@ export async function getProfileData(profileUsername: string, viewerId: string) 
   }
 
   const posts = await prisma.post.findMany({
-    where: { userId: user.id },
+    where: {
+      userId: user.id,
+      isArchived: false
+    },
     include: postSummaryInclude,
     orderBy: { visitedAt: "desc" }
   });
@@ -478,7 +506,10 @@ export async function getProfileData(profileUsername: string, viewerId: string) 
     viewerId === user.id
       ? postsWithSavedState
       : await prisma.post.findMany({
-          where: { userId: viewerId },
+          where: {
+            userId: viewerId,
+            isArchived: false
+          },
           orderBy: { visitedAt: "desc" },
           select: {
             id: true,
@@ -533,6 +564,7 @@ export async function getOwnedCollectionById(userId: string, collectionId: strin
     const posts = await prisma.post.findMany({
       where: {
         userId,
+        isArchived: false,
         collectionEntries: {
           some: {
             collectionId
@@ -673,7 +705,8 @@ export async function getRecentFeedPosts(viewerId: string, limit = 24) {
 
   const posts = await prisma.post.findMany({
     where: {
-      userId: { in: visibleUserIds }
+      userId: { in: visibleUserIds },
+      isArchived: false
     },
     include: postSummaryInclude,
     orderBy: { createdAt: "desc" },
@@ -691,7 +724,8 @@ export async function getSavedPosts(viewerId: string, limit = 48) {
       where: {
         userId: viewerId,
         post: {
-          userId: { in: visibleUserIds }
+          userId: { in: visibleUserIds },
+          isArchived: false
         }
       },
       include: {
@@ -715,4 +749,18 @@ export async function getSavedPosts(viewerId: string, limit = 48) {
   } catch {
     return [];
   }
+}
+
+export async function getOwnedArchivedPosts(userId: string, limit = 48) {
+  const posts = await prisma.post.findMany({
+    where: {
+      userId,
+      isArchived: true
+    },
+    include: postSummaryInclude,
+    orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+    take: limit
+  });
+
+  return attachViewerPostState(userId, posts);
 }

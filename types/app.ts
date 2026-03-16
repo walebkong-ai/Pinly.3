@@ -96,6 +96,7 @@ export type ProfileTravelSummary = {
 export type PostSummary = {
   id: string;
   userId: string;
+  isArchived?: boolean;
   mediaType: "IMAGE" | "VIDEO";
   mediaUrl: string;
   thumbnailUrl: string | null;

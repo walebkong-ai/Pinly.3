@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { CalendarDays, Crosshair, MapPin } from "lucide-react";
+import Link from "next/link";
+import { CalendarDays, Crosshair, MapPin, PencilLine } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { getOwnedCollectionsForPost, getVisiblePostById, getWantToGoPlaceByLocation } from "@/lib/data";
 import { prisma } from "@/lib/prisma";
@@ -88,7 +89,16 @@ export default async function PostDetailPage({ params }: Props) {
                 </div>
               </div>
               {isOwnPost && (
-                <DeletePostButton postId={post.id} redirectToMap />
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <Link
+                    href={`/posts//edit`}
+                    className="inline-flex h-9 items-center gap-2 rounded-2xl border bg-[var(--surface-soft)] px-3 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--foreground)]/5"
+                  >
+                    <PencilLine className="h-4 w-4" />
+                    Edit
+                  </Link>
+                  <DeletePostButton postId={post.id} redirectToMap />
+                </div>
               )}
             </div>
 
