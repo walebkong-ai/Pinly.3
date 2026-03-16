@@ -53,6 +53,17 @@ a {
   box-shadow: 0 18px 48px rgba(24, 85, 56, 0.08);
 }
 
+.pinly-map-canvas {
+  isolation: isolate;
+  z-index: 0;
+}
+
+.pinly-map-canvas .maplibregl-map {
+  position: relative;
+  isolation: isolate;
+  z-index: 0;
+}
+
 .pinly-map-canvas .maplibregl-ctrl-bottom-left,
 .pinly-map-canvas .maplibregl-ctrl-bottom-right {
   bottom: 5.25rem;

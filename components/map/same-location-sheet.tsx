@@ -66,7 +66,7 @@ export function SameLocationSheet({
   return (
     <div
       className={cn(
-        "pointer-events-none fixed inset-0 z-[995] flex items-end justify-center p-3 transition-all duration-400 ease-out will-change-[transform,opacity]",
+        "pointer-events-none fixed inset-0 z-[995] isolate flex items-end justify-center p-3 transition-all duration-400 ease-out will-change-[transform,opacity]",
         marker ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
       )}
     >
@@ -81,7 +81,7 @@ export function SameLocationSheet({
       ) : null}
 
       <div
-        className="pointer-events-auto relative z-[1] glass-panel w-full max-w-2xl rounded-[2rem] p-4 shadow-2xl shadow-black/20"
+        className="pointer-events-auto relative z-[1] isolate glass-panel w-full max-w-2xl rounded-[2rem] p-4 shadow-2xl shadow-black/20"
         onPointerDown={(event) => event.stopPropagation()}
         onPointerUp={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
@@ -144,7 +144,7 @@ export function SameLocationSheet({
                 return (
                   <div key={post.id} className="rounded-[1.5rem] border bg-[var(--surface-strong)] p-3">
                     <div className="grid gap-3 sm:grid-cols-[104px_1fr]">
-                      <div className="aspect-[4/3] overflow-hidden rounded-[1.25rem]">
+                      <div className="relative isolate aspect-[4/3] overflow-hidden rounded-[1.25rem]">
                         <MediaView
                           mediaType={post.mediaType}
                           mediaUrl={post.mediaUrl}

@@ -332,7 +332,7 @@ export function MapPageClient() {
   }, []);
 
   return (
-    <section className="relative min-h-[calc(100vh-7.5rem)] overflow-hidden rounded-[2.2rem] border bg-[var(--surface-soft)] shadow-2xl shadow-black/5">
+    <section className="relative isolate min-h-[calc(100vh-7.5rem)] overflow-hidden rounded-[2.2rem] border bg-[var(--surface-soft)] shadow-2xl shadow-black/5">
       <DynamicMapCanvas
         markers={mapData.markers}
         mapMode={activeMapMode}

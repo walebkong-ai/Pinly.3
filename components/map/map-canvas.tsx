@@ -121,7 +121,7 @@ export function MapCanvas({
   return (
     <div
       className={cn(
-        "pinly-map-canvas absolute inset-0 bg-[var(--background)]",
+        "pinly-map-canvas absolute inset-0 z-0 isolate bg-[var(--background)]",
         mapMode === "satellite" && "pinly-map-canvas--satellite"
       )}
     >

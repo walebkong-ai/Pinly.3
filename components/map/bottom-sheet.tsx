@@ -66,7 +66,7 @@ export function BottomSheet({
   return (
     <div
       className={cn(
-        "pointer-events-none fixed inset-0 z-[990] flex items-end justify-center p-3 transition-all duration-400 ease-out will-change-[transform,opacity]",
+        "pointer-events-none fixed inset-0 z-[990] isolate flex items-end justify-center p-3 transition-all duration-400 ease-out will-change-[transform,opacity]",
         post ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
       )}
     >
@@ -81,14 +81,14 @@ export function BottomSheet({
       ) : null}
 
       <div
-        className="pointer-events-auto relative z-[1] glass-panel w-full max-w-3xl rounded-[2rem] p-3 shadow-2xl shadow-black/20"
+        className="pointer-events-auto relative z-[1] isolate glass-panel w-full max-w-3xl rounded-[2rem] p-3 shadow-2xl shadow-black/20"
         onPointerDown={(event) => event.stopPropagation()}
         onPointerUp={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
       >
         {post && (
           <div className="grid gap-4 md:grid-cols-[0.9fr_1.1fr]">
-            <div className="aspect-[4/3] overflow-hidden rounded-[1.5rem]">
+            <div className="relative isolate aspect-[4/3] overflow-hidden rounded-[1.5rem]">
               <MediaView mediaType={post.mediaType} mediaUrl={post.mediaUrl} thumbnailUrl={post.thumbnailUrl} />
             </div>
             <div className="flex flex-col">
