@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { getMarkerAnchor, getMarkerHtml, getMarkerPopupOffset } from "@/lib/map-marker-rendering";
+import { getMarkerAnchor, getMarkerHtml, getMarkerPopupOffset, getMarkerVisualSize } from "@/lib/map-marker-rendering";
 import type { MapMarker, PostSummary } from "@/types/app";
 
 function makePost(overrides: Partial<PostSummary> = {}): PostSummary {
@@ -49,7 +49,7 @@ function makeBubbleMarker(): MapMarker {
   };
 }
 
-function makeCityClusterMarker(): MapMarker {
+function makeCityClusterMarker(postCount = 14): MapMarker {
   return {
     type: "cityCluster",
     id: "city-paris::france",
@@ -57,13 +57,13 @@ function makeCityClusterMarker(): MapMarker {
     longitude: 2.3522,
     city: "Paris",
     country: "France",
-    postCount: 14,
+    postCount,
     friendCount: 5,
     visitors: [makePost().user]
   };
 }
 
-function makePlaceClusterMarker(): MapMarker {
+function makePlaceClusterMarker(postCount = 7): MapMarker {
   return {
     type: "placeCluster",
     id: "place-cafe-example",
@@ -72,7 +72,7 @@ function makePlaceClusterMarker(): MapMarker {
     placeName: "Cafe Example",
     city: "Paris",
     country: "France",
-    postCount: 7,
+    postCount,
     visitors: [makePost().user],
     previewPost: {
       id: "post-1",
@@ -122,6 +122,17 @@ describe("map marker rendering", () => {
     expect(placeHtml).toContain('fill="#1691A3"');
   });
 
+  test("scales pin size up as represented memory count increases", () => {
+    const singlePinSize = getMarkerVisualSize(makePinMarker());
+    const mediumClusterSize = getMarkerVisualSize(makePlaceClusterMarker(5));
+    const largeClusterSize = getMarkerVisualSize(makeCityClusterMarker(14));
+
+    expect(mediumClusterSize.height).toBeGreaterThan(singlePinSize.height);
+    expect(mediumClusterSize.width).toBeGreaterThan(singlePinSize.width);
+    expect(largeClusterSize.height).toBeGreaterThan(mediumClusterSize.height);
+    expect(largeClusterSize.width).toBeGreaterThan(mediumClusterSize.width);
+  });
+
   test("keeps all marker stages bottom-anchored for a consistent pin tip", () => {
     expect(getMarkerAnchor(makePinMarker())).toBe("bottom");
     expect(getMarkerAnchor(makeBubbleMarker())).toBe("bottom");
@@ -133,6 +144,7 @@ describe("map marker rendering", () => {
     expect(getMarkerPopupOffset(makePinMarker())).toBeGreaterThanOrEqual(35);
     expect(getMarkerPopupOffset(makeBubbleMarker())).toBeGreaterThanOrEqual(38);
     expect(getMarkerPopupOffset(makeCityClusterMarker())).toBeGreaterThan(getMarkerPopupOffset(makePinMarker()));
+    expect(getMarkerPopupOffset(makePlaceClusterMarker(5))).toBeGreaterThan(getMarkerPopupOffset(makePinMarker()));
   });
 
   test("renders avatar markers inside the same pin shell", () => {
