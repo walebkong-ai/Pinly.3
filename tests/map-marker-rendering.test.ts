@@ -1,5 +1,12 @@
 import { describe, expect, test } from "vitest";
-import { getMarkerAnchor, getMarkerHtml, getMarkerPopupOffset, getMarkerVisualSize } from "@/lib/map-marker-rendering";
+import {
+  getMarkerAnchor,
+  getMarkerHtml,
+  getMarkerPopupOffset,
+  getMarkerRenderPriority,
+  getMarkerVisualSize,
+  sortMarkersForRender
+} from "@/lib/map-marker-rendering";
 import type { MapMarker, PostSummary } from "@/types/app";
 
 function makePost(overrides: Partial<PostSummary> = {}): PostSummary {
@@ -128,10 +135,36 @@ describe("map marker rendering", () => {
     const largeClusterSize = getMarkerVisualSize(makeCityClusterMarker(14));
 
     expect(singlePinSize).toEqual({ width: 32, height: 44 });
-    expect(mediumClusterSize.height - singlePinSize.height).toBeGreaterThanOrEqual(18);
-    expect(mediumClusterSize.width - singlePinSize.width).toBeGreaterThanOrEqual(12);
-    expect(largeClusterSize.height - mediumClusterSize.height).toBeGreaterThanOrEqual(14);
-    expect(largeClusterSize.width - mediumClusterSize.width).toBeGreaterThanOrEqual(10);
+    expect(mediumClusterSize.height - singlePinSize.height).toBeGreaterThanOrEqual(24);
+    expect(mediumClusterSize.width - singlePinSize.width).toBeGreaterThanOrEqual(17);
+    expect(largeClusterSize.height - mediumClusterSize.height).toBeGreaterThanOrEqual(20);
+    expect(largeClusterSize.width - mediumClusterSize.width).toBeGreaterThanOrEqual(14);
+  });
+
+  test("assigns higher render priority to bigger, higher-memory markers", () => {
+    const singlePinPriority = getMarkerRenderPriority(makePinMarker());
+    const mediumClusterPriority = getMarkerRenderPriority(makePlaceClusterMarker(5));
+    const largeClusterPriority = getMarkerRenderPriority(makeCityClusterMarker(14));
+
+    expect(mediumClusterPriority).toBeGreaterThan(singlePinPriority);
+    expect(largeClusterPriority).toBeGreaterThan(mediumClusterPriority);
+    expect(getMarkerRenderPriority(makePinMarker(), true)).toBeGreaterThan(largeClusterPriority);
+  });
+
+  test("sorts markers so high-memory pins render last and visually come forward", () => {
+    const singlePin = makePinMarker();
+    const mediumCluster = makePlaceClusterMarker(5);
+    const largeCluster = makeCityClusterMarker(14);
+
+    expect(sortMarkersForRender([largeCluster, singlePin, mediumCluster]).map((marker) => marker.id)).toEqual([
+      singlePin.id,
+      mediumCluster.id,
+      largeCluster.id
+    ]);
+
+    expect(sortMarkersForRender([largeCluster, singlePin, mediumCluster], mediumCluster.id).at(-1)?.id).toBe(
+      mediumCluster.id
+    );
   });
 
   test("keeps all marker stages bottom-anchored for a consistent pin tip", () => {

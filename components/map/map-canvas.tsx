@@ -1,10 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { Marker, Popup, MapRef } from "react-map-gl/maplibre";
 import type { MapMarker, MapVisualMode, PostSummary } from "@/types/app";
 import { MarkerPreview } from "@/components/map/marker-preview";
-import { getMarkerAnchor, getMarkerHtml, getMarkerPopupOffset } from "@/lib/map-marker-rendering";
+import {
+  getMarkerAnchor,
+  getMarkerHtml,
+  getMarkerPopupOffset,
+  getMarkerRenderPriority,
+  sortMarkersForRender
+} from "@/lib/map-marker-rendering";
 import type { MapStyleValue } from "@/lib/map-style";
 import { cn } from "@/lib/utils";
 
@@ -85,6 +91,12 @@ export function MapCanvas({
     reportViewport();
   }, [reportViewport]);
 
+  const selectedMarkerId = popupInfo?.id ?? markers.find((marker) => "post" in marker && marker.post.id === selectedPostId)?.id ?? null;
+  const orderedMarkers = useMemo(
+    () => sortMarkersForRender(markers, selectedMarkerId),
+    [markers, selectedMarkerId]
+  );
+
   function zoomToMarker(marker: MapMarker) {
     if (!mapRef.current) return;
     const currentZoom = mapRef.current.getZoom();
@@ -126,7 +138,7 @@ export function MapCanvas({
         maxPitch={85}
         projection="globe"
       >
-        {markers.map((marker) => {
+        {orderedMarkers.map((marker) => {
           const isSelected = marker.id === popupInfo?.id || ("post" in marker && marker.post.id === selectedPostId);
 
           return (
@@ -137,7 +149,7 @@ export function MapCanvas({
               anchor={getMarkerAnchor(marker)}
               opacityWhenCovered="0"
               subpixelPositioning
-              style={isSelected ? { zIndex: 3 } : undefined}
+              style={{ zIndex: getMarkerRenderPriority(marker, isSelected) }}
               onClick={(e) => {
                 e.originalEvent.stopPropagation();
 

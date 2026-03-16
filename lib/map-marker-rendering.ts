@@ -44,7 +44,23 @@ function scalePinWidth(height: number) {
   return Math.round((height / PIN_VIEWBOX_HEIGHT) * PIN_VIEWBOX_WIDTH);
 }
 
-function getRepresentedMemoryCount(marker: MapMarker) {
+function getMarkerTypePriority(marker: MapMarker) {
+  if (marker.type === "cityCluster") {
+    return 4;
+  }
+
+  if (marker.type === "placeCluster") {
+    return 3;
+  }
+
+  if (marker.type === "profileBubble") {
+    return 2;
+  }
+
+  return 1;
+}
+
+export function getRepresentedMemoryCount(marker: MapMarker) {
   if (marker.type === "cityCluster" || marker.type === "placeCluster") {
     return marker.postCount;
   }
@@ -54,19 +70,19 @@ function getRepresentedMemoryCount(marker: MapMarker) {
 
 function getMemoryScaleBoost(memoryCount: number) {
   if (memoryCount >= 11) {
-    return 28;
+    return 44;
   }
 
   if (memoryCount >= 7) {
-    return 22;
+    return 34;
   }
 
   if (memoryCount >= 4) {
-    return 15;
+    return 22;
   }
 
   if (memoryCount >= 2) {
-    return 7;
+    return 10;
   }
 
   return 0;
@@ -126,8 +142,8 @@ function getPinRenderSpec(marker: MapMarker, selected: boolean): MarkerRenderSpe
         ? 48 + memoryScaleBoost + (selected ? 4 : 0)
         : 44 + memoryScaleBoost + (selected ? 4 : 0);
   const contentSize = cityCluster || placeCluster || profileMarker
-    ? Math.round(height * 0.44)
-    : Math.round(height * 0.4);
+    ? Math.round(height * 0.46)
+    : Math.round(height * 0.41);
   const fill = cityCluster
     ? selected
       ? "#236A47"
@@ -148,7 +164,7 @@ function getPinRenderSpec(marker: MapMarker, selected: boolean): MarkerRenderSpe
     popupOffset: Math.round(height * 0.74),
     fill,
     stroke: selected ? "#FFF8F0" : "#FFF3E6",
-    strokeWidth: (selected ? 3 : 2.6) + Math.min(memoryScaleBoost, 28) * 0.025,
+    strokeWidth: (selected ? 3 : 2.6) + Math.min(memoryScaleBoost, 44) * 0.022,
     contentBackground: placeCluster && selected ? "#F2FDFF" : "#FFF8F0",
     contentBorder: placeCluster ? "rgba(8, 52, 61, 0.12)" : "rgba(24, 85, 56, 0.12)",
     contentColor: cityCluster
@@ -233,6 +249,29 @@ export function getMarkerVisualSize(marker: MapMarker, isSelected = false) {
     width: spec.width,
     height: spec.height
   };
+}
+
+export function getMarkerRenderPriority(marker: MapMarker, isSelected = false) {
+  const memoryCount = getRepresentedMemoryCount(marker);
+  const visualSize = getMarkerVisualSize(marker, isSelected);
+  const typePriority = getMarkerTypePriority(marker);
+  const basePriority = memoryCount * 1000 + visualSize.height * 10 + typePriority;
+
+  return isSelected ? basePriority + 1_000_000 : basePriority;
+}
+
+export function sortMarkersForRender(markers: MapMarker[], selectedMarkerId?: string | null) {
+  return [...markers].sort((left, right) => {
+    const priorityDifference =
+      getMarkerRenderPriority(left, left.id === selectedMarkerId) -
+      getMarkerRenderPriority(right, right.id === selectedMarkerId);
+
+    if (priorityDifference !== 0) {
+      return priorityDifference;
+    }
+
+    return left.id.localeCompare(right.id);
+  });
 }
 
 export function getMarkerAnchor(_marker: MapMarker): "bottom" {
