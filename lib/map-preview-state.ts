@@ -34,16 +34,8 @@ export function getExpandedPreviewPost(state: MapPreviewState) {
   return state.kind === "post" ? state.post : null;
 }
 
-export function getActiveLocationPreviewMarkerId(state: MapPreviewState) {
-  if (state.kind === "location") {
-    return state.markerId;
-  }
-
-  if (state.kind === "post") {
-    return state.returnMarkerId;
-  }
-
-  return null;
+export function getSelectedLocationPreviewMarkerId(state: MapPreviewState) {
+  return state.kind === "location" ? state.markerId : null;
 }
 
 export function canReturnToLocationPreview(

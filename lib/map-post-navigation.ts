@@ -21,6 +21,23 @@ export type MapFocusedPostTarget = {
   key: string;
 };
 
+export function resolveMapFocusTarget({
+  pendingTarget,
+  queryTarget
+}: {
+  pendingTarget: MapFocusedPostTarget | null;
+  queryTarget: MapFocusedPostTarget | null;
+}) {
+  return pendingTarget ?? queryTarget;
+}
+
+export function clearConsumedMapFocusTarget(
+  currentTarget: MapFocusedPostTarget | null,
+  consumedKey: string
+) {
+  return currentTarget?.key === consumedKey ? null : currentTarget;
+}
+
 function clampLatitude(latitude: number) {
   return Math.max(-MAX_MAP_LATITUDE, Math.min(MAX_MAP_LATITUDE, latitude));
 }

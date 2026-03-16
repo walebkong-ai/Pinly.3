@@ -23,8 +23,8 @@ import {
   canReturnToLocationPreview,
   closeMapPreview,
   findPlaceClusterMarker,
-  getActiveLocationPreviewMarkerId,
   getExpandedPreviewPost,
+  getSelectedLocationPreviewMarkerId,
   hasOpenMapPreview,
   IDLE_MAP_PREVIEW_STATE,
   openFocusedPostPreview,
@@ -35,8 +35,10 @@ import {
 } from "@/lib/map-preview-state";
 import {
   buildMapPathWithoutFocusedPost,
+  clearConsumedMapFocusTarget,
   createFocusedPostViewport,
-  parseMapFocusedPostTarget
+  parseMapFocusedPostTarget,
+  resolveMapFocusTarget
 } from "@/lib/map-post-navigation";
 import { MAP_MODE_STORAGE_KEY, getMapStyle, isSatelliteModeAvailable, parseStoredMapMode } from "@/lib/map-style";
 import { canonicalizeViewportForDataQuery, createViewportFingerprint, FULL_WORLD_BOUNDS, type MapViewport } from "@/lib/map-viewport";
@@ -86,6 +88,7 @@ export function MapPageClient() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [previewState, setPreviewState] = useState<MapPreviewState>(IDLE_MAP_PREVIEW_STATE);
   const [pendingFocusedPost, setPendingFocusedPost] = useState(focusedPostFromQuery);
+  const [pendingMapFocusTarget, setPendingMapFocusTarget] = useState(focusedPostFromQuery);
   const [viewport, setViewport] = useState<MapViewport>(() =>
     focusedPostFromQuery
       ? createFocusedPostViewport(focusedPostFromQuery)
@@ -100,7 +103,11 @@ export function MapPageClient() {
   const satelliteAvailability = satelliteFailed ? "failed" : "available";
   const activeMapMode = satelliteModeAvailable && !satelliteFailed ? mapMode : "default";
   const expandedPost = getExpandedPreviewPost(previewState);
-  const activeLocationMarkerId = getActiveLocationPreviewMarkerId(previewState);
+  const selectedLocationMarkerId = getSelectedLocationPreviewMarkerId(previewState);
+  const mapFocusTarget = resolveMapFocusTarget({
+    pendingTarget: pendingMapFocusTarget,
+    queryTarget: focusedPostFromQuery
+  });
   const selectedLocationCluster = useMemo(
     () => (previewState.kind === "location" ? findPlaceClusterMarker(mapData.markers, previewState.markerId) : null),
     [mapData.markers, previewState]
@@ -136,6 +143,7 @@ export function MapPageClient() {
     setFilterOpen(false);
     setPreviewState(closeMapPreview());
     setPendingFocusedPost(focusedPostFromQuery);
+    setPendingMapFocusTarget(focusedPostFromQuery);
     setViewport(createFocusedPostViewport(focusedPostFromQuery));
   }, [focusedPostFromQuery]);
 
@@ -295,6 +303,7 @@ export function MapPageClient() {
 
     if (!loadingMap) {
       setPendingFocusedPost(null);
+      setPendingMapFocusTarget((currentTarget) => clearConsumedMapFocusTarget(currentTarget, pendingFocusedPost.key));
 
       if (focusedPostFromQuery?.key === pendingFocusedPost.key) {
         router.replace(buildMapPathWithoutFocusedPost(pathname, searchParams), { scroll: false });
@@ -398,8 +407,12 @@ export function MapPageClient() {
 
   const handleSelectLocationPost = useCallback((post: PostSummary) => {
     setFilterOpen(false);
-    setPreviewState(openPostPreview(post, activeLocationMarkerId));
-  }, [activeLocationMarkerId]);
+    setPreviewState(openPostPreview(post, selectedLocationMarkerId));
+  }, [selectedLocationMarkerId]);
+
+  const handleFocusedCoordinatesApplied = useCallback((focusKey: string) => {
+    setPendingMapFocusTarget((currentTarget) => clearConsumedMapFocusTarget(currentTarget, focusKey));
+  }, []);
 
   const handleCloseLocationCluster = useCallback(() => {
     setPreviewState(closeMapPreview());
@@ -420,12 +433,12 @@ export function MapPageClient() {
         mapMode={activeMapMode}
         mapStyle={mapStyle}
         expandedPostId={expandedPost?.id ?? null}
-        selectedLocationMarkerId={activeLocationMarkerId}
+        selectedLocationMarkerId={selectedLocationMarkerId}
         initialViewState={
-          focusedPostFromQuery
+          mapFocusTarget
             ? {
-                longitude: focusedPostFromQuery.longitude,
-                latitude: focusedPostFromQuery.latitude,
+                longitude: mapFocusTarget.longitude,
+                latitude: mapFocusTarget.latitude,
                 zoom: 13,
                 pitch: 45,
                 bearing: 0
@@ -433,15 +446,16 @@ export function MapPageClient() {
             : undefined
         }
         focusedCoordinates={
-          pendingFocusedPost
+          mapFocusTarget
             ? {
-                latitude: pendingFocusedPost.latitude,
-                longitude: pendingFocusedPost.longitude,
-                key: pendingFocusedPost.key
+                latitude: mapFocusTarget.latitude,
+                longitude: mapFocusTarget.longitude,
+                key: mapFocusTarget.key
               }
             : null
         }
         onExpandPost={handleExpandPost}
+        onFocusedCoordinatesApplied={handleFocusedCoordinatesApplied}
         onOpenLocationCluster={handleOpenLocationCluster}
         onMapError={handleMapError}
         onViewportChange={onViewportChange}

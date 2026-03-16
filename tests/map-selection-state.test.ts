@@ -12,7 +12,6 @@ describe("map selection state", () => {
 
     expect(
       getSelectedMapMarkerId({
-        expandedPostMarkerId: null,
         popupMarkerId: null,
         selectedLocationMarkerId: null
       })
@@ -22,7 +21,6 @@ describe("map selection state", () => {
   test("prioritizes the same-location cluster while that sheet is open", () => {
     expect(
       getSelectedMapMarkerId({
-        expandedPostMarkerId: "bubble-post-42",
         popupMarkerId: "pin-post-42",
         selectedLocationMarkerId: "place-cluster-7"
       })
@@ -32,20 +30,9 @@ describe("map selection state", () => {
   test("keeps the tapped preview pin selected only while the popup itself is open", () => {
     expect(
       getSelectedMapMarkerId({
-        expandedPostMarkerId: null,
         popupMarkerId: "pin-post-42",
         selectedLocationMarkerId: null
       })
     ).toBe("pin-post-42");
-  });
-
-  test("keeps the expanded standalone post marker selected while the bottom sheet is open", () => {
-    expect(
-      getSelectedMapMarkerId({
-        expandedPostMarkerId: "bubble-post-42",
-        popupMarkerId: null,
-        selectedLocationMarkerId: null
-      })
-    ).toBe("bubble-post-42");
   });
 });

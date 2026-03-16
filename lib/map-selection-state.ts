@@ -1,13 +1,11 @@
 export function getSelectedMapMarkerId({
-  expandedPostMarkerId,
   popupMarkerId,
   selectedLocationMarkerId
 }: {
-  expandedPostMarkerId: string | null;
   popupMarkerId: string | null;
   selectedLocationMarkerId: string | null;
 }) {
-  return selectedLocationMarkerId ?? expandedPostMarkerId ?? popupMarkerId ?? null;
+  return selectedLocationMarkerId ?? popupMarkerId ?? null;
 }
 
 export function shouldDismissMapPopup({

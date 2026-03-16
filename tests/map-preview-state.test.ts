@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   backFromPostPreview,
   closeMapPreview,
+  getSelectedLocationPreviewMarkerId,
   openFocusedPostPreview,
   openLocationPreview,
   openPostPreview,
@@ -105,6 +106,13 @@ describe("map preview state", () => {
     const post = createPostSummary();
 
     expect(openFocusedPostPreview([createLocationCluster(post)], post.id)).toEqual(openPostPreview(post, "cluster-1"));
+  });
+
+  test("only exposes a selected location marker while the same-location sheet is open", () => {
+    const post = createPostSummary();
+
+    expect(getSelectedLocationPreviewMarkerId(openLocationPreview("cluster-1"))).toBe("cluster-1");
+    expect(getSelectedLocationPreviewMarkerId(openPostPreview(post, "cluster-1"))).toBeNull();
   });
 
   test("opens the standalone focused post preview when the marker is not grouped", () => {

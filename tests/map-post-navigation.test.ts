@@ -2,8 +2,10 @@ import { describe, expect, test } from "vitest";
 import {
   buildMapPathWithoutFocusedPost,
   buildPostLocationMapHref,
+  clearConsumedMapFocusTarget,
   createFocusedPostViewport,
-  parseMapFocusedPostTarget
+  parseMapFocusedPostTarget,
+  resolveMapFocusTarget
 } from "@/lib/map-post-navigation";
 
 describe("map post navigation helpers", () => {
@@ -46,6 +48,34 @@ describe("map post navigation helpers", () => {
     expect(viewport.bounds.south).toBeCloseTo(43.5976);
     expect(viewport.bounds.east).toBeCloseTo(-79.3421);
     expect(viewport.bounds.west).toBeCloseTo(-79.4321);
+  });
+
+  test("keeps the pending map focus target alive after the query params are cleared", () => {
+    const target = {
+      postId: "post-42",
+      latitude: 43.6426,
+      longitude: -79.3871,
+      key: "post-42:43.6426:-79.3871"
+    };
+
+    expect(
+      resolveMapFocusTarget({
+        pendingTarget: target,
+        queryTarget: null
+      })
+    ).toEqual(target);
+  });
+
+  test("clears the consumed pending map focus target by key", () => {
+    const target = {
+      postId: "post-42",
+      latitude: 43.6426,
+      longitude: -79.3871,
+      key: "post-42:43.6426:-79.3871"
+    };
+
+    expect(clearConsumedMapFocusTarget(target, target.key)).toBeNull();
+    expect(clearConsumedMapFocusTarget(target, "other-key")).toEqual(target);
   });
 
   test("removes focused-post params while preserving other map query state", () => {

@@ -67,6 +67,7 @@ export function MapCanvas({
   mapMode,
   mapStyle,
   onExpandPost,
+  onFocusedCoordinatesApplied,
   onOpenLocationCluster,
   onMapError,
   onViewportChange
@@ -85,6 +86,7 @@ export function MapCanvas({
   };
   selectedLocationMarkerId: string | null;
   onExpandPost: (post: PostSummary) => void;
+  onFocusedCoordinatesApplied?: (focusKey: string) => void;
   onOpenLocationCluster: (marker: PlaceClusterMarker) => void;
   onMapError: (error: Error) => void;
   onViewportChange: (viewport: {
@@ -99,6 +101,8 @@ export function MapCanvas({
   // Stable callback ref to avoid stale closures
   const onViewportChangeRef = useRef(onViewportChange);
   onViewportChangeRef.current = onViewportChange;
+  const onFocusedCoordinatesAppliedRef = useRef(onFocusedCoordinatesApplied);
+  onFocusedCoordinatesAppliedRef.current = onFocusedCoordinatesApplied;
 
   const reportViewport = useCallback(() => {
     const mapInstance = mapRef.current;
@@ -160,6 +164,7 @@ export function MapCanvas({
       zoom: Math.max(mapRef.current.getZoom(), 13),
       duration: 850
     });
+    onFocusedCoordinatesAppliedRef.current?.(focusedCoordinates.key);
   }, [focusedCoordinates]);
 
   const handleMoveEnd = useCallback(() => {
@@ -167,15 +172,7 @@ export function MapCanvas({
   }, [reportViewport]);
 
   const orderedMarkers = useMemo(() => sortMarkersForRender(markers), [markers]);
-  const expandedPostMarkerId = useMemo(
-    () =>
-      expandedPostId
-        ? orderedMarkers.find((marker) => "post" in marker && marker.post.id === expandedPostId)?.id ?? null
-        : null,
-    [expandedPostId, orderedMarkers]
-  );
   const selectedMarkerId = getSelectedMapMarkerId({
-    expandedPostMarkerId,
     popupMarkerId: popupInfo?.id ?? null,
     selectedLocationMarkerId
   });
