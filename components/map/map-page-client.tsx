@@ -80,6 +80,10 @@ export function MapPageClient() {
   const [collections, setCollections] = useState<CollectionSummary[]>([]);
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
   const [collectionFilter, setCollectionFilter] = useState<MapCollectionFilter | null>(null);
+  const [collectionFitBoundsTarget, setCollectionFitBoundsTarget] = useState<{
+    key: string;
+    points: Array<{ latitude: number; longitude: number }>;
+  } | null>(null);
   const [query, setQuery] = useState("");
   const [layer, setLayer] = useState<LayerMode>("both");
   const [mapMode, setMapMode] = useState<MapVisualMode>("default");
@@ -256,6 +260,15 @@ export function MapPageClient() {
       const points: Array<{ postId: string; latitude: number; longitude: number; visitedAt: string }> = data.points ?? [];
 
       if (!ignore) {
+        const validPoints = points.filter(
+          (p) =>
+            isFinite(p.latitude) &&
+            isFinite(p.longitude) &&
+            p.latitude >= -90 &&
+            p.latitude <= 90 &&
+            p.longitude >= -180 &&
+            p.longitude <= 180
+        );
         setCollectionFilter({
           collectionId: colId,
           name: colName,
@@ -263,6 +276,9 @@ export function MapPageClient() {
           postIds: new Set(points.map((p) => p.postId)),
           routePoints: points
         });
+        if (validPoints.length > 0) {
+          setCollectionFitBoundsTarget({ key: colId, points: validPoints });
+        }
       }
     }
 
@@ -436,6 +452,7 @@ export function MapPageClient() {
     setSelectedCategories([]);
     setSelectedCollectionId(null);
     setCollectionFilter(null);
+    setCollectionFitBoundsTarget(null);
   }
 
   const handleMapModeChange = useCallback(
@@ -513,6 +530,7 @@ export function MapPageClient() {
         expandedPostId={expandedPost?.id ?? null}
         selectedLocationMarkerId={selectedLocationMarkerId}
         collectionFilter={collectionFilter}
+        collectionFitBoundsTarget={collectionFitBoundsTarget}
         initialViewState={
           mapFocusTarget
             ? {
@@ -541,6 +559,23 @@ export function MapPageClient() {
       />
 
       <div className="pointer-events-none absolute inset-0 z-[700]">
+        {/* Always-visible Filters button — top-left, no zoom gate */}
+        {!previewSurfaceOpen && (
+          <div className="pointer-events-auto absolute left-4 top-4 z-10 md:left-5 md:top-5">
+            <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setFilterOpen(true)}
+                className="flex min-h-10 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-[var(--foreground)]/70 transition hover:bg-[var(--foreground)]/5 md:gap-2 md:px-4 md:text-sm"
+              >
+                <Filter className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Filters</span>
+                {activeFilterCount > 0 && <span>({activeFilterCount})</span>}
+              </button>
+            </div>
+          </div>
+        )}
+
         {!previewSurfaceOpen ? (
           <>
             <div className="pointer-events-none flex h-full flex-col justify-between p-4 md:p-5">
@@ -567,19 +602,6 @@ export function MapPageClient() {
                       ) : null}
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      {showControls ? (
-                        <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
-                          <button
-                            type="button"
-                            onClick={() => setFilterOpen(true)}
-                            className="flex min-h-10 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-[var(--foreground)]/70 transition hover:bg-[var(--foreground)]/5 md:gap-2 md:px-4 md:text-sm"
-                          >
-                            <Filter className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                            <span className="hidden sm:inline">Filters</span>
-                            {activeFilterCount > 0 && <span>({activeFilterCount})</span>}
-                          </button>
-                        </div>
-                      ) : null}
                       {showControls ? (
                         <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
                           <LayerToggle value={layer} onChange={setLayer} />

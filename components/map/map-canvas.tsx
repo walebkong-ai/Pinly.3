@@ -105,6 +105,7 @@ export function MapCanvas({
   mapMode,
   mapStyle,
   collectionFilter,
+  collectionFitBoundsTarget,
   onExpandPost,
   onFocusedCoordinatesApplied,
   onOpenLocationCluster,
@@ -125,6 +126,10 @@ export function MapCanvas({
   };
   selectedLocationMarkerId: string | null;
   collectionFilter: MapCollectionFilter | null;
+  collectionFitBoundsTarget?: {
+    key: string;
+    points: Array<{ latitude: number; longitude: number }>;
+  } | null;
   onExpandPost: (post: PostSummary) => void;
   onFocusedCoordinatesApplied?: (focusKey: string) => void;
   onOpenLocationCluster: (marker: PlaceClusterMarker) => void;
@@ -136,6 +141,7 @@ export function MapCanvas({
 }) {
   const mapRef = useRef<MapRef | null>(null);
   const lastFocusedCoordinateKeyRef = useRef<string | null>(null);
+  const lastFitCollectionKeyRef = useRef<string | null>(null);
   const [popupInfo, setPopupInfo] = useState<MapMarker | null>(null);
 
   // Stable callback ref to avoid stale closures
@@ -206,6 +212,40 @@ export function MapCanvas({
     });
     onFocusedCoordinatesAppliedRef.current?.(focusedCoordinates.key);
   }, [focusedCoordinates]);
+
+  // Fit map bounds to selected collection once — guarded by key ref
+  useEffect(() => {
+    if (!collectionFitBoundsTarget) {
+      lastFitCollectionKeyRef.current = null;
+      return;
+    }
+
+    if (!mapRef.current || lastFitCollectionKeyRef.current === collectionFitBoundsTarget.key) {
+      return;
+    }
+
+    lastFitCollectionKeyRef.current = collectionFitBoundsTarget.key;
+    const { points } = collectionFitBoundsTarget;
+
+    if (points.length === 1) {
+      mapRef.current.easeTo({
+        center: [points[0].longitude, points[0].latitude],
+        zoom: 12,
+        duration: 900
+      });
+    } else {
+      const lats = points.map((p) => p.latitude);
+      const lngs = points.map((p) => p.longitude);
+      const south = Math.min(...lats);
+      const north = Math.max(...lats);
+      const west = Math.min(...lngs);
+      const east = Math.max(...lngs);
+      mapRef.current.fitBounds(
+        [west, south, east, north],
+        { padding: 80, duration: 900, maxZoom: 14 }
+      );
+    }
+  }, [collectionFitBoundsTarget]);
 
   const handleMoveEnd = useCallback(() => {
     reportViewport();
