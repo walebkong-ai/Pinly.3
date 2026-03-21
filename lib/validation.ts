@@ -106,14 +106,20 @@ const collectionColorField = z
   .nullable()
   .optional();
 
+export const COLLECTION_VISIBILITY_VALUES = ["public", "friends", "private"] as const;
+export type CollectionVisibilityValue = (typeof COLLECTION_VISIBILITY_VALUES)[number];
+const collectionVisibilityField = z.enum(COLLECTION_VISIBILITY_VALUES).optional();
+
 export const collectionSchema = z.object({
   name: z.string().trim().min(2).max(60),
-  color: collectionColorField
+  color: collectionColorField,
+  visibility: collectionVisibilityField
 });
 
 export const collectionUpdateSchema = z.object({
   name: z.string().trim().min(2).max(60).optional(),
-  color: collectionColorField
+  color: collectionColorField,
+  visibility: collectionVisibilityField
 });
 
 export const collectionAssignmentSchema = z.object({

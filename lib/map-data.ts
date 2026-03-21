@@ -200,7 +200,8 @@ function createCityCluster(group: CityGroup, viewerId: string): MapMarker {
     country: group.country,
     postCount: group.posts.length,
     friendCount: uniqueUsers(group.posts.filter((post) => post.userId !== viewerId)).length,
-    visitors: uniqueUsers(group.posts).slice(0, 4)
+    visitors: uniqueUsers(group.posts).slice(0, 4),
+    postIds: group.posts.map((p) => p.id)
   };
 }
 
@@ -216,7 +217,8 @@ function createPlaceCluster(group: PlaceGroup): MapMarker {
     postCount: group.posts.length,
     visitors: uniqueUsers(group.posts).slice(0, 4),
     previewPost: toPreviewPost(group.posts[0]),
-    posts: group.posts
+    posts: group.posts,
+    postIds: group.posts.map((p) => p.id)
   };
 }
 

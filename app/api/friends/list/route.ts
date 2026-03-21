@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { getFriendIds } from "@/lib/data";
 import { prisma } from "@/lib/prisma";
 import { apiError } from "@/lib/api";
 
@@ -11,12 +12,8 @@ export async function GET() {
     return apiError("Unauthorized", 401);
   }
 
-  const [friendships, incomingRequests, outgoingRequests] = await Promise.all([
-    prisma.friendship.findMany({
-      where: {
-        OR: [{ userAId: session.user.id }, { userBId: session.user.id }]
-      }
-    }),
+  const [friendIds, incomingRequests, outgoingRequests] = await Promise.all([
+    getFriendIds(session.user.id),
     prisma.friendRequest.findMany({
       where: {
         toUserId: session.user.id,
@@ -52,10 +49,6 @@ export async function GET() {
       orderBy: { createdAt: "desc" }
     })
   ]);
-
-  const friendIds = friendships.map((friendship) =>
-    friendship.userAId === session.user.id ? friendship.userBId : friendship.userAId
-  );
 
   const friends = await prisma.user.findMany({
     where: { id: { in: friendIds } },

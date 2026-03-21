@@ -1,26 +1,22 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const authMock = vi.fn();
-const getVisibleUserIdsMock = vi.fn();
+const getRelationshipDetailsForTargetsMock = vi.fn();
 const blockFindManyMock = vi.fn();
-const friendRequestFindManyMock = vi.fn();
 const userFindManyMock = vi.fn();
 
 vi.mock("@/lib/auth", () => ({
   auth: authMock
 }));
 
-vi.mock("@/lib/data", () => ({
-  getVisibleUserIds: getVisibleUserIdsMock
+vi.mock("@/lib/relationships", () => ({
+  getRelationshipDetailsForTargets: getRelationshipDetailsForTargetsMock
 }));
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     block: {
       findMany: blockFindManyMock
-    },
-    friendRequest: {
-      findMany: friendRequestFindManyMock
     },
     user: {
       findMany: userFindManyMock
@@ -33,9 +29,8 @@ describe("friends search route", () => {
 
   beforeEach(() => {
     authMock.mockReset();
-    getVisibleUserIdsMock.mockReset();
+    getRelationshipDetailsForTargetsMock.mockReset();
     blockFindManyMock.mockReset();
-    friendRequestFindManyMock.mockReset();
     userFindManyMock.mockReset();
 
     authMock.mockResolvedValue({
@@ -43,15 +38,27 @@ describe("friends search route", () => {
         id: viewerId
       }
     });
-    getVisibleUserIdsMock.mockResolvedValue([viewerId, "ckfriend00000000000000001"]);
     blockFindManyMock.mockResolvedValue([]);
-    friendRequestFindManyMock.mockResolvedValue([
-      {
-        fromUserId: "ckpending0000000000000001",
-        toUserId: viewerId,
-        status: "PENDING"
-      }
-    ]);
+    getRelationshipDetailsForTargetsMock.mockResolvedValue(
+      new Map([
+        [
+          "ckpending0000000000000001",
+          {
+            targetUserId: "ckpending0000000000000001",
+            status: "pending_received",
+            activeRequestId: "ckreq000000000000000000001"
+          }
+        ],
+        [
+          "ckfriend00000000000000001",
+          {
+            targetUserId: "ckfriend00000000000000001",
+            status: "friends",
+            activeRequestId: null
+          }
+        ]
+      ])
+    );
   });
 
   test("returns ranked users with friendship state", async () => {
@@ -75,6 +82,10 @@ describe("friends search route", () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
+    expect(getRelationshipDetailsForTargetsMock).toHaveBeenCalledWith(viewerId, [
+      "ckpending0000000000000001",
+      "ckfriend00000000000000001"
+    ]);
     expect(data.users).toEqual([
       expect.objectContaining({
         id: "ckfriend00000000000000001",
@@ -82,7 +93,8 @@ describe("friends search route", () => {
       }),
       expect.objectContaining({
         id: "ckpending0000000000000001",
-        requestStatus: "pending_received"
+        requestStatus: "pending_received",
+        requestId: "ckreq000000000000000000001"
       })
     ]);
   });
@@ -94,7 +106,7 @@ describe("friends search route", () => {
 
     expect(response.status).toBe(200);
     expect(data).toEqual({ users: [] });
-    expect(friendRequestFindManyMock).not.toHaveBeenCalled();
+    expect(getRelationshipDetailsForTargetsMock).not.toHaveBeenCalled();
     expect(userFindManyMock).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { normalizeUsername } from "@/lib/validation";
 
 export async function POST(
   request: Request,
@@ -16,7 +17,7 @@ export async function POST(
     const currentUserId = session.user.id;
 
     const targetUser = await prisma.user.findUnique({
-      where: { username },
+      where: { username: normalizeUsername(username) },
       select: { id: true },
     });
 
@@ -26,27 +27,31 @@ export async function POST(
 
     const targetUserId = targetUser.id;
 
-    // Delete any friendship between the two users
-    await prisma.friendship.deleteMany({
-      where: {
-        OR: [
-          { userAId: currentUserId, userBId: targetUserId },
-          { userAId: targetUserId, userBId: currentUserId },
-        ],
-      },
-    });
+    if (targetUserId === currentUserId) {
+      return NextResponse.json({ error: "Cannot remove yourself" }, { status: 400 });
+    }
 
-    // Also delete any pending friend requests
-    await prisma.friendRequest.deleteMany({
-      where: {
-        OR: [
-          { fromUserId: currentUserId, toUserId: targetUserId },
-          { fromUserId: targetUserId, toUserId: currentUserId },
-        ],
-      },
-    });
+    // Delete any friendship and requests between the two users atomically
+    await prisma.$transaction([
+      prisma.friendship.deleteMany({
+        where: {
+          OR: [
+            { userAId: currentUserId, userBId: targetUserId },
+            { userAId: targetUserId, userBId: currentUserId },
+          ],
+        },
+      }),
+      prisma.friendRequest.deleteMany({
+        where: {
+          OR: [
+            { fromUserId: currentUserId, toUserId: targetUserId },
+            { fromUserId: targetUserId, toUserId: currentUserId },
+          ],
+        },
+      }),
+    ]);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, relationshipStatus: "none" });
   } catch (error) {
     console.error("Error removing friend:", error);
     return NextResponse.json(

@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { apiError } from "@/lib/api";
-import { getCollectionRoutePoints } from "@/lib/data";
+import { getVisibleCollectionRoutePoints } from "@/lib/data";
 
 export const runtime = "nodejs";
 
@@ -12,7 +12,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ col
   }
 
   const { collectionId } = await params;
-  const points = await getCollectionRoutePoints(session.user.id, collectionId);
+  const points = await getVisibleCollectionRoutePoints(session.user.id, collectionId);
 
   return Response.json({ points });
 }

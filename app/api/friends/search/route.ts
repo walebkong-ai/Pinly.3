@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getVisibleUserIds } from "@/lib/data";
+import { isPrismaSchemaNotReadyError } from "@/lib/prisma-errors";
+import { getRelationshipDetailsForTargets } from "@/lib/relationships";
 import { apiError } from "@/lib/api";
 import { getSearchTerms, rankBySearch } from "@/lib/search";
 
@@ -22,32 +23,27 @@ export async function GET(request: Request) {
   }
 
   const currentUserId = session.user.id;
-  const visibleIds = await getVisibleUserIds(currentUserId);
+  let blockRecords: Array<{ blockerId: string; blockedId: string }> = [];
 
-  const blockRecords = await prisma.block.findMany({
-    where: {
-      OR: [{ blockerId: currentUserId }, { blockedId: currentUserId }]
-    },
-    select: {
-      blockerId: true,
-      blockedId: true
+  try {
+    blockRecords = await prisma.block.findMany({
+      where: {
+        OR: [{ blockerId: currentUserId }, { blockedId: currentUserId }]
+      },
+      select: {
+        blockerId: true,
+        blockedId: true
+      }
+    });
+  } catch (error) {
+    if (!isPrismaSchemaNotReadyError(error)) {
+      throw error;
     }
-  });
+  }
 
   const blockedUserIds = new Set<string>(
     blockRecords.map((b) => (b.blockerId === currentUserId ? b.blockedId : b.blockerId))
   );
-
-  const pending = await prisma.friendRequest.findMany({
-    where: {
-      OR: [{ fromUserId: currentUserId }, { toUserId: currentUserId }]
-    },
-    select: {
-      fromUserId: true,
-      toUserId: true,
-      status: true
-    }
-  });
 
   const users = await prisma.user.findMany({
     where: {
@@ -67,25 +63,24 @@ export async function GET(request: Request) {
     },
     take: 24
   });
+  const relationships = await getRelationshipDetailsForTargets(
+    currentUserId,
+    users.map((user) => user.id)
+  );
 
   const mapped = users.map((user) => {
-    const relation = pending.find(
-      (request) =>
-        (request.fromUserId === currentUserId && request.toUserId === user.id) ||
-        (request.toUserId === currentUserId && request.fromUserId === user.id)
-    );
-
-    const requestStatus = visibleIds.includes(user.id)
-      ? "friends"
-      : relation?.status === "PENDING" && relation.fromUserId === currentUserId
-        ? "pending_sent"
-        : relation?.status === "PENDING" && relation.toUserId === currentUserId
-          ? "pending_received"
-          : "none";
+    const relationship = relationships.get(user.id);
+    const requestStatus =
+      relationship?.status === "friends" ||
+      relationship?.status === "pending_sent" ||
+      relationship?.status === "pending_received"
+        ? relationship.status
+        : "none";
 
     return {
       ...user,
-      requestStatus
+      requestStatus,
+      requestId: relationship?.activeRequestId ?? null
     };
   });
 

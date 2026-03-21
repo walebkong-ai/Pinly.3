@@ -2,34 +2,40 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const authMock = vi.fn();
 const userFindUniqueMock = vi.fn();
-const friendshipFindUniqueMock = vi.fn();
-const friendRequestFindFirstMock = vi.fn();
-const friendRequestCreateMock = vi.fn();
 const friendRequestFindUniqueMock = vi.fn();
-const friendRequestUpdateMock = vi.fn();
-const friendshipCreateMock = vi.fn();
+const friendRequestUpsertMock = vi.fn();
+const friendRequestUpdateManyMock = vi.fn();
+const friendshipUpsertMock = vi.fn();
+const friendshipDeleteManyMock = vi.fn();
+const getRelationshipDetailsMock = vi.fn();
 const createNotificationSafelyMock = vi.fn();
+
+const prismaMock = {
+  user: {
+    findUnique: userFindUniqueMock
+  },
+  friendRequest: {
+    findUnique: friendRequestFindUniqueMock,
+    upsert: friendRequestUpsertMock,
+    updateMany: friendRequestUpdateManyMock
+  },
+  friendship: {
+    upsert: friendshipUpsertMock,
+    deleteMany: friendshipDeleteManyMock
+  },
+  $transaction: vi.fn(async (callback: (tx: any) => Promise<unknown>) => callback(prismaMock))
+};
 
 vi.mock("@/lib/auth", () => ({
   auth: authMock
 }));
 
 vi.mock("@/lib/prisma", () => ({
-  prisma: {
-    user: {
-      findUnique: userFindUniqueMock
-    },
-    friendship: {
-      findUnique: friendshipFindUniqueMock,
-      create: friendshipCreateMock
-    },
-    friendRequest: {
-      findFirst: friendRequestFindFirstMock,
-      create: friendRequestCreateMock,
-      findUnique: friendRequestFindUniqueMock,
-      update: friendRequestUpdateMock
-    }
-  }
+  prisma: prismaMock
+}));
+
+vi.mock("@/lib/relationships", () => ({
+  getRelationshipDetails: getRelationshipDetailsMock
 }));
 
 vi.mock("@/lib/notifications", () => ({
@@ -44,21 +50,30 @@ describe("friend request notification routes", () => {
   beforeEach(() => {
     authMock.mockReset();
     userFindUniqueMock.mockReset();
-    friendshipFindUniqueMock.mockReset();
-    friendRequestFindFirstMock.mockReset();
-    friendRequestCreateMock.mockReset();
     friendRequestFindUniqueMock.mockReset();
-    friendRequestUpdateMock.mockReset();
-    friendshipCreateMock.mockReset();
+    friendRequestUpsertMock.mockReset();
+    friendRequestUpdateManyMock.mockReset();
+    friendshipUpsertMock.mockReset();
+    friendshipDeleteManyMock.mockReset();
+    getRelationshipDetailsMock.mockReset();
     createNotificationSafelyMock.mockReset();
+    prismaMock.$transaction.mockClear();
 
     authMock.mockResolvedValue({
       user: {
         id: viewerId
       }
     });
-    friendshipFindUniqueMock.mockResolvedValue(null);
-    friendRequestFindFirstMock.mockResolvedValue(null);
+    getRelationshipDetailsMock.mockResolvedValue({
+      targetUserId: otherUserId,
+      status: "none",
+      isFriend: false,
+      isBlocked: false,
+      incomingRequestId: null,
+      outgoingRequestId: null,
+      activeRequestId: null
+    });
+    friendshipDeleteManyMock.mockResolvedValue({ count: 0 });
   });
 
   test("sending a friend request creates a received notification", async () => {
@@ -66,7 +81,7 @@ describe("friend request notification routes", () => {
       id: otherUserId,
       username: "jordan"
     });
-    friendRequestCreateMock.mockResolvedValue({
+    friendRequestUpsertMock.mockResolvedValue({
       id: requestId,
       toUser: {
         id: otherUserId,
@@ -86,6 +101,15 @@ describe("friend request notification routes", () => {
     );
 
     expect(response.status).toBe(201);
+    expect(friendRequestUpsertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: { status: "PENDING" },
+        create: {
+          fromUserId: viewerId,
+          toUserId: otherUserId
+        }
+      })
+    );
     expect(createNotificationSafelyMock).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: otherUserId,
@@ -103,8 +127,8 @@ describe("friend request notification routes", () => {
       toUserId: viewerId,
       status: "PENDING"
     });
-    friendRequestUpdateMock.mockResolvedValue({ id: requestId, status: "ACCEPTED" });
-    friendshipCreateMock.mockResolvedValue({ id: "friendship_1" });
+    friendRequestUpdateManyMock.mockResolvedValue({ count: 1 });
+    friendshipUpsertMock.mockResolvedValue({ id: "friendship_1" });
 
     const { POST } = await import("@/app/api/friends/respond/route");
     const response = await POST(
@@ -119,6 +143,16 @@ describe("friend request notification routes", () => {
     );
 
     expect(response.status).toBe(200);
+    expect(friendRequestUpdateManyMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: "PENDING"
+        }),
+        data: {
+          status: "ACCEPTED"
+        }
+      })
+    );
     expect(createNotificationSafelyMock).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: otherUserId,
@@ -129,18 +163,12 @@ describe("friend request notification routes", () => {
     );
   });
 
-  test("sending again after a declined same-direction request reuses the existing record", async () => {
+  test("re-sending after a declined request still reactivates the same pair", async () => {
     userFindUniqueMock.mockResolvedValue({
       id: otherUserId,
       username: "jordan"
     });
-    friendRequestFindFirstMock.mockResolvedValue({
-      id: requestId,
-      fromUserId: viewerId,
-      toUserId: otherUserId,
-      status: "DECLINED"
-    });
-    friendRequestUpdateMock.mockResolvedValue({
+    friendRequestUpsertMock.mockResolvedValue({
       id: requestId,
       toUser: {
         id: otherUserId,
@@ -160,11 +188,15 @@ describe("friend request notification routes", () => {
     );
 
     expect(response.status).toBe(201);
-    expect(friendRequestCreateMock).not.toHaveBeenCalled();
-    expect(friendRequestUpdateMock).toHaveBeenCalledWith(
+    expect(friendRequestUpsertMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: requestId },
-        data: { status: "PENDING" }
+        where: {
+          fromUserId_toUserId: {
+            fromUserId: viewerId,
+            toUserId: otherUserId
+          }
+        },
+        update: { status: "PENDING" }
       })
     );
   });

@@ -4,19 +4,25 @@ import { FULL_WORLD_BOUNDS, getBoundsCenter, getLongitudeFilter, normalizeMapBou
 import { Prisma } from "@prisma/client";
 import { getMapStage, getTimeFilterStart, buildLayerUserIds, buildMapPayload } from "@/lib/map-data";
 import { prisma } from "@/lib/prisma";
-import { buildVisibleUserIds } from "@/lib/permissions";
 import { buildProfileTravelSummary } from "@/lib/profile-summary";
 import { isPrismaSchemaNotReadyError } from "@/lib/prisma-errors";
+import {
+  getFriendIdsForViewer,
+  getRelationshipDetails,
+  getVisibleUserIdsForViewer
+} from "@/lib/relationships";
 import { getSearchTerms, rankBySearch } from "@/lib/search";
 import { buildWantToGoPlaceKey, type WantToGoLocation } from "@/lib/want-to-go";
 import { notificationInclude } from "@/lib/notifications";
 import type {
   CollectionChip,
+  MapCollectionOverlay,
   CollectionSummary,
   LayerMode,
   MapCategory,
   NotificationSummary,
   PostSummary,
+  RelationshipStatus,
   TimeFilter,
   WantToGoPlaceSummary
 } from "@/types/app";
@@ -293,6 +299,7 @@ function normalizeCollectionSummary(collection: IncludedCollection): CollectionS
     id: collection.id,
     name: collection.name,
     color: collection.color ?? null,
+    visibility: (collection as any).visibility || "private",
     postCount: collection._count.posts,
     updatedAt: collection.updatedAt,
     previewPost: collection.posts[0]?.post ?? null
@@ -546,59 +553,12 @@ async function hydrateConversationMessages(
   });
 }
 
-async function getViewerFriendships(viewerId: string) {
-  try {
-    return await prisma.friendship.findMany({
-      where: {
-        OR: [{ userAId: viewerId }, { userBId: viewerId }]
-      }
-    });
-  } catch (error) {
-    if (isPrismaSchemaNotReadyError(error)) {
-      return [];
-    }
-
-    throw error;
-  }
-}
-
-async function getViewerBlocks(viewerId: string) {
-  try {
-    return await prisma.block.findMany({
-      where: {
-        OR: [{ blockerId: viewerId }, { blockedId: viewerId }]
-      }
-    });
-  } catch (error) {
-    if (isPrismaSchemaNotReadyError(error)) {
-      return [];
-    }
-
-    throw error;
-  }
-}
-
 export async function getVisibleUserIds(viewerId: string) {
-  const [friendships, blocks] = await Promise.all([getViewerFriendships(viewerId), getViewerBlocks(viewerId)]);
-
-  const blockedIds = new Set(
-    blocks.map((b) => (b.blockerId === viewerId ? b.blockedId : b.blockerId))
-  );
-
-  const potentialVisibleIds = buildVisibleUserIds(viewerId, friendships);
-  return potentialVisibleIds.filter((id) => !blockedIds.has(id));
+  return getVisibleUserIdsForViewer(viewerId);
 }
 
 export async function getFriendIds(viewerId: string) {
-  const [friendships, blocks] = await Promise.all([getViewerFriendships(viewerId), getViewerBlocks(viewerId)]);
-
-  const blockedIds = new Set(
-    blocks.map((b) => (b.blockerId === viewerId ? b.blockedId : b.blockerId))
-  );
-
-  return friendships
-    .map((friendship) => (friendship.userAId === viewerId ? friendship.userBId : friendship.userAId))
-    .filter((id) => !blockedIds.has(id));
+  return getFriendIdsForViewer(viewerId);
 }
 
 export async function getLayerUserIds(viewerId: string, layer: LayerMode) {
@@ -615,7 +575,8 @@ export async function getMapData({
   layer,
   time,
   groups,
-  categories
+  categories,
+  collectionOverlay = false
 }: {
   viewerId: string;
   bounds: { north: number; south: number; east: number; west: number };
@@ -625,6 +586,7 @@ export async function getMapData({
   groups: string[];
   categories: MapCategory[];
   query?: string;
+  collectionOverlay?: boolean;
 }) {
   const friendIds = await getFriendIds(viewerId);
   const scopedUserIds = resolveLayerUserIds({
@@ -681,6 +643,27 @@ export async function getMapData({
           { user: { username: { contains: term, mode: "insensitive" } } }
         ]
       }))
+    });
+  }
+
+  if (collectionOverlay) {
+    const visibleCollectionWhere = buildMapCollectionOverlayWhere(viewerId, scopedUserIds);
+
+    if (!visibleCollectionWhere) {
+      return buildMapPayload({
+        posts: [],
+        zoom,
+        center: getBoundsCenter(normalizedBounds),
+        viewerId
+      });
+    }
+
+    whereClauses.push({
+      collectionEntries: {
+        some: {
+          collection: visibleCollectionWhere
+        }
+      }
     });
   }
 
@@ -849,9 +832,102 @@ export async function getVisiblePostById(viewerId: string, postId: string) {
   return postWithSavedState;
 }
 
-export async function getProfileData(profileUsername: string, viewerId: string) {
-  const visibleUserIds = await getVisibleUserIds(viewerId);
+async function getCollectionAccessState(viewerId: string, targetUserId: string) {
+  if (viewerId === targetUserId) {
+    return {
+      isOwner: true,
+      isFriend: false,
+      isBlocked: false
+    };
+  }
 
+  const relationship = await getRelationshipDetails(viewerId, targetUserId);
+
+  return {
+    isOwner: false,
+    isFriend: relationship.status === "friends",
+    isBlocked: relationship.status === "blocked"
+  };
+}
+
+function buildVisibleCollectionWhere(
+  targetUserId: string,
+  access: {
+    isOwner: boolean;
+    isFriend: boolean;
+    isBlocked: boolean;
+  }
+): Prisma.PostCollectionWhereInput {
+  if (access.isBlocked && !access.isOwner) {
+    return {
+      userId: targetUserId,
+      id: "__blocked__"
+    };
+  }
+
+  if (access.isOwner) {
+    return {
+      userId: targetUserId
+    };
+  }
+
+  return {
+    userId: targetUserId,
+    OR: [{ visibility: "public" } as any, ...(access.isFriend ? [{ visibility: "friends" } as any] : [])]
+  };
+}
+
+function buildMapCollectionOverlayWhere(viewerId: string, scopedUserIds: string[]): Prisma.PostCollectionWhereInput | null {
+  const uniqueScopedUserIds = Array.from(new Set(scopedUserIds));
+
+  if (uniqueScopedUserIds.length === 0) {
+    return null;
+  }
+
+  const visibleCollectionScopes: Prisma.PostCollectionWhereInput[] = [];
+
+  if (uniqueScopedUserIds.includes(viewerId)) {
+    visibleCollectionScopes.push({
+      userId: viewerId
+    });
+  }
+
+  const friendUserIds = uniqueScopedUserIds.filter((userId) => userId !== viewerId);
+
+  if (friendUserIds.length > 0) {
+    visibleCollectionScopes.push({
+      userId: { in: friendUserIds },
+      OR: [{ visibility: "public" } as any, { visibility: "friends" } as any]
+    });
+  }
+
+  if (visibleCollectionScopes.length === 0) {
+    return null;
+  }
+
+  return visibleCollectionScopes.length === 1 ? visibleCollectionScopes[0] : { OR: visibleCollectionScopes };
+}
+
+function canViewCollectionVisibility(
+  visibility: string | null | undefined,
+  access: {
+    isOwner: boolean;
+    isFriend: boolean;
+    isBlocked: boolean;
+  }
+) {
+  if (access.isBlocked && !access.isOwner) {
+    return false;
+  }
+
+  if (access.isOwner) {
+    return true;
+  }
+
+  return visibility === "public" || (visibility === "friends" && access.isFriend);
+}
+
+export async function getProfileData(profileUsername: string, viewerId: string) {
   const user = await prisma.user.findUnique({
     where: { username: profileUsername },
     select: {
@@ -867,18 +943,23 @@ export async function getProfileData(profileUsername: string, viewerId: string) 
     return null;
   }
 
-  if (!visibleUserIds.includes(user.id) && user.id !== viewerId) {
+  const relationship = await getRelationshipDetails(viewerId, user.id);
+  const canViewPosts = user.id === viewerId || relationship.status === "friends";
+
+  if (relationship.status === "blocked") {
     return null;
   }
 
-  const posts = await prisma.post.findMany({
-    where: {
-      userId: user.id,
-      isArchived: false
-    },
-    include: postSummaryInclude,
-    orderBy: { visitedAt: "desc" }
-  });
+  const posts = canViewPosts
+    ? await prisma.post.findMany({
+        where: {
+          userId: user.id,
+          isArchived: false
+        },
+        include: postSummaryInclude,
+        orderBy: { visitedAt: "desc" }
+      })
+    : [];
   const postsWithSavedState = await attachViewerPostState(viewerId, posts);
 
   const places = Array.from(new Set(postsWithSavedState.map((post) => `${post.city}, ${post.country}`)));
@@ -927,13 +1008,125 @@ export async function getOwnedCollections(userId: string, limit = 24) {
   }
 }
 
-export async function getOwnedCollectionById(userId: string, collectionId: string) {
+export async function getVisibleCollectionsForUser(viewerId: string, targetUserId: string, limit = 24) {
   try {
-    const collection = await prisma.postCollection.findFirst({
+    const access = await getCollectionAccessState(viewerId, targetUserId);
+
+    const collections = await prisma.postCollection.findMany({
+      where: buildVisibleCollectionWhere(targetUserId, access),
+      include: collectionSummaryInclude,
+      orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+      take: limit
+    });
+
+    return collections.map(normalizeCollectionSummary);
+  } catch (error) {
+    if (isPrismaSchemaNotReadyError(error)) {
+      return [];
+    }
+    throw error;
+  }
+}
+
+export async function getMapCollectionOverlays({
+  viewerId,
+  layer,
+  groups
+}: {
+  viewerId: string;
+  layer: LayerMode;
+  groups: string[];
+}): Promise<MapCollectionOverlay[]> {
+  try {
+    const friendIds = await getFriendIds(viewerId);
+    const scopedUserIds = resolveLayerUserIds({
+      viewerId,
+      friendIds,
+      selectedGroupIds: groups,
+      layer
+    });
+    const visibleCollectionWhere = buildMapCollectionOverlayWhere(viewerId, scopedUserIds);
+
+    if (!visibleCollectionWhere) {
+      return [];
+    }
+
+    const collections = await prisma.postCollection.findMany({
       where: {
-        id: collectionId,
-        userId
+        AND: [
+          visibleCollectionWhere,
+          {
+            posts: {
+              some: {
+                post: {
+                  isArchived: false
+                }
+              }
+            }
+          }
+        ]
       },
+      orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }, { name: "asc" }],
+      select: {
+        id: true,
+        userId: true,
+        name: true,
+        color: true,
+        updatedAt: true,
+        posts: {
+          where: {
+            post: {
+              isArchived: false
+            }
+          },
+          orderBy: [{ post: { visitedAt: "asc" } }, { post: { createdAt: "asc" } }],
+          select: {
+            post: {
+              select: {
+                id: true,
+                latitude: true,
+                longitude: true,
+                visitedAt: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    return collections.map((collection) => {
+      const points = collection.posts
+        .filter((entry) => entry.post !== null)
+        .map((entry) => ({
+          postId: entry.post.id,
+          latitude: entry.post.latitude,
+          longitude: entry.post.longitude,
+          visitedAt: entry.post.visitedAt
+        }));
+
+      return {
+        id: collection.id,
+        ownerId: collection.userId,
+        name: collection.name,
+        color: collection.color ?? null,
+        updatedAt: collection.updatedAt,
+        postIds: points.map((point) => point.postId),
+        routePoints: points
+      };
+    });
+  } catch (error) {
+    if (isPrismaSchemaNotReadyError(error)) {
+      return [];
+    }
+
+    throw error;
+  }
+}
+
+export async function getVisibleCollectionById(viewerId: string, collectionId: string) {
+  try {
+    const collection = await prisma.postCollection.findUnique({
+      where: { id: collectionId },
       include: collectionSummaryInclude
     });
 
@@ -941,9 +1134,16 @@ export async function getOwnedCollectionById(userId: string, collectionId: strin
       return null;
     }
 
+    const access = await getCollectionAccessState(viewerId, collection.userId);
+    const canSee = canViewCollectionVisibility((collection as any).visibility, access);
+
+    if (!canSee) {
+      return null;
+    }
+
     const posts = await prisma.post.findMany({
       where: {
-        userId,
+        userId: collection.userId,
         isArchived: false,
         collectionEntries: {
           some: {
@@ -957,7 +1157,7 @@ export async function getOwnedCollectionById(userId: string, collectionId: strin
 
     return {
       collection: normalizeCollectionSummary(collection),
-      posts: await attachViewerPostState(userId, posts)
+      posts: await attachViewerPostState(viewerId, posts)
     };
   } catch (error) {
     if (isPrismaSchemaNotReadyError(error)) {
@@ -982,12 +1182,17 @@ export async function getOwnedCollectionsForPost(userId: string, postId: string)
       select: {
         id: true,
         name: true,
-        color: true
-      },
+        color: true,
+        visibility: true as any
+      } as any,
       orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }]
     });
 
-    return collections.map((c) => ({ ...c, color: c.color ?? null }));
+    return (collections as any[]).map((c) => ({
+      id: c.id,
+      name: c.name,
+      color: c.color ?? null
+    })) as CollectionChip[];
   } catch (error) {
     if (isPrismaSchemaNotReadyError(error)) {
       return [];
@@ -997,12 +1202,23 @@ export async function getOwnedCollectionsForPost(userId: string, postId: string)
   }
 }
 
-export async function getCollectionRoutePoints(userId: string, collectionId: string) {
+export async function getVisibleCollectionRoutePoints(viewerId: string, collectionId: string) {
   try {
+    const collection = await prisma.postCollection.findUnique({
+      where: { id: collectionId },
+      select: { userId: true, visibility: true as any }
+    }) as any;
+
+    if (!collection) return [];
+
+    const access = await getCollectionAccessState(viewerId, collection.userId);
+    const canSee = canViewCollectionVisibility((collection as any).visibility, access);
+
+    if (!canSee) return [];
+
     const entries = await prisma.postCollectionItem.findMany({
       where: {
         collectionId,
-        collection: { userId },
         post: { isArchived: false }
       },
       select: {
@@ -1036,6 +1252,11 @@ export async function getCollectionRoutePoints(userId: string, collectionId: str
 
     throw error;
   }
+}
+
+export async function getRelationshipStatus(viewerId: string, targetUserId: string): Promise<RelationshipStatus> {
+  const relationship = await getRelationshipDetails(viewerId, targetUserId);
+  return relationship.status;
 }
 
 export async function getWantToGoPlaceByLocation(userId: string, location: WantToGoLocation) {

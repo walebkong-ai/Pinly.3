@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { normalizeFriendPair } from "@/lib/friendships";
+import { getRelationshipDetails } from "@/lib/relationships";
 import { createNotificationSafely } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { friendRequestSchema, normalizeUsername } from "@/lib/validation";
@@ -42,67 +43,133 @@ export async function POST(request: Request) {
   }
 
   const pair = normalizeFriendPair(session.user.id, target.id);
-  const existingFriendship = await prisma.friendship.findUnique({
-    where: { userAId_userBId: pair }
+  const result = await prisma.$transaction(async (tx) => {
+    const relationship = await getRelationshipDetails(session.user.id, target.id, { db: tx });
+
+    if (relationship.status === "blocked") {
+      return { kind: "blocked" } as const;
+    }
+
+    if (relationship.status === "friends") {
+      await tx.friendship.upsert({
+        where: { userAId_userBId: pair },
+        create: pair,
+        update: {}
+      });
+      await tx.friendship.deleteMany({
+        where: {
+          userAId: pair.userBId,
+          userBId: pair.userAId
+        }
+      });
+
+      return { kind: "friends" } as const;
+    }
+
+    if (relationship.status === "pending_received" && relationship.incomingRequestId) {
+      await tx.friendRequest.updateMany({
+        where: {
+          OR: [
+            { fromUserId: session.user.id, toUserId: target.id },
+            { fromUserId: target.id, toUserId: session.user.id }
+          ],
+          status: "PENDING"
+        },
+        data: {
+          status: "ACCEPTED"
+        }
+      });
+      await tx.friendship.upsert({
+        where: { userAId_userBId: pair },
+        create: pair,
+        update: {}
+      });
+      await tx.friendship.deleteMany({
+        where: {
+          userAId: pair.userBId,
+          userBId: pair.userAId
+        }
+      });
+
+      return {
+        kind: "autoAccepted",
+        requestId: relationship.incomingRequestId
+      } as const;
+    }
+
+    if (relationship.status === "pending_sent") {
+      return { kind: "pending" } as const;
+    }
+
+    const friendRequest = await tx.friendRequest.upsert({
+      where: {
+        fromUserId_toUserId: {
+          fromUserId: session.user.id,
+          toUserId: target.id
+        }
+      },
+      update: {
+        status: "PENDING"
+      },
+      create: {
+        fromUserId: session.user.id,
+        toUserId: target.id
+      },
+      include: {
+        toUser: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            avatarUrl: true
+          }
+        }
+      }
+    });
+
+    return {
+      kind: "sent",
+      friendRequest
+    } as const;
   });
 
-  if (existingFriendship) {
+  if (result.kind === "blocked") {
+    return apiError("You can't send requests between blocked users.", 403);
+  }
+
+  if (result.kind === "friends") {
     return apiError("You are already friends.", 409);
   }
 
-  const existingRequest = await prisma.friendRequest.findFirst({
-    where: {
-      OR: [
-        { fromUserId: session.user.id, toUserId: target.id },
-        { fromUserId: target.id, toUserId: session.user.id }
-      ]
-    }
-  });
-
-  if (existingRequest?.status === "PENDING") {
+  if (result.kind === "pending") {
     return apiError("A friend request is already pending.", 409);
   }
 
-  const friendRequest =
-    existingRequest?.fromUserId === session.user.id && existingRequest.toUserId === target.id
-      ? await prisma.friendRequest.update({
-          where: { id: existingRequest.id },
-          data: { status: "PENDING" },
-          include: {
-            toUser: {
-              select: {
-                id: true,
-                name: true,
-                username: true,
-                avatarUrl: true
-              }
-            }
-          }
-        })
-      : await prisma.friendRequest.create({
-          data: {
-            fromUserId: session.user.id,
-            toUserId: target.id
-          },
-          include: {
-            toUser: {
-              select: {
-                id: true,
-                name: true,
-                username: true,
-                avatarUrl: true
-              }
-            }
-          }
-        });
+  if (result.kind === "autoAccepted") {
+    await createNotificationSafely({
+      userId: target.id,
+      actorId: session.user.id,
+      type: "FRIEND_REQUEST_ACCEPTED",
+      friendRequestId: result.requestId,
+      dedupeKey: `FRIEND_REQUEST_ACCEPTED:${result.requestId}`
+    });
+
+    return Response.json({ autoAccepted: true, relationshipStatus: "friends" }, { status: 201 });
+  }
 
   await createNotificationSafely({
     userId: target.id,
     actorId: session.user.id,
     type: "FRIEND_REQUEST_RECEIVED",
-    friendRequestId: friendRequest.id,
-    dedupeKey: `FRIEND_REQUEST_RECEIVED:${friendRequest.id}`
+    friendRequestId: result.friendRequest.id,
+    dedupeKey: `FRIEND_REQUEST_RECEIVED:${result.friendRequest.id}`
   });
 
-  return Response.json({ friendRequest }, { status: 201 });
+  return Response.json(
+    {
+      friendRequest: result.friendRequest,
+      relationshipStatus: "pending_sent"
+    },
+    { status: 201 }
+  );
 }

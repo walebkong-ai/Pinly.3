@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, FolderOpen } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { getOwnedCollectionById } from "@/lib/data";
+import { getVisibleCollectionById } from "@/lib/data";
 import { prisma } from "@/lib/prisma";
 import { PostCard } from "@/components/post/post-card";
 import { CollectionDetailShell } from "@/components/collections/collection-detail-shell";
@@ -20,7 +20,7 @@ export default async function CollectionDetailPage({ params }: Props) {
 
   const { collectionId } = await params;
   const [collectionData, settings] = await Promise.all([
-    getOwnedCollectionById(session.user.id, collectionId),
+    getVisibleCollectionById(session.user.id, collectionId),
     prisma.userSettings.findUnique({
       where: { userId: session.user.id },
       select: { showLikeCounts: true }
@@ -72,6 +72,7 @@ export default async function CollectionDetailPage({ params }: Props) {
         <CollectionDetailShell
           collectionId={collection.id}
           color={color}
+          visibility={collection.visibility}
           hasPosts={posts.length > 0}
         />
       </section>

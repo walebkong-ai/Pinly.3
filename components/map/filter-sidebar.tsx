@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MAP_CATEGORY_OPTIONS } from "@/lib/map-filters";
-import type { CollectionSummary, MapCategory, MapGroupOption, TimeFilter } from "@/types/app";
+import type { LayerMode, MapCategory, MapGroupOption, TimeFilter } from "@/types/app";
 
 const timeOptions: Array<{ value: TimeFilter; label: string }> = [
   { value: "all", label: "All Time" },
@@ -13,18 +13,26 @@ const timeOptions: Array<{ value: TimeFilter; label: string }> = [
   { value: "1y", label: "Last Year" }
 ];
 
+const collectionOverlayOptions: Array<{ value: LayerMode; label: string }> = [
+  { value: "both", label: "Both" },
+  { value: "friends", label: "Friends" },
+  { value: "you", label: "You" }
+];
+
 export function FilterSidebar({
   open,
   time,
   selectedGroupIds,
   selectedCategories,
   groupOptions,
-  collections,
-  selectedCollectionId,
+  collectionsOverlayMode,
+  collectionsOverlayCount,
+  collectionsOverlayLoading,
   onTimeChange,
   onToggleGroup,
   onToggleCategory,
-  onSelectCollection,
+  onToggleCollectionsOverlay,
+  onChangeCollectionsOverlayMode,
   onClear,
   onClose
 }: {
@@ -33,12 +41,14 @@ export function FilterSidebar({
   selectedGroupIds: string[];
   selectedCategories: MapCategory[];
   groupOptions: MapGroupOption[];
-  collections: CollectionSummary[];
-  selectedCollectionId: string | null;
+  collectionsOverlayMode: LayerMode | null;
+  collectionsOverlayCount: number;
+  collectionsOverlayLoading: boolean;
   onTimeChange: (value: TimeFilter) => void;
   onToggleGroup: (groupId: string) => void;
   onToggleCategory: (category: MapCategory) => void;
-  onSelectCollection: (id: string | null) => void;
+  onToggleCollectionsOverlay: () => void;
+  onChangeCollectionsOverlayMode: (value: LayerMode) => void;
   onClear: () => void;
   onClose: () => void;
 }) {
@@ -67,47 +77,66 @@ export function FilterSidebar({
           </Button>
         </div>
 
-        {/* Trips & Collections */}
-        {collections.length > 0 && (
-          <section className="mt-8 space-y-4">
-            <div>
-              <p className="text-sm font-semibold">Trips &amp; Collections</p>
-              <p className="mt-1 text-sm text-[var(--foreground)]/58">Focus the map on one trip or collection.</p>
+        <section className="mt-8 space-y-4">
+          <div>
+            <p className="text-sm font-semibold">Collections/Trips</p>
+            <p className="mt-1 text-sm text-[var(--foreground)]/58">
+              Turn on the map overlay for collections and trips, then choose whose routes to show.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onToggleCollectionsOverlay}
+            className={cn(
+              "flex w-full items-center justify-between rounded-3xl border px-4 py-3 text-left text-sm transition",
+              collectionsOverlayMode
+                ? "border-[rgba(56,182,201,0.24)] bg-[var(--map-accent-soft)] text-[var(--foreground)]"
+                : "bg-[var(--surface-soft)] hover:bg-[var(--surface-strong)]"
+            )}
+          >
+            <div className="space-y-1">
+              <p className="font-medium">Collections/Trips</p>
+              <p className="text-xs text-[var(--foreground)]/56">
+                {collectionsOverlayMode
+                  ? collectionsOverlayLoading
+                    ? "Loading routes on the map..."
+                    : collectionsOverlayCount > 0
+                      ? `${collectionsOverlayCount} collection${collectionsOverlayCount === 1 ? "" : "s"} on the map`
+                      : "No matching collections are visible right now."
+                  : "Tap once to turn it on in Both mode."}
+              </p>
             </div>
-            <div className="space-y-2">
-              {collections.map((col) => {
-                const isActive = selectedCollectionId === col.id;
-                return (
-                  <button
-                    key={col.id}
-                    type="button"
-                    onClick={() => onSelectCollection(isActive ? null : col.id)}
-                    className={cn(
-                      "flex w-full items-center gap-3 rounded-3xl border px-4 py-3 text-left text-sm transition",
-                      isActive
-                        ? "border-[rgba(56,182,201,0.24)] bg-[var(--map-accent-soft)] text-[var(--foreground)]"
-                        : "bg-[var(--surface-soft)] hover:bg-[var(--surface-strong)]"
-                    )}
-                  >
-                    {/* Color swatch */}
-                    <span
-                      className="h-3 w-3 shrink-0 rounded-full"
-                      style={{ backgroundColor: col.color ?? "var(--map-accent)" }}
-                      aria-hidden
-                    />
-                    <span className="flex-1 truncate">{col.name}</span>
-                    <span className="shrink-0 text-xs text-[var(--foreground)]/45">
-                      {col.postCount} {col.postCount === 1 ? "memory" : "memories"}
-                    </span>
-                    <span
-                      className={cn("h-3 w-3 shrink-0 rounded-full border", isActive && "bg-[var(--map-accent)] border-[var(--map-accent)]")}
-                    />
-                  </button>
-                );
-              })}
+            <span
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs font-medium",
+                collectionsOverlayMode
+                  ? "border-[var(--map-accent)] bg-[var(--foreground)] text-[var(--background)]"
+                  : "border-[var(--line)] bg-[var(--surface-strong)] text-[var(--foreground)]/58"
+              )}
+            >
+              {collectionsOverlayMode ? "On" : "Off"}
+            </span>
+          </button>
+          {collectionsOverlayMode ? (
+            <div className="grid grid-cols-3 gap-2">
+              {collectionOverlayOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => onChangeCollectionsOverlayMode(option.value)}
+                  className={cn(
+                    "rounded-full border px-3 py-2 text-sm font-medium transition",
+                    collectionsOverlayMode === option.value
+                      ? "border-[rgba(56,182,201,0.24)] bg-[var(--foreground)] text-[var(--background)] shadow-sm"
+                      : "bg-[var(--surface-soft)] text-[var(--foreground)]/72 hover:bg-[var(--surface-strong)]"
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
             </div>
-          </section>
-        )}
+          ) : null}
+        </section>
 
         <section className="mt-8 space-y-4">
           <p className="text-sm font-semibold">Time</p>

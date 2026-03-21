@@ -36,12 +36,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
     return apiError("Collection not found.", 404);
   }
 
-  const updateData: { name?: string; color?: string | null } = {};
+  const updateData: { name?: string; color?: string | null; visibility?: any } = {};
   if (parsed.data.name !== undefined) {
     updateData.name = parsed.data.name.trim();
   }
   if (parsed.data.color !== undefined) {
     updateData.color = parsed.data.color ?? null;
+  }
+  if (parsed.data.visibility !== undefined) {
+    updateData.visibility = parsed.data.visibility;
   }
 
   const updated = await prisma.postCollection.update({
@@ -51,6 +54,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
       id: true,
       name: true,
       color: true,
+      visibility: true,
       updatedAt: true
     }
   });

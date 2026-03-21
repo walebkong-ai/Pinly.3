@@ -1,2 +1,2 @@
-ALTER TABLE "UserSettings"
-ADD COLUMN "commentsEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE IF EXISTS "UserSettings"
+ADD COLUMN IF NOT EXISTS "commentsEnabled" BOOLEAN NOT NULL DEFAULT true;

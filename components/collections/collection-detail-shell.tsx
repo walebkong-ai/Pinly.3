@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { LoaderCircle } from "lucide-react";
+import type { CollectionVisibility } from "@/types/app";
 
 // Both components use browser APIs (MapLibre, router) — must be ssr:false.
 const CollectionMapView = dynamic(
@@ -21,20 +22,32 @@ const CollectionColorEditor = dynamic(
   { ssr: false }
 );
 
+const CollectionVisibilityEditor = dynamic(
+  () => import("@/components/collections/collection-visibility-editor").then((m) => m.CollectionVisibilityEditor),
+  { ssr: false }
+);
+
 export function CollectionDetailShell({
   collectionId,
   color,
+  visibility,
   hasPosts
 }: {
   collectionId: string;
   color: string | null;
+  visibility: CollectionVisibility;
   hasPosts: boolean;
 }) {
   return (
     <>
       {/* Inline color editor inside the header card */}
       <div className="mt-4 border-t border-[var(--foreground)]/6 pt-4">
-        <CollectionColorEditor collectionId={collectionId} initialColor={color} />
+        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div className="flex-1 space-y-4">
+            <CollectionColorEditor collectionId={collectionId} initialColor={color} />
+            <CollectionVisibilityEditor collectionId={collectionId} initialVisibility={visibility} />
+          </div>
+        </div>
       </div>
 
       {/* Route map — shown when collection has memories */}

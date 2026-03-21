@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getOwnedCollections, getProfileData } from "@/lib/data";
+import { getVisibleCollectionsForUser, getProfileData } from "@/lib/data";
 import { isPrismaSchemaNotReadyError } from "@/lib/prisma-errors";
+import { getRelationshipDetails } from "@/lib/relationships";
 import { ProfileView } from "@/components/profile/profile-view";
 import { normalizeUsername } from "@/lib/validation";
 
@@ -55,7 +56,10 @@ export default async function ProfilePage({ params }: Props) {
   }
 
   const isOwnProfile = profile.user.id === session.user.id;
-  const collections = isOwnProfile ? await getOwnedCollections(session.user.id, 6) : [];
+  const [collections, relationship] = await Promise.all([
+    getVisibleCollectionsForUser(session.user.id, profile.user.id, 6),
+    getRelationshipDetails(session.user.id, profile.user.id)
+  ]);
 
   return (
     <ProfileView
@@ -63,6 +67,7 @@ export default async function ProfilePage({ params }: Props) {
       isOwnProfile={isOwnProfile}
       showLikeCounts={settings?.showLikeCounts ?? true}
       collections={collections}
+      relationship={relationship}
     />
   );
 }

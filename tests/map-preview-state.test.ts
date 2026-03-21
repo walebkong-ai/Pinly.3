@@ -51,6 +51,7 @@ function createLocationCluster(post: PostSummary): MapMarker {
     country: post.country,
     postCount: 2,
     visitors: [post.user],
+    postIds: [post.id],
     previewPost: {
       id: post.id,
       caption: post.caption,

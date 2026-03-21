@@ -78,7 +78,7 @@ export function WelcomeCard({ forceOpen = false }: { forceOpen?: boolean }) {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium">Add friends</p>
-              <p className="text-xs text-[var(--foreground)]/55">See each other's pins on the map</p>
+              <p className="text-xs text-[var(--foreground)]/55">See each other&apos;s pins on the map</p>
             </div>
           </Link>
 

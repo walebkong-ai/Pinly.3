@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { normalizeFriendPair } from "@/lib/friendships";
 
 export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -40,7 +41,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--accent)]/10 text-2xl">
             👋
           </div>
-          <h1 className="text-2xl font-[var(--font-serif)]">You're Invited!</h1>
+          <h1 className="text-2xl font-[var(--font-serif)]">You&apos;re Invited!</h1>
           <p className="mt-2 text-sm text-[var(--foreground)]/60">
             <strong>{invite.createdByUser.name}</strong> invited you to join Pinly.
           </p>
@@ -86,23 +87,31 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
 
   // Auto-establish friendship from the valid invite token
   try {
-    await prisma.friendship.create({
-      data: {
-        userAId: currentUserId,
-        userBId: invite.createdByUserId
-      }
-    });
+    const pair = normalizeFriendPair(currentUserId, invite.createdByUserId);
 
-    // Optionally delete pending requests between them
-    await prisma.friendRequest.deleteMany({
-      where: {
-        OR: [
-          { fromUserId: currentUserId, toUserId: invite.createdByUserId },
-          { fromUserId: invite.createdByUserId, toUserId: currentUserId }
-        ]
-      }
-    });
-
+    await prisma.$transaction([
+      prisma.friendship.deleteMany({
+        where: {
+          userAId: pair.userBId,
+          userBId: pair.userAId
+        }
+      }),
+      prisma.friendship.upsert({
+        where: {
+          userAId_userBId: pair
+        },
+        create: pair,
+        update: {}
+      }),
+      prisma.friendRequest.deleteMany({
+        where: {
+          OR: [
+            { fromUserId: currentUserId, toUserId: invite.createdByUserId },
+            { fromUserId: invite.createdByUserId, toUserId: currentUserId }
+          ]
+        }
+      })
+    ]);
   } catch (error) {
     // If it fails (e.g. unique constraint race condition), just go to friends
     console.error("Failed to accept invite:", error);

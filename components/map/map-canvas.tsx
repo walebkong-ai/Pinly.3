@@ -2,7 +2,8 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { Layer, Marker, Popup, Source, type MapRef } from "react-map-gl/maplibre";
-import type { MapCollectionFilter, MapMarker, MapVisualMode, PlaceClusterMarker, PostSummary } from "@/types/app";
+import type { ResolvedMapCollectionOverlay } from "@/lib/map-collection-overlays";
+import type { MapMarker, MapVisualMode, PlaceClusterMarker, PostSummary } from "@/types/app";
 import { MarkerPreview } from "@/components/map/marker-preview";
 import {
   getMarkerAnchor,
@@ -40,6 +41,16 @@ function jitterRoutePoints(points: { latitude: number; longitude: number }[]) {
   });
 }
 
+function hasCollapsedBounds(points: Array<{ latitude: number; longitude: number }>) {
+  const latitudes = points.map((point) => point.latitude);
+  const longitudes = points.map((point) => point.longitude);
+
+  return (
+    Math.max(...latitudes) - Math.min(...latitudes) < 0.0008 &&
+    Math.max(...longitudes) - Math.min(...longitudes) < 0.0008
+  );
+}
+
 const MapMarkerNode = memo(
   function MapMarkerNode({
     marker,
@@ -67,7 +78,7 @@ const MapMarkerNode = memo(
         anchor={getMarkerAnchor(marker)}
         opacityWhenCovered="0"
         subpixelPositioning
-        style={{ zIndex: getMarkerRenderPriority(marker, isSelected), opacity: dimmed ? 0.32 : 1 }}
+        style={{ zIndex: getMarkerRenderPriority(marker, isSelected), opacity: dimmed ? 0.15 : 1 }}
         onClick={(event) => onSelect(marker, event)}
       >
         <div
@@ -90,8 +101,8 @@ function getMarkerPostIds(marker: MapMarker): string[] {
   if (marker.type === "pin" || marker.type === "profileBubble") {
     return [marker.post.id];
   }
-  if (marker.type === "placeCluster") {
-    return marker.posts.map((p) => p.id);
+  if (marker.type === "placeCluster" || marker.type === "cityCluster") {
+    return marker.postIds;
   }
   return [];
 }
@@ -104,8 +115,8 @@ export function MapCanvas({
   markers,
   mapMode,
   mapStyle,
-  collectionFilter,
-  collectionFitBoundsTarget,
+  collectionOverlays,
+  collectionOverlayFitBoundsTarget,
   onExpandPost,
   onFocusedCoordinatesApplied,
   onOpenLocationCluster,
@@ -125,8 +136,8 @@ export function MapCanvas({
     bearing?: number;
   };
   selectedLocationMarkerId: string | null;
-  collectionFilter: MapCollectionFilter | null;
-  collectionFitBoundsTarget?: {
+  collectionOverlays: ResolvedMapCollectionOverlay[];
+  collectionOverlayFitBoundsTarget?: {
     key: string;
     points: Array<{ latitude: number; longitude: number }>;
   } | null;
@@ -215,22 +226,25 @@ export function MapCanvas({
 
   // Fit map bounds to selected collection once — guarded by key ref
   useEffect(() => {
-    if (!collectionFitBoundsTarget) {
+    if (!collectionOverlayFitBoundsTarget) {
       lastFitCollectionKeyRef.current = null;
       return;
     }
 
-    if (!mapRef.current || lastFitCollectionKeyRef.current === collectionFitBoundsTarget.key) {
+    if (!mapRef.current || lastFitCollectionKeyRef.current === collectionOverlayFitBoundsTarget.key) {
       return;
     }
 
-    lastFitCollectionKeyRef.current = collectionFitBoundsTarget.key;
-    const { points } = collectionFitBoundsTarget;
+    lastFitCollectionKeyRef.current = collectionOverlayFitBoundsTarget.key;
+    const { points } = collectionOverlayFitBoundsTarget;
+    const mapInstance = mapRef.current;
 
-    if (points.length === 1) {
-      mapRef.current.easeTo({
+    if (points.length === 1 || hasCollapsedBounds(points)) {
+      const currentZoom = mapInstance.getZoom();
+
+      mapInstance.easeTo({
         center: [points[0].longitude, points[0].latitude],
-        zoom: 12,
+        zoom: Math.min(Math.max(currentZoom, 10.5), 12.5),
         duration: 900
       });
     } else {
@@ -240,12 +254,16 @@ export function MapCanvas({
       const north = Math.max(...lats);
       const west = Math.min(...lngs);
       const east = Math.max(...lngs);
-      mapRef.current.fitBounds(
+      mapInstance.fitBounds(
         [west, south, east, north],
-        { padding: 80, duration: 900, maxZoom: 14 }
+        {
+          padding: { top: 110, right: 28, bottom: 220, left: 28 },
+          duration: 900,
+          maxZoom: 13.5
+        }
       );
     }
-  }, [collectionFitBoundsTarget]);
+  }, [collectionOverlayFitBoundsTarget]);
 
   const handleMoveEnd = useCallback(() => {
     reportViewport();
@@ -318,33 +336,55 @@ export function MapCanvas({
     [onOpenLocationCluster]
   );
 
-  // Build route geojson and jitter guard
-  const routeGeojson = useMemo(() => {
-    if (!collectionFilter || collectionFilter.routePoints.length < 2) return null;
-    const jittered = jitterRoutePoints(collectionFilter.routePoints);
-    return {
-      type: "FeatureCollection" as const,
-      features: [
-        {
-          type: "Feature" as const,
-          geometry: {
-            type: "LineString" as const,
-            coordinates: jittered.map((p) => [p.longitude, p.latitude])
-          },
-          properties: {}
-        }
-      ]
-    };
-  }, [collectionFilter]);
+  const collectionColorByPostId = useMemo(() => {
+    const colorByPostId = new globalThis.Map<string, string>();
 
-  // Determine per-marker color override and dim state when collection filter is active
+    for (const collectionOverlay of collectionOverlays) {
+      for (const postId of collectionOverlay.postIds) {
+        if (!colorByPostId.has(postId)) {
+          colorByPostId.set(postId, collectionOverlay.resolvedColor);
+        }
+      }
+    }
+
+    return colorByPostId;
+  }, [collectionOverlays]);
+
+  const routeGeojsons = useMemo(
+    () =>
+      collectionOverlays
+        .filter((collectionOverlay) => collectionOverlay.routePoints.length >= 2)
+        .map((collectionOverlay) => ({
+          id: collectionOverlay.id,
+          color: collectionOverlay.resolvedColor,
+          data: {
+            type: "FeatureCollection" as const,
+            features: [
+              {
+                type: "Feature" as const,
+                geometry: {
+                  type: "LineString" as const,
+                  coordinates: jitterRoutePoints(collectionOverlay.routePoints).map((point) => [point.longitude, point.latitude])
+                },
+                properties: {}
+              }
+            ]
+          }
+        })),
+    [collectionOverlays]
+  );
+
   function getMarkerCollectionState(marker: MapMarker): { colorOverride: string | null; dimmed: boolean } {
-    if (!collectionFilter) return { colorOverride: null, dimmed: false };
+    if (collectionOverlays.length === 0) {
+      return { colorOverride: null, dimmed: false };
+    }
+
     const postIds = getMarkerPostIds(marker);
-    const isInCollection = postIds.some((id) => collectionFilter.postIds.has(id));
+    const matchedColor = postIds.find((postId) => collectionColorByPostId.has(postId));
+
     return {
-      colorOverride: isInCollection ? collectionFilter.color : null,
-      dimmed: !isInCollection
+      colorOverride: matchedColor ? collectionColorByPostId.get(matchedColor) ?? null : null,
+      dimmed: !matchedColor
     };
   }
 
@@ -375,28 +415,27 @@ export function MapCanvas({
         maxPitch={85}
         projection="globe"
       >
-        {/* Collection route line */}
-        {routeGeojson && collectionFilter && (
-          <Source id="collection-route" type="geojson" data={routeGeojson}>
+        {routeGeojsons.map((routeGeojson) => (
+          <Source key={routeGeojson.id} id={`collection-route-${routeGeojson.id}`} type="geojson" data={routeGeojson.data}>
             <Layer
-              id="collection-route-shadow"
+              id={`collection-route-shadow-${routeGeojson.id}`}
               type="line"
               paint={{ "line-color": "#000000", "line-width": 6, "line-opacity": 0.07, "line-blur": 4 }}
               layout={{ "line-cap": "round", "line-join": "round" }}
             />
             <Layer
-              id="collection-route-line"
+              id={`collection-route-line-${routeGeojson.id}`}
               type="line"
               paint={{
-                "line-color": collectionFilter.color,
+                "line-color": routeGeojson.color,
                 "line-width": 2.5,
-                "line-opacity": 0.8,
+                "line-opacity": 0.82,
                 "line-dasharray": [2, 2.5]
               }}
               layout={{ "line-cap": "round", "line-join": "round" }}
             />
           </Source>
-        )}
+        ))}
 
         {unselectedMarkers.map((marker) => {
           const { colorOverride, dimmed } = getMarkerCollectionState(marker);

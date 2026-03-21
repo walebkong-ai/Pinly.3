@@ -4,7 +4,6 @@ import { createNotificationSafely } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { friendRequestActionSchema } from "@/lib/validation";
 import { apiError, apiValidationError } from "@/lib/api";
-import { getPrismaErrorCode } from "@/lib/prisma-errors";
 
 export const runtime = "nodejs";
 
@@ -29,44 +28,103 @@ export async function POST(request: Request) {
     return apiValidationError(parsed.error);
   }
 
-  const friendRequest = await prisma.friendRequest.findUnique({
-    where: { id: parsed.data.requestId }
+  const result = await prisma.$transaction(async (tx) => {
+    const friendRequest = await tx.friendRequest.findUnique({
+      where: { id: parsed.data.requestId }
+    });
+
+    if (!friendRequest || friendRequest.toUserId !== session.user.id) {
+      return { kind: "not_found" } as const;
+    }
+
+    if (parsed.data.action === "accept") {
+      const normalizedPair = normalizeFriendPair(friendRequest.fromUserId, friendRequest.toUserId);
+
+      if (friendRequest.status === "DECLINED") {
+        return { kind: "already_declined" } as const;
+      }
+
+      await tx.friendRequest.updateMany({
+        where: {
+          OR: [
+            { fromUserId: friendRequest.fromUserId, toUserId: friendRequest.toUserId },
+            { fromUserId: friendRequest.toUserId, toUserId: friendRequest.fromUserId }
+          ],
+          status: "PENDING"
+        },
+        data: {
+          status: "ACCEPTED"
+        }
+      });
+      await tx.friendship.upsert({
+        where: {
+          userAId_userBId: normalizedPair
+        },
+        create: normalizedPair,
+        update: {}
+      });
+      await tx.friendship.deleteMany({
+        where: {
+          userAId: normalizedPair.userBId,
+          userBId: normalizedPair.userAId
+        }
+      });
+
+      return {
+        kind: "accepted",
+        requestId: friendRequest.id,
+        fromUserId: friendRequest.fromUserId,
+        alreadyHandled: friendRequest.status === "ACCEPTED"
+      } as const;
+    }
+
+    if (friendRequest.status === "ACCEPTED") {
+      return { kind: "already_accepted" } as const;
+    }
+
+    await tx.friendRequest.updateMany({
+      where: {
+        OR: [
+          { fromUserId: friendRequest.fromUserId, toUserId: friendRequest.toUserId },
+          { fromUserId: friendRequest.toUserId, toUserId: friendRequest.fromUserId }
+        ],
+        status: "PENDING"
+      },
+      data: {
+        status: "DECLINED"
+      }
+    });
+
+    return {
+      kind: "declined"
+    } as const;
   });
 
-  if (!friendRequest || friendRequest.toUserId !== session.user.id) {
+  if (result.kind === "not_found") {
     return apiError("Friend request not found.", 404);
   }
 
-  if (friendRequest.status !== "PENDING") {
-    return apiError("This friend request has already been handled.", 409);
+  if (result.kind === "already_declined") {
+    return apiError("This friend request has already been declined.", 409);
   }
 
-  const status = parsed.data.action === "accept" ? "ACCEPTED" : "DECLINED";
+  if (result.kind === "already_accepted") {
+    return apiError("This friend request has already been accepted.", 409);
+  }
 
-  await prisma.friendRequest.update({
-    where: { id: friendRequest.id },
-    data: { status }
-  });
-
-  if (status === "ACCEPTED") {
-    try {
-      await prisma.friendship.create({
-        data: normalizeFriendPair(friendRequest.fromUserId, friendRequest.toUserId)
+  if (result.kind === "accepted") {
+    if (!result.alreadyHandled) {
+      await createNotificationSafely({
+        userId: result.fromUserId,
+        actorId: session.user.id,
+        type: "FRIEND_REQUEST_ACCEPTED",
+        friendRequestId: result.requestId,
+        dedupeKey: `FRIEND_REQUEST_ACCEPTED:${result.requestId}`
       });
-    } catch (error) {
-      if (getPrismaErrorCode(error) !== "P2002") {
-        throw error;
-      }
     }
 
-    await createNotificationSafely({
-      userId: friendRequest.fromUserId,
-      actorId: session.user.id,
-      type: "FRIEND_REQUEST_ACCEPTED",
-      friendRequestId: friendRequest.id,
-      dedupeKey: `FRIEND_REQUEST_ACCEPTED:${friendRequest.id}`
-    });
+    return Response.json({ ok: true, relationshipStatus: "friends" });
   }
 
-  return Response.json({ ok: true });
+  return Response.json({ ok: true, relationshipStatus: "none" });
 }

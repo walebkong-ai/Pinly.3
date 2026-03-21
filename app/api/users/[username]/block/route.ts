@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { normalizeUsername } from "@/lib/validation";
 
 export async function POST(
   request: Request,
@@ -16,7 +17,7 @@ export async function POST(
     const currentUserId = session.user.id;
 
     const targetUser = await prisma.user.findUnique({
-      where: { username },
+      where: { username: normalizeUsername(username) },
       select: { id: true },
     });
 
@@ -30,32 +31,31 @@ export async function POST(
       return NextResponse.json({ error: "Cannot block yourself" }, { status: 400 });
     }
 
-    // Execute the "Remove Friend" logic
-    await prisma.friendship.deleteMany({
-      where: {
-        OR: [
-          { userAId: currentUserId, userBId: targetUserId },
-          { userAId: targetUserId, userBId: currentUserId },
-        ],
-      },
-    });
-
-    await prisma.friendRequest.deleteMany({
-      where: {
-        OR: [
-          { fromUserId: currentUserId, toUserId: targetUserId },
-          { fromUserId: targetUserId, toUserId: currentUserId },
-        ],
-      },
-    });
-
-    // Create the Block record
-    await prisma.block.create({
-      data: {
-        blockerId: currentUserId,
-        blockedId: targetUserId,
-      },
-    });
+    // Atomically remove friendship/requests and create the block
+    await prisma.$transaction([
+      prisma.friendship.deleteMany({
+        where: {
+          OR: [
+            { userAId: currentUserId, userBId: targetUserId },
+            { userAId: targetUserId, userBId: currentUserId },
+          ],
+        },
+      }),
+      prisma.friendRequest.deleteMany({
+        where: {
+          OR: [
+            { fromUserId: currentUserId, toUserId: targetUserId },
+            { fromUserId: targetUserId, toUserId: currentUserId },
+          ],
+        },
+      }),
+      prisma.block.create({
+        data: {
+          blockerId: currentUserId,
+          blockedId: targetUserId,
+        },
+      }),
+    ]);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

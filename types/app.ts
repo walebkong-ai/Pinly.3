@@ -8,10 +8,13 @@ export type UserSummary = {
   } | null;
 };
 
+export type CollectionVisibility = "public" | "friends" | "private";
+
 export type CollectionSummary = {
   id: string;
   name: string;
   color: string | null;
+  visibility: CollectionVisibility;
   postCount: number;
   updatedAt: string | Date;
   previewPost: {
@@ -38,11 +41,13 @@ export type CollectionRoutePoint = {
   visitedAt: string | Date;
 };
 
-export type MapCollectionFilter = {
-  collectionId: string;
+export type MapCollectionOverlay = {
+  id: string;
+  ownerId: string;
   name: string;
-  color: string;
-  postIds: Set<string>;
+  color: string | null;
+  updatedAt: string | Date;
+  postIds: string[];
   routePoints: CollectionRoutePoint[];
 };
 
@@ -181,6 +186,7 @@ export type CityClusterMarker = {
   postCount: number;
   friendCount: number;
   visitors: UserSummary[];
+  postIds: string[];
 };
 
 export type PlaceClusterMarker = {
@@ -195,6 +201,7 @@ export type PlaceClusterMarker = {
   visitors: UserSummary[];
   previewPost: MarkerPreviewPost;
   posts: PostSummary[];
+  postIds: string[];
 };
 
 export type PinMarker = {
@@ -253,3 +260,5 @@ export type PlaceSearchResult = {
   latitude: number;
   longitude: number;
 };
+
+export type RelationshipStatus = "friends" | "pending_sent" | "pending_received" | "none" | "blocked" | "self";

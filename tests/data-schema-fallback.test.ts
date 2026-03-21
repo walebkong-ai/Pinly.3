@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
-const { friendshipFindManyMock, blockFindManyMock } = vi.hoisted(() => ({
+const { friendshipFindManyMock, friendRequestFindManyMock, blockFindManyMock } = vi.hoisted(() => ({
   friendshipFindManyMock: vi.fn(),
+  friendRequestFindManyMock: vi.fn(),
   blockFindManyMock: vi.fn()
 }));
 
@@ -9,6 +10,9 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     friendship: {
       findMany: friendshipFindManyMock
+    },
+    friendRequest: {
+      findMany: friendRequestFindManyMock
     },
     block: {
       findMany: blockFindManyMock
@@ -25,7 +29,9 @@ describe("data schema fallback", () => {
 
   beforeEach(() => {
     friendshipFindManyMock.mockReset();
+    friendRequestFindManyMock.mockReset();
     blockFindManyMock.mockReset();
+    friendRequestFindManyMock.mockResolvedValue([]);
   });
 
   test("keeps visible ids when the block table is not ready yet", async () => {
@@ -60,5 +66,23 @@ describe("data schema fallback", () => {
     blockFindManyMock.mockResolvedValue([]);
 
     await expect(getFriendIds(viewerId)).resolves.toEqual([]);
+  });
+
+  test("treats accepted requests as friends when legacy friendship rows are missing", async () => {
+    friendshipFindManyMock.mockResolvedValue([]);
+    friendRequestFindManyMock.mockResolvedValue([
+      {
+        id: "request_1",
+        fromUserId: viewerId,
+        toUserId: friendId,
+        status: "ACCEPTED",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ]);
+    blockFindManyMock.mockResolvedValue([]);
+
+    await expect(getFriendIds(viewerId)).resolves.toEqual([friendId]);
+    await expect(getVisibleUserIds(viewerId)).resolves.toEqual([viewerId, friendId]);
   });
 });

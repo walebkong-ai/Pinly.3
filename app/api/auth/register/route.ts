@@ -1,4 +1,5 @@
 import { hash } from "bcryptjs";
+import { normalizeFriendPair } from "@/lib/friendships";
 import { prisma } from "@/lib/prisma";
 import { normalizeUsername, signUpSchema } from "@/lib/validation";
 import { apiError, apiValidationError } from "@/lib/api";
@@ -65,12 +66,31 @@ export async function POST(request: Request) {
       });
 
       if (invite && (!invite.expiresAt || invite.expiresAt > new Date())) {
-        await prisma.friendship.create({
-          data: {
-            userAId: user.id,
-            userBId: invite.createdByUserId
-          }
-        });
+        const pair = normalizeFriendPair(user.id, invite.createdByUserId);
+
+        await prisma.$transaction([
+          prisma.friendship.deleteMany({
+            where: {
+              userAId: pair.userBId,
+              userBId: pair.userAId
+            }
+          }),
+          prisma.friendship.upsert({
+            where: {
+              userAId_userBId: pair
+            },
+            create: pair,
+            update: {}
+          }),
+          prisma.friendRequest.deleteMany({
+            where: {
+              OR: [
+                { fromUserId: user.id, toUserId: invite.createdByUserId },
+                { fromUserId: invite.createdByUserId, toUserId: user.id }
+              ]
+            }
+          })
+        ]);
       }
     }
   } catch (error) {

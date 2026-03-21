@@ -17,6 +17,7 @@ import { LayerToggle } from "@/components/map/layer-toggle";
 import { MapModeToggle } from "@/components/map/map-mode-toggle";
 import { SameLocationSheet } from "@/components/map/same-location-sheet";
 import { WelcomeCard } from "@/components/map/welcome-card";
+import { buildCollectionOverlayFitBoundsTarget, buildResolvedMapCollectionOverlays } from "@/lib/map-collection-overlays";
 import { buildLightweightMapGroups } from "@/lib/map-groups";
 import {
   backFromPostPreview,
@@ -42,7 +43,7 @@ import {
 } from "@/lib/map-post-navigation";
 import { MAP_MODE_STORAGE_KEY, getMapStyle, isSatelliteModeAvailable, parseStoredMapMode } from "@/lib/map-style";
 import { canonicalizeViewportForDataQuery, createViewportFingerprint, FULL_WORLD_BOUNDS, type MapViewport } from "@/lib/map-viewport";
-import type { CollectionSummary, LayerMode, MapCategory, MapCollectionFilter, MapGroupOption, MapResponse, MapVisualMode, PlaceClusterMarker, PostSummary, TimeFilter } from "@/types/app";
+import type { LayerMode, MapCategory, MapCollectionOverlay, MapGroupOption, MapResponse, MapVisualMode, PlaceClusterMarker, PostSummary, TimeFilter } from "@/types/app";
 
 const DynamicMapCanvas = dynamic(() => import("@/components/map/map-canvas").then((mod) => mod.MapCanvas), {
   ssr: false,
@@ -77,10 +78,10 @@ export function MapPageClient() {
   const [mapData, setMapData] = useState<MapResponse>(emptyMap);
   const [loadingMap, setLoadingMap] = useState(true);
   const [groupOptions, setGroupOptions] = useState<MapGroupOption[]>([]);
-  const [collections, setCollections] = useState<CollectionSummary[]>([]);
-  const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
-  const [collectionFilter, setCollectionFilter] = useState<MapCollectionFilter | null>(null);
-  const [collectionFitBoundsTarget, setCollectionFitBoundsTarget] = useState<{
+  const [collectionsOverlayMode, setCollectionsOverlayMode] = useState<LayerMode | null>(null);
+  const [collectionsOverlayLoading, setCollectionsOverlayLoading] = useState(false);
+  const [collectionOverlays, setCollectionOverlays] = useState<ReturnType<typeof buildResolvedMapCollectionOverlays>>([]);
+  const [collectionOverlayFitBoundsTarget, setCollectionOverlayFitBoundsTarget] = useState<{
     key: string;
     points: Array<{ latitude: number; longitude: number }>;
   } | null>(null);
@@ -109,6 +110,8 @@ export function MapPageClient() {
   const satelliteToggleVisible = true;
   const satelliteAvailability = satelliteFailed ? "failed" : "available";
   const activeMapMode = satelliteModeAvailable && !satelliteFailed ? mapMode : "default";
+  const collectionsOverlayEnabled = collectionsOverlayMode !== null;
+  const effectiveLayer = collectionsOverlayMode ?? layer;
   const expandedPost = getExpandedPreviewPost(previewState);
   const selectedLocationMarkerId = getSelectedLocationPreviewMarkerId(previewState);
   const mapFocusTarget = resolveMapFocusTarget({
@@ -205,89 +208,87 @@ export function MapPageClient() {
     };
   }, []);
 
-  // Load user collections for the filter sidebar
   useEffect(() => {
+    if (!collectionsOverlayMode) {
+      setCollectionsOverlayLoading(false);
+      setCollectionOverlays([]);
+      setCollectionOverlayFitBoundsTarget(null);
+      return;
+    }
+
+    const overlayLayer = collectionsOverlayMode;
+    const abortController = new AbortController();
     let ignore = false;
 
-    async function loadCollections() {
-      const response = await fetch("/api/collections");
+    async function loadCollectionOverlay() {
+      setCollectionsOverlayLoading(true);
 
-      if (!response.ok) return;
+      const params = new URLSearchParams({
+        layer: overlayLayer
+      });
 
-      const data = await response.json();
-
-      if (!ignore) {
-        setCollections(
-          (data.collections ?? []).filter((c: CollectionSummary) => c.postCount > 0)
-        );
+      if (selectedGroupIds.length) {
+        params.set("groups", selectedGroupIds.join(","));
       }
-    }
 
-    void loadCollections();
+      let response: Response;
 
-    return () => {
-      ignore = true;
-    };
-  }, []);
-
-  // When a collection is selected, fetch its route points and build the filter
-  useEffect(() => {
-    if (!selectedCollectionId) {
-      setCollectionFilter(null);
-      return;
-    }
-
-    const selectedCol = collections.find((c) => c.id === selectedCollectionId);
-
-    if (!selectedCol) {
-      setCollectionFilter(null);
-      return;
-    }
-
-    // Capture primitives before async boundary so TS can narrow them
-    const colId = selectedCol.id;
-    const colName = selectedCol.name;
-    const colColor = selectedCol.color ?? "#38B6C9";
-
-    let ignore = false;
-
-    async function loadCollectionRoute() {
-      const response = await fetch(`/api/collections/${colId}/route-points`);
-
-      if (!response.ok || ignore) return;
-
-      const data = await response.json();
-      const points: Array<{ postId: string; latitude: number; longitude: number; visitedAt: string }> = data.points ?? [];
-
-      if (!ignore) {
-        const validPoints = points.filter(
-          (p) =>
-            isFinite(p.latitude) &&
-            isFinite(p.longitude) &&
-            p.latitude >= -90 &&
-            p.latitude <= 90 &&
-            p.longitude >= -180 &&
-            p.longitude <= 180
-        );
-        setCollectionFilter({
-          collectionId: colId,
-          name: colName,
-          color: colColor,
-          postIds: new Set(points.map((p) => p.postId)),
-          routePoints: points
+      try {
+        response = await fetch(`/api/map/collections?${params.toString()}`, {
+          signal: abortController.signal
         });
-        if (validPoints.length > 0) {
-          setCollectionFitBoundsTarget({ key: colId, points: validPoints });
+      } catch (error) {
+        if (ignore || (error instanceof DOMException && error.name === "AbortError")) {
+          return;
         }
+
+        setCollectionOverlays([]);
+        setCollectionOverlayFitBoundsTarget(null);
+        setCollectionsOverlayLoading(false);
+        return;
       }
+
+      if (!response.ok || ignore) {
+        if (!ignore) {
+          setCollectionOverlays([]);
+          setCollectionOverlayFitBoundsTarget(null);
+          setCollectionsOverlayLoading(false);
+        }
+        return;
+      }
+
+      const data = (await response.json().catch(() => null)) as { collections?: MapCollectionOverlay[] } | null;
+
+      if (!data || ignore) {
+        if (!ignore) {
+          setCollectionOverlays([]);
+          setCollectionOverlayFitBoundsTarget(null);
+          setCollectionsOverlayLoading(false);
+        }
+        return;
+      }
+
+      const nextCollectionOverlays = buildResolvedMapCollectionOverlays(data.collections ?? []);
+
+      setCollectionOverlays(nextCollectionOverlays);
+      setCollectionOverlayFitBoundsTarget(
+        buildCollectionOverlayFitBoundsTarget(
+          `collections-overlay:${collectionsOverlayMode}:${selectedGroupIds.join(",")}:${nextCollectionOverlays
+            .map((collectionOverlay) => `${collectionOverlay.id}:${collectionOverlay.postIds.length}`)
+            .join("|")}`,
+          nextCollectionOverlays
+        )
+      );
+      setCollectionsOverlayLoading(false);
     }
 
-    void loadCollectionRoute();
+    void loadCollectionOverlay();
 
     return () => {
       ignore = true;
+      abortController.abort();
     };
-  }, [selectedCollectionId, collections]);
+  }, [collectionsOverlayMode, selectedGroupIds]);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -303,9 +304,13 @@ export function MapPageClient() {
         east: String(viewport.bounds.east),
         west: String(viewport.bounds.west),
         zoom: String(viewport.zoom),
-        layer,
+        layer: effectiveLayer,
         time
       });
+
+      if (collectionsOverlayEnabled) {
+        params.set("collectionsOverlay", "1");
+      }
 
       if (selectedGroupIds.length) {
         params.set("groups", selectedGroupIds.join(","));
@@ -368,11 +373,15 @@ export function MapPageClient() {
       ignore = true;
       abortController.abort();
     };
-  }, [viewport, deferredQuery, layer, time, selectedGroupIds, selectedCategories]);
+  }, [viewport, deferredQuery, effectiveLayer, time, selectedGroupIds, selectedCategories, collectionsOverlayEnabled]);
 
   useEffect(() => {
     setPreviewState((currentState) => syncPreviewStateWithMarkers(currentState, mapData.markers));
   }, [mapData.markers]);
+
+  useEffect(() => {
+    setPreviewState(closeMapPreview());
+  }, [collectionsOverlayMode]);
 
   useEffect(() => {
     if (!pendingFocusedPost) {
@@ -412,7 +421,8 @@ export function MapPageClient() {
   const showControls = mapData.stage !== "world";
   const showWelcomeCard = mapData.stage === "world" || !mapData.cityContext;
   const forceWelcomeOpen = searchParams.get("welcome") === "1";
-  const activeFilterCount = (time !== "all" ? 1 : 0) + selectedGroupIds.length + selectedCategories.length + (selectedCollectionId ? 1 : 0);
+  const activeFilterCount = (time !== "all" ? 1 : 0) + selectedGroupIds.length + selectedCategories.length + (collectionsOverlayEnabled ? 1 : 0);
+  const collectionsOverlayCount = collectionOverlays.length;
   const activeSearchQuery = deferredQuery.trim();
   const showEmptySearchState = activeSearchQuery.length > 0 && !loadingMap && mapData.markers.length === 0;
   const minimalCopy = useMemo(
@@ -450,10 +460,19 @@ export function MapPageClient() {
     setTime("all");
     setSelectedGroupIds([]);
     setSelectedCategories([]);
-    setSelectedCollectionId(null);
-    setCollectionFilter(null);
-    setCollectionFitBoundsTarget(null);
+    setCollectionsOverlayMode(null);
+    setCollectionOverlays([]);
+    setCollectionOverlayFitBoundsTarget(null);
+    setCollectionsOverlayLoading(false);
   }
+
+  const handleToggleCollectionsOverlay = useCallback(() => {
+    setCollectionsOverlayMode((currentMode) => (currentMode ? null : "both"));
+  }, []);
+
+  const handleChangeCollectionsOverlayMode = useCallback((nextMode: LayerMode) => {
+    setCollectionsOverlayMode(nextMode);
+  }, []);
 
   const handleMapModeChange = useCallback(
     (nextMode: MapVisualMode) => {
@@ -529,8 +548,8 @@ export function MapPageClient() {
         mapStyle={mapStyle}
         expandedPostId={expandedPost?.id ?? null}
         selectedLocationMarkerId={selectedLocationMarkerId}
-        collectionFilter={collectionFilter}
-        collectionFitBoundsTarget={collectionFitBoundsTarget}
+        collectionOverlays={collectionOverlays}
+        collectionOverlayFitBoundsTarget={collectionOverlayFitBoundsTarget}
         initialViewState={
           mapFocusTarget
             ? {
@@ -566,6 +585,7 @@ export function MapPageClient() {
               <button
                 type="button"
                 onClick={() => setFilterOpen(true)}
+                aria-label="Open filters"
                 className="flex min-h-10 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-[var(--foreground)]/70 transition hover:bg-[var(--foreground)]/5 md:gap-2 md:px-4 md:text-sm"
               >
                 <Filter className="h-3.5 w-3.5 md:h-4 md:w-4" />
@@ -602,7 +622,7 @@ export function MapPageClient() {
                       ) : null}
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      {showControls ? (
+                      {showControls && !collectionsOverlayEnabled ? (
                         <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
                           <LayerToggle value={layer} onChange={setLayer} />
                         </div>
@@ -649,7 +669,7 @@ export function MapPageClient() {
                 </div>
                 {showControls ? (
                   <div className="pointer-events-auto justify-self-end">
-                    <FriendActivityPanel items={mapData.friendActivity} layer={layer} />
+                    <FriendActivityPanel items={mapData.friendActivity} layer={effectiveLayer} />
                   </div>
                 ) : null}
               </div>
@@ -663,12 +683,14 @@ export function MapPageClient() {
           selectedGroupIds={selectedGroupIds}
           selectedCategories={selectedCategories}
           groupOptions={groupOptions}
-          collections={collections}
-          selectedCollectionId={selectedCollectionId}
+          collectionsOverlayMode={collectionsOverlayMode}
+          collectionsOverlayCount={collectionsOverlayCount}
+          collectionsOverlayLoading={collectionsOverlayLoading}
           onTimeChange={setTime}
           onToggleGroup={toggleGroup}
           onToggleCategory={toggleCategory}
-          onSelectCollection={setSelectedCollectionId}
+          onToggleCollectionsOverlay={handleToggleCollectionsOverlay}
+          onChangeCollectionsOverlayMode={handleChangeCollectionsOverlayMode}
           onClear={clearFilters}
           onClose={() => setFilterOpen(false)}
         />

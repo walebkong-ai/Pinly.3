@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { Archive, Bookmark, Folders, MapPinned, Settings2 } from "lucide-react";
 import type { CollectionSummary, PostSummary, ProfileTravelSummary } from "@/types/app";
+import type { RelationshipDetails } from "@/lib/relationships";
 import { Avatar } from "@/components/ui/avatar";
 import { PostCard } from "@/components/post/post-card";
 import { EditProfile } from "@/components/profile/edit-profile";
 import { MessageFriendButton } from "@/components/messages/message-friend-button";
+import { ProfileActions } from "@/components/profile/profile-actions";
 import { CollectionCard } from "@/components/collections/collection-card";
 import { CreateCollectionButton } from "@/components/collections/create-collection-button";
 import { InstallAppCard } from "@/components/pwa/install-app-card";
@@ -39,7 +41,8 @@ export function ProfileView({
   profile,
   isOwnProfile,
   showLikeCounts = true,
-  collections = []
+  collections = [],
+  relationship
 }: {
   profile: {
     user: {
@@ -56,6 +59,7 @@ export function ProfileView({
   isOwnProfile: boolean;
   showLikeCounts?: boolean;
   collections?: CollectionSummary[];
+  relationship: RelationshipDetails;
 }) {
   const uniquePlaces = getUniqueProfilePlaces(profile.posts);
   const visiblePlaces = uniquePlaces.slice(0, 8);
@@ -125,17 +129,23 @@ export function ProfileView({
               <Avatar name={profile.user.name} src={profile.user.avatarUrl} className="h-16 w-16 shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">
-                  Friend profile
+                  {relationship.status === "friends" ? "Friend profile" : "Profile"}
                 </p>
                 <h1 className="mt-1 font-[var(--font-serif)] text-3xl md:text-4xl truncate">{profile.user.name}</h1>
                 <p className="text-sm text-[var(--foreground)]/62 truncate">@{profile.user.username}</p>
-                <div className="mt-3">
-                  <MessageFriendButton
-                    friendId={profile.user.id}
-                    label="Message"
-                    variant="secondary"
-                    className="h-10 px-4"
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <ProfileActions
+                    username={profile.user.username}
+                    relationship={relationship}
                   />
+                  {relationship.status === "friends" ? (
+                    <MessageFriendButton
+                      friendId={profile.user.id}
+                      label="Message"
+                      variant="secondary"
+                      className="h-10 px-4"
+                    />
+                  ) : null}
                 </div>
               </div>
             </div>

@@ -41,6 +41,7 @@ describe("collections route", () => {
         id: "col_1",
         name: "Montreal trip",
         color: null,
+        visibility: "private",
         updatedAt: new Date("2026-03-15T12:00:00.000Z"),
         _count: { posts: 3 }
       }
@@ -56,8 +57,10 @@ describe("collections route", () => {
           id: "col_1",
           name: "Montreal trip",
           color: null,
+          visibility: "private",
           postCount: 3,
-          updatedAt: new Date("2026-03-15T12:00:00.000Z").toISOString()
+          updatedAt: new Date("2026-03-15T12:00:00.000Z").toISOString(),
+          _count: { posts: 3 }
         }
       ]
     });
@@ -101,6 +104,7 @@ describe("collections route", () => {
       id: "col_2",
       name: "Summer 2026",
       color: null,
+      visibility: "private",
       updatedAt: new Date("2026-03-15T12:00:00.000Z")
     });
 
@@ -118,12 +122,14 @@ describe("collections route", () => {
       data: {
         userId: viewerId,
         name: "Summer 2026",
-        color: null
+        color: null,
+        visibility: "private"
       },
       select: {
         id: true,
         name: true,
         color: true,
+        visibility: true,
         updatedAt: true
       }
     });

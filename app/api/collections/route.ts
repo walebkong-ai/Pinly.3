@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { apiError, apiValidationError } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { collectionSchema } from "@/lib/validation";
+import type { CollectionSummary } from "@/types/app";
 
 export const runtime = "nodejs";
 
@@ -18,24 +19,23 @@ export async function GET() {
       id: true,
       name: true,
       color: true,
+      visibility: true as any,
       updatedAt: true,
       _count: {
         select: {
           posts: true
         }
       }
-    },
+    } as any,
     orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }]
   });
 
   return Response.json({
-    collections: collections.map((collection) => ({
-      id: collection.id,
-      name: collection.name,
-      color: collection.color ?? null,
-      postCount: collection._count.posts,
-      updatedAt: collection.updatedAt
-    }))
+    collections: (collections ?? []).map((c: any) => ({
+      ...c,
+      visibility: c.visibility || "private",
+      postCount: c._count?.posts || 0
+    })) as CollectionSummary[]
   });
 }
 
@@ -101,14 +101,16 @@ export async function POST(request: Request) {
     data: {
       userId: session.user.id,
       name,
-      color
-    },
+      color,
+      visibility: (parsed.data.visibility as any) || "private"
+    } as any,
     select: {
       id: true,
       name: true,
       color: true,
+      visibility: true as any,
       updatedAt: true
-    }
+    } as any
   });
 
   return Response.json(

@@ -15,6 +15,7 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
+  const rawCollectionOverlay = searchParams.get("collectionsOverlay");
   const parsed = mapQuerySchema.safeParse({
     north: searchParams.get("north"),
     south: searchParams.get("south"),
@@ -32,6 +33,10 @@ export async function GET(request: Request) {
     return apiValidationError(parsed.error);
   }
 
+  if (rawCollectionOverlay && rawCollectionOverlay !== "0" && rawCollectionOverlay !== "1") {
+    return apiError("Invalid collections overlay flag.", 400, { code: "MAP_COLLECTIONS_OVERLAY_INVALID" });
+  }
+
   const map = await getMapData({
     viewerId: session.user.id,
     bounds: parsed.data,
@@ -40,7 +45,8 @@ export async function GET(request: Request) {
     time: parsed.data.time,
     groups: parsed.data.groups,
     categories: parsed.data.categories,
-    query: parsed.data.q
+    query: parsed.data.q,
+    collectionOverlay: rawCollectionOverlay === "1"
   });
 
   return Response.json(map);

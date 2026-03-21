@@ -6,13 +6,15 @@ import { useRouter } from "next/navigation";
 import { CheckCircle2, FolderPlus, Folders, LoaderCircle, Search } from "lucide-react";
 import { Drawer } from "vaul";
 import { toast } from "sonner";
-import type { CollectionChip } from "@/types/app";
+import { CollectionVisibilitySelector } from "@/components/collections/collection-visibility-selector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import type { CollectionChip, CollectionVisibility } from "@/types/app";
 
 type CollectionOption = CollectionChip & {
   postCount: number;
+  visibility: CollectionVisibility;
 };
 
 function mergeCollectionOptions(current: CollectionOption[], incoming: CollectionOption[]) {
@@ -29,14 +31,17 @@ async function loadCollectionOptions() {
   }
 
   const data = await response.json();
-  return (data.collections ?? []) as CollectionOption[];
+  return (data.collections ?? []).map((c: any) => ({
+    ...c,
+    visibility: c.visibility || "private"
+  })) as CollectionOption[];
 }
 
-async function createCollection(name: string, color?: string | null) {
+async function createCollection(name: string, visibility: CollectionVisibility, color?: string | null) {
   const response = await fetch("/api/collections", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, color: color ?? null })
+    body: JSON.stringify({ name, visibility, color: color ?? null })
   });
 
   if (!response.ok) {
@@ -56,6 +61,8 @@ function CollectionSelectionPanel({
   onQueryChange,
   newCollectionName,
   onNewCollectionNameChange,
+  newCollectionVisibility,
+  onNewCollectionVisibilityChange,
   onCreateCollection,
   creating,
   loading,
@@ -68,6 +75,8 @@ function CollectionSelectionPanel({
   onQueryChange: (value: string) => void;
   newCollectionName: string;
   onNewCollectionNameChange: (value: string) => void;
+  newCollectionVisibility: CollectionVisibility;
+  onNewCollectionVisibilityChange: (value: CollectionVisibility) => void;
   onCreateCollection: () => void;
   creating: boolean;
   loading: boolean;
@@ -120,6 +129,16 @@ function CollectionSelectionPanel({
           >
             {creating ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <FolderPlus className="h-4 w-4" />}
           </Button>
+        </div>
+        <div className="mt-3">
+          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--foreground)]/40 px-1">
+            Privacy
+          </p>
+          <CollectionVisibilitySelector
+            value={newCollectionVisibility}
+            onChange={onNewCollectionVisibilityChange}
+            disabled={creating}
+          />
         </div>
       </div>
 
@@ -191,6 +210,7 @@ export function CollectionPicker({
   const [collections, setCollections] = useState<CollectionOption[]>([]);
   const [query, setQuery] = useState("");
   const [newCollectionName, setNewCollectionName] = useState("");
+  const [newCollectionVisibility, setNewCollectionVisibility] = useState<CollectionVisibility>("private");
   const [creating, startCreateTransition] = useTransition();
 
   useEffect(() => {
@@ -247,10 +267,11 @@ export function CollectionPicker({
 
     startCreateTransition(async () => {
       try {
-        const collection = await createCollection(trimmedName);
+        const collection = await createCollection(trimmedName, newCollectionVisibility);
         setCollections((current) => mergeCollectionOptions(current, [collection]));
         onChange(Array.from(new Set([...selectedCollectionIds, collection.id])));
         setNewCollectionName("");
+        setNewCollectionVisibility("private");
         toast.success(`Saved to ${collection.name}`);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Could not create collection.");
@@ -288,6 +309,8 @@ export function CollectionPicker({
                 onQueryChange={setQuery}
                 newCollectionName={newCollectionName}
                 onNewCollectionNameChange={setNewCollectionName}
+                newCollectionVisibility={newCollectionVisibility}
+                onNewCollectionVisibilityChange={setNewCollectionVisibility}
                 onCreateCollection={handleCreateCollection}
                 creating={creating}
                 loading={loading}
@@ -334,7 +357,8 @@ export function ManagePostCollectionsCard({
   const [collections, setCollections] = useState<CollectionOption[]>(
     initialCollections.map((collection) => ({
       ...collection,
-      postCount: 0
+      postCount: 0,
+      visibility: "private" // Fallback, will be updated by loadCollectionOptions
     }))
   );
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>(
@@ -343,6 +367,7 @@ export function ManagePostCollectionsCard({
   const [currentCollections, setCurrentCollections] = useState<CollectionChip[]>(initialCollections);
   const [query, setQuery] = useState("");
   const [newCollectionName, setNewCollectionName] = useState("");
+  const [newCollectionVisibility, setNewCollectionVisibility] = useState<CollectionVisibility>("private");
   const [creating, startCreateTransition] = useTransition();
   const [saving, startSaveTransition] = useTransition();
 
@@ -354,7 +379,8 @@ export function ManagePostCollectionsCard({
         current,
         initialCollections.map((collection) => ({
           ...collection,
-          postCount: 0
+          postCount: 0,
+          visibility: "private"
         }))
       )
     );
@@ -412,10 +438,11 @@ export function ManagePostCollectionsCard({
 
     startCreateTransition(async () => {
       try {
-        const collection = await createCollection(trimmedName);
+        const collection = await createCollection(trimmedName, newCollectionVisibility);
         setCollections((current) => mergeCollectionOptions(current, [collection]));
         setSelectedCollectionIds((current) => Array.from(new Set([...current, collection.id])));
         setNewCollectionName("");
+        setNewCollectionVisibility("private");
         toast.success(`Created ${collection.name}`);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Could not create collection.");
@@ -480,6 +507,8 @@ export function ManagePostCollectionsCard({
                 onQueryChange={setQuery}
                 newCollectionName={newCollectionName}
                 onNewCollectionNameChange={setNewCollectionName}
+                newCollectionVisibility={newCollectionVisibility}
+                onNewCollectionVisibilityChange={setNewCollectionVisibility}
                 onCreateCollection={handleCreateCollection}
                 creating={creating}
                 loading={loading}

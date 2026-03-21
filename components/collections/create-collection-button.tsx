@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { CollectionColorPicker } from "@/components/collections/collection-color-picker";
+import { CollectionVisibilitySelector } from "@/components/collections/collection-visibility-selector";
+import type { CollectionVisibility } from "@/types/app";
 
 export function CreateCollectionButton({
   label = "New collection",
@@ -23,6 +25,7 @@ export function CreateCollectionButton({
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [color, setColor] = useState<string | null>(null);
+  const [visibility, setVisibility] = useState<CollectionVisibility>("private");
   const [isPending, startTransition] = useTransition();
 
   function handleCreate() {
@@ -37,7 +40,7 @@ export function CreateCollectionButton({
         const response = await fetch("/api/collections", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: trimmedName, color })
+          body: JSON.stringify({ name: trimmedName, color, visibility })
         });
 
         if (!response.ok) {
@@ -49,6 +52,7 @@ export function CreateCollectionButton({
         setOpen(false);
         setName("");
         setColor(null);
+        setVisibility("private");
         router.push(`/collections/${data.collection.id}`);
         router.refresh();
       } catch (error) {
@@ -87,6 +91,12 @@ export function CreateCollectionButton({
                 />
               </div>
               <CollectionColorPicker value={color} onChange={setColor} />
+              <div>
+                <label className="mb-2 block text-xs font-medium uppercase tracking-[0.16em] text-[var(--foreground)]/45">
+                  Privacy
+                </label>
+                <CollectionVisibilitySelector value={visibility} onChange={setVisibility} disabled={isPending} />
+              </div>
             </div>
             <Button
               type="button"

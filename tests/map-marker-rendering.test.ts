@@ -66,7 +66,8 @@ function makeCityClusterMarker(postCount = 14): MapMarker {
     country: "France",
     postCount,
     friendCount: 5,
-    visitors: [makePost().user]
+    visitors: [makePost().user],
+    postIds: Array.from({ length: postCount }, (_, index) => `city-post-${index + 1}`)
   };
 }
 
@@ -88,6 +89,7 @@ function makePlaceClusterMarker(postCount = 7): MapMarker {
     country: "France",
     postCount,
     visitors: [makePost().user],
+    postIds: posts.map((post) => post.id),
     previewPost: {
       id: "post-1",
       caption: "A travel memory worth keeping.",

@@ -178,7 +178,7 @@ export function NotificationsList({
   if (visibleNotifications.length === 0) {
     return (
       <div className="rounded-[1.75rem] border bg-[var(--surface-strong)] p-6 text-center">
-        <p className="text-sm font-medium text-[var(--foreground)]">You're all caught up.</p>
+        <p className="text-sm font-medium text-[var(--foreground)]">You&apos;re all caught up.</p>
         <p className="mt-2 text-xs text-[var(--foreground)]/58">Unread notifications disappear from this list as soon as they&apos;re read.</p>
       </div>
     );
