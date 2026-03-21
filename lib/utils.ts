@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { shouldProxyMediaUrl } from "@/lib/media-url";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -30,7 +31,7 @@ export function parseCitySlug(slug: string) {
 export function getMediaProxyUrl(url: string | null | undefined): string {
   if (!url) return "";
   if (url.startsWith("/")) return url;
-  if (url.includes(".blob.vercel-storage.com")) {
+  if (shouldProxyMediaUrl(url)) {
     return `/api/media?url=${encodeURIComponent(url)}`;
   }
   return url;

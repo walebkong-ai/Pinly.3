@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { apiError } from "@/lib/api";
 import { z } from "zod";
 import { getGroupConversation } from "@/lib/data";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -43,6 +44,19 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
 
   const userId = session.user.id;
   const groupId = params.id;
+
+  const rateLimitResponse = enforceRateLimit({
+    scope: "group-messages-send",
+    request,
+    userId,
+    key: groupId,
+    limit: 60,
+    windowMs: 5 * 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
 
   // Check membership
   const member = await prisma.groupMember.findUnique({

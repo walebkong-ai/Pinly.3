@@ -42,7 +42,7 @@ describe("group members route", () => {
     groupFindUniqueMock.mockResolvedValue({
       id: "group_1",
       isDirect: false,
-      members: [{ userId: viewerId }]
+      members: [{ userId: viewerId, role: "OWNER" }]
     });
   });
 
@@ -77,6 +77,30 @@ describe("group members route", () => {
 
   test("POST rejects non-friends when adding members", async () => {
     getFriendIdsMock.mockResolvedValue([]);
+
+    const { POST } = await import("@/app/api/groups/[id]/members/route");
+    const response = await POST(
+      new Request("http://localhost/api/groups/group_1/members", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ userIds: [friendId] })
+      }),
+      {
+        params: Promise.resolve({ id: "group_1" })
+      }
+    );
+
+    expect(response.status).toBe(403);
+    expect(createManyMock).not.toHaveBeenCalled();
+  });
+
+  test("POST rejects members who are not the group owner", async () => {
+    groupFindUniqueMock.mockResolvedValue({
+      id: "group_1",
+      isDirect: false,
+      members: [{ userId: viewerId, role: "MEMBER" }]
+    });
+    getFriendIdsMock.mockResolvedValue([friendId]);
 
     const { POST } = await import("@/app/api/groups/[id]/members/route");
     const response = await POST(

@@ -4,6 +4,8 @@ import { mapQuerySchema, postSchema } from "@/lib/validation";
 import { apiError, apiValidationError } from "@/lib/api";
 import { normalizeCountryForStorage } from "@/lib/country-flags";
 import { getFriendIds, getMapData } from "@/lib/data";
+import { normalizeStoredMediaUrl } from "@/lib/media-url";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -12,6 +14,18 @@ export async function GET(request: Request) {
 
   if (!session?.user?.id) {
     return apiError("Unauthorized", 401);
+  }
+
+  const rateLimitResponse = enforceRateLimit({
+    scope: "map-posts",
+    request,
+    userId: session.user.id,
+    limit: 180,
+    windowMs: 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
   }
 
   const { searchParams } = new URL(request.url);
@@ -59,6 +73,18 @@ export async function POST(request: Request) {
     return apiError("Unauthorized", 401);
   }
 
+  const rateLimitResponse = enforceRateLimit({
+    scope: "posts-create",
+    request,
+    userId: session.user.id,
+    limit: 20,
+    windowMs: 10 * 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   let body: unknown;
 
   try {
@@ -74,6 +100,24 @@ export async function POST(request: Request) {
   }
 
   try {
+    const mediaUrl = normalizeStoredMediaUrl(parsed.data.mediaUrl);
+    const thumbnailUrl =
+      parsed.data.thumbnailUrl === null || parsed.data.thumbnailUrl === undefined
+        ? null
+        : normalizeStoredMediaUrl(parsed.data.thumbnailUrl);
+
+    if (!mediaUrl) {
+      return apiError("Media must come from a trusted Pinly upload.", 400, {
+        code: "POST_MEDIA_URL_INVALID"
+      });
+    }
+
+    if (parsed.data.thumbnailUrl && !thumbnailUrl) {
+      return apiError("Thumbnail media must come from a trusted Pinly upload.", 400, {
+        code: "POST_THUMBNAIL_URL_INVALID"
+      });
+    }
+
     const validFriendIds = await getFriendIds(session.user.id);
     const taggedUserIds = Array.from(new Set(parsed.data.taggedUserIds)).filter(
       (taggedUserId) => taggedUserId !== session.user.id
@@ -101,8 +145,8 @@ export async function POST(request: Request) {
     const post = await prisma.post.create({
       data: {
         mediaType: parsed.data.mediaType,
-        mediaUrl: parsed.data.mediaUrl,
-        thumbnailUrl: parsed.data.thumbnailUrl,
+        mediaUrl,
+        thumbnailUrl,
         caption: parsed.data.caption,
         placeName: parsed.data.placeName,
         city: parsed.data.city,

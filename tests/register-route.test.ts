@@ -43,7 +43,8 @@ describe("register route", () => {
           name: "Avery Chen",
           username: "avery",
           email: "Avery@pinly.demo",
-          password: "password123"
+          password: "password123",
+          acceptLegal: true
         })
       })
     );
@@ -53,8 +54,11 @@ describe("register route", () => {
     expect(payload.user.email).toBe("avery@pinly.demo");
     expect(createMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.not.objectContaining({
-          avatarUrl: expect.anything()
+        data: expect.objectContaining({
+          termsAcceptedAt: expect.any(Date),
+          privacyAcceptedAt: expect.any(Date),
+          termsVersion: "2026-03-21",
+          privacyVersion: "2026-03-21"
         })
       })
     );
@@ -74,11 +78,32 @@ describe("register route", () => {
           name: "Avery Chen",
           username: "avery",
           email: "avery@pinly.demo",
-          password: "password123"
+          password: "password123",
+          acceptLegal: true
         })
       })
     );
 
     expect(response.status).toBe(409);
+  });
+
+  test("rejects requests without legal acceptance", async () => {
+    const { POST } = await import("@/app/api/auth/register/route");
+    const response = await POST(
+      new Request("http://localhost/api/auth/register", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name: "Avery Chen",
+          username: "avery",
+          email: "avery@pinly.demo",
+          password: "password123",
+          acceptLegal: false
+        })
+      })
+    );
+
+    expect(response.status).toBe(422);
+    expect(createMock).not.toHaveBeenCalled();
   });
 });

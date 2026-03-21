@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Compass, LockKeyhole, MapPinned, Users } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { Brand } from "@/components/brand";
+import { LegalLinks } from "@/components/legal/legal-links";
 import { HeroGlobeBackground } from "@/components/marketing/hero-globe-background";
 import { Button } from "@/components/ui/button";
 
@@ -81,6 +82,7 @@ export default async function LandingPage() {
                 </Button>
               </Link>
             </div>
+            <LegalLinks className="mt-5" />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">

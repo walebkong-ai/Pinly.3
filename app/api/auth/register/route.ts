@@ -1,12 +1,25 @@
 import { hash } from "bcryptjs";
 import { normalizeFriendPair } from "@/lib/friendships";
+import { createLegalAcceptanceRecord } from "@/lib/legal";
 import { prisma } from "@/lib/prisma";
 import { normalizeUsername, signUpSchema } from "@/lib/validation";
 import { apiError, apiValidationError } from "@/lib/api";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const rateLimitResponse = enforceRateLimit({
+    scope: "register",
+    request,
+    limit: 8,
+    windowMs: 15 * 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   let body: unknown;
 
   try {
@@ -45,12 +58,14 @@ export async function POST(request: Request) {
 
   let user;
   try {
+    const legalAcceptance = createLegalAcceptanceRecord();
     user = await prisma.user.create({
       data: {
         name: parsed.data.name,
         username,
         email,
-        passwordHash: await hash(parsed.data.password, 10)
+        passwordHash: await hash(parsed.data.password, 10),
+        ...legalAcceptance
       },
       select: {
         id: true,

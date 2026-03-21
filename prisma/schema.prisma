@@ -41,6 +41,10 @@ model User {
   email              String           @unique
   passwordHash       String
   avatarUrl          String?
+  termsAcceptedAt    DateTime?
+  privacyAcceptedAt  DateTime?
+  termsVersion       String?
+  privacyVersion     String?
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
   posts              Post[]

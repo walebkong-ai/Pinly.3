@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { apiError } from "@/lib/api";
 import { z } from "zod";
 import { getFriendIds } from "@/lib/data";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -101,6 +102,18 @@ export async function POST(request: Request) {
   }
 
   const userId = session.user.id;
+
+  const rateLimitResponse = enforceRateLimit({
+    scope: "groups-create",
+    request,
+    userId,
+    limit: 10,
+    windowMs: 10 * 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
 
   try {
     const json = await request.json();

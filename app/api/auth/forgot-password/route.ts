@@ -1,17 +1,35 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
+import { z } from "zod";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
+const forgotPasswordSchema = z.object({
+  email: z.string().email()
+});
+
 export async function POST(req: Request) {
   try {
-    const { email } = await req.json();
+    const rateLimitResponse = enforceRateLimit({
+      scope: "forgot-password",
+      request: req,
+      limit: 5,
+      windowMs: 15 * 60 * 1000
+    });
 
-    if (!email || typeof email !== "string") {
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
+    const parsed = forgotPasswordSchema.safeParse(await req.json());
+
+    if (!parsed.success) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
     }
 
+    const email = parsed.data.email.toLowerCase();
     const user = await prisma.user.findUnique({
       where: { email },
     });
@@ -28,29 +46,28 @@ export async function POST(req: Request) {
 
     // Generate a secure random token
     const token = crypto.randomBytes(32).toString("hex");
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
     const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours
 
     // Save token to database
     await prisma.passwordResetToken.create({
       data: {
         email,
-        token,
+        token: hashedToken,
         expiresAt,
       },
     });
 
     const resetLink = `${process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
 
-    // STUB: Log email delivery
-    console.log("=========================================");
-    console.log("EMAIL DELIVERY STUB (Forgot Password)");
-    console.log(`To: ${email}`);
-    console.log(`Reset Link: ${resetLink}`);
-    console.log("=========================================");
-
-    // TODO: Integrate actual email provider here (e.g. Resend, SendGrid)
-
-    return NextResponse.json({ message: "If an account exists, a reset link has been sent." });
+    return NextResponse.json({
+      message: "If an account exists, a reset link has been sent.",
+      ...(process.env.NODE_ENV !== "production" && process.env.AUTH_DEBUG_RESET_LINKS === "true"
+        ? {
+            previewResetLink: resetLink
+          }
+        : {})
+    });
   } catch (error) {
     console.error("Forgot password error:", error);
     return NextResponse.json({ error: "An unexpected error occurred." }, { status: 500 });

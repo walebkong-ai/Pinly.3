@@ -53,7 +53,7 @@ describe("profile route", () => {
     updateMock.mockResolvedValue({
       id: "user_1",
       username: "new_name",
-      avatarUrl: "https://cdn.pinly.dev/avatar.jpg"
+      avatarUrl: "https://api.dicebear.com/9.x/thumbs/svg?seed=new_name"
     });
 
     const { PATCH } = await import("@/app/api/profile/route");
@@ -63,7 +63,7 @@ describe("profile route", () => {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           username: "  New_Name  ",
-          avatarUrl: "https://cdn.pinly.dev/avatar.jpg"
+          avatarUrl: "https://api.dicebear.com/9.x/thumbs/svg?seed=new_name"
         })
       })
     );
@@ -73,7 +73,7 @@ describe("profile route", () => {
       success: true,
       user: {
         username: "new_name",
-        avatarUrl: "https://cdn.pinly.dev/avatar.jpg"
+        avatarUrl: "https://api.dicebear.com/9.x/thumbs/svg?seed=new_name"
       }
     });
     expect(findFirstMock).toHaveBeenCalledWith({
@@ -87,7 +87,7 @@ describe("profile route", () => {
       where: { id: "user_1" },
       data: {
         username: "new_name",
-        avatarUrl: "https://cdn.pinly.dev/avatar.jpg"
+        avatarUrl: "https://api.dicebear.com/9.x/thumbs/svg?seed=new_name"
       },
       select: {
         id: true,
@@ -98,7 +98,7 @@ describe("profile route", () => {
     expect(unstableUpdateMock).toHaveBeenCalledWith({
       user: {
         username: "new_name",
-        avatarUrl: "https://cdn.pinly.dev/avatar.jpg"
+        avatarUrl: "https://api.dicebear.com/9.x/thumbs/svg?seed=new_name"
       }
     });
   });
@@ -186,5 +186,24 @@ describe("profile route", () => {
     await expect(response.json()).resolves.toMatchObject({
       error: "Username is already taken"
     });
+  });
+
+  test("rejects avatar URLs from untrusted hosts", async () => {
+    const { PATCH } = await import("@/app/api/profile/route");
+    const response = await PATCH(
+      new Request("http://localhost/api/profile", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          avatarUrl: "https://evil.example.com/avatar.jpg"
+        })
+      })
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "Avatar URLs must use a trusted Pinly or supported profile image host."
+    });
+    expect(updateMock).not.toHaveBeenCalled();
   });
 });

@@ -117,6 +117,37 @@ describe("single post route", () => {
     );
   });
 
+  test("GET returns a visible post for the viewer", async () => {
+    getVisiblePostByIdMock.mockResolvedValue({
+      id: "post_1",
+      userId: friendId
+    });
+
+    const { GET } = await import("@/app/api/posts/[postId]/route");
+    const response = await GET(new Request("http://localhost/api/posts/post_1"), {
+      params: Promise.resolve({ postId: "post_1" })
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      post: {
+        id: "post_1",
+        userId: friendId
+      }
+    });
+  });
+
+  test("GET hides posts that are not visible to the viewer", async () => {
+    getVisiblePostByIdMock.mockResolvedValue(null);
+
+    const { GET } = await import("@/app/api/posts/[postId]/route");
+    const response = await GET(new Request("http://localhost/api/posts/post_1"), {
+      params: Promise.resolve({ postId: "post_1" })
+    });
+
+    expect(response.status).toBe(404);
+  });
+
   test("PATCH rejects edits from non-owners", async () => {
     findUniqueMock.mockResolvedValue({
       userId: "someone_else",

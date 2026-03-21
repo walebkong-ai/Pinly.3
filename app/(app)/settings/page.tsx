@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { LegalLinks } from "@/components/legal/legal-links";
+import { LEGAL_LAST_UPDATED_LABEL } from "@/lib/legal";
 import { prisma } from "@/lib/prisma";
 import { BackButton } from "@/components/post/back-button";
 import { SettingsForm } from "@/components/settings-form";
@@ -52,6 +54,14 @@ export default async function SettingsPage() {
             commentsEnabled: settings?.commentsEnabled ?? true
           }}
         />
+      </section>
+
+      <section className="glass-panel rounded-[1.75rem] p-4">
+        <p className="text-sm font-medium">Legal</p>
+        <p className="mt-1 text-xs leading-5 text-[var(--foreground)]/58">
+          Review the current Terms of Service and Privacy Policy. Last updated {LEGAL_LAST_UPDATED_LABEL}.
+        </p>
+        <LegalLinks className="mt-3" />
       </section>
     </div>
   );

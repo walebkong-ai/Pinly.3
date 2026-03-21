@@ -3,6 +3,7 @@ import { MediaType } from "@prisma/client";
 import { addDays, subDays } from "date-fns";
 import { DEMO_PASSWORD, DEMO_USERS, type DemoUserKey, getDemoAvatarUrl } from "@/lib/demo-config";
 import { normalizeFriendPair } from "@/lib/friendships";
+import { createLegalAcceptanceRecord } from "@/lib/legal";
 import { createUniqueUsername } from "@/lib/usernames";
 
 const DEMO_FRIENDSHIPS = [
@@ -72,6 +73,7 @@ export type DemoProvisionPrisma = {
 
 export async function ensureDemoDataset(prisma: DemoProvisionPrisma) {
   const passwordHash = await hash(DEMO_PASSWORD, 10);
+  const legalAcceptance = createLegalAcceptanceRecord(new Date("2026-03-21T00:00:00.000Z"));
   const usersByKey = new Map<DemoUserKey, DemoUserRecord>();
 
   for (const demoUser of DEMO_USERS) {
@@ -85,7 +87,8 @@ export async function ensureDemoDataset(prisma: DemoProvisionPrisma) {
         data: {
           name: demoUser.name,
           passwordHash,
-          avatarUrl: getDemoAvatarUrl(demoUser.preferredUsername)
+          avatarUrl: getDemoAvatarUrl(demoUser.preferredUsername),
+          ...legalAcceptance
         }
       });
 
@@ -100,7 +103,8 @@ export async function ensureDemoDataset(prisma: DemoProvisionPrisma) {
         username,
         email: demoUser.email,
         passwordHash,
-        avatarUrl: getDemoAvatarUrl(demoUser.preferredUsername)
+        avatarUrl: getDemoAvatarUrl(demoUser.preferredUsername),
+        ...legalAcceptance
       }
     });
 

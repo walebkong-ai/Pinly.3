@@ -2,7 +2,8 @@ import NextAuth, { type NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { prisma } from "@/lib/prisma";
-import { authorizeCredentials, ensureGoogleUser } from "@/lib/auth-helpers";
+import { authorizeCredentials, ensureGoogleUser, LegalAcceptanceRequiredError } from "@/lib/auth-helpers";
+import { readPendingLegalConsent } from "@/lib/legal";
 
 const googleConfigured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 
@@ -47,11 +48,12 @@ export const authConfig = {
       }
 
       try {
+        const legalAcceptance = await readPendingLegalConsent();
         const ensuredUser = await ensureGoogleUser(prisma, {
           email: user.email,
           name: user.name,
           avatarUrl: user.image ?? user.avatarUrl
-        });
+        }, legalAcceptance ?? undefined);
 
         user.id = ensuredUser.id;
         user.username = ensuredUser.username;
@@ -60,6 +62,10 @@ export const authConfig = {
         user.email = ensuredUser.email;
         return true;
       } catch (error) {
+        if (error instanceof LegalAcceptanceRequiredError) {
+          return "/sign-up?legal=required";
+        }
+
         console.error(error);
         return false;
       }

@@ -2,15 +2,39 @@
 
 import { useState } from "react";
 import { LoaderCircle } from "lucide-react";
+import { toast } from "sonner";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 
-export function GoogleAuthButton({ mode }: { mode: "signin" | "signup" }) {
+type GoogleAuthButtonProps = {
+  mode: "signin" | "signup";
+  callbackUrl?: string;
+  beforeAuth?: () => Promise<boolean>;
+};
+
+export function GoogleAuthButton({ mode, callbackUrl = "/map", beforeAuth }: GoogleAuthButtonProps) {
   const [loading, setLoading] = useState(false);
 
   async function onGoogleAuth() {
     setLoading(true);
-    await signIn("google", { callbackUrl: "/map" });
+
+    try {
+      if (beforeAuth) {
+        const canContinue = await beforeAuth();
+
+        if (!canContinue) {
+          setLoading(false);
+          return;
+        }
+      }
+
+      await signIn("google", { callbackUrl });
+    } catch {
+      setLoading(false);
+      toast.error("Google sign in could not start. Please try again.");
+      return;
+    }
+
     setLoading(false);
   }
 

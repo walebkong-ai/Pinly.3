@@ -1,55 +1,93 @@
-import { NextRequest } from "next/server";
+import { auth } from "@/lib/auth";
+import { apiError } from "@/lib/api";
+import { resolveAuthorizedMediaTarget } from "@/lib/media-authorization";
+import { assertStorageConfiguration, getBlobAccessMode } from "@/lib/storage";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
-export async function GET(request: NextRequest) {
-  const url = request.nextUrl.searchParams.get("url");
+const passthroughHeaders = [
+  "accept-ranges",
+  "cache-control",
+  "content-length",
+  "content-range",
+  "content-type",
+  "etag",
+  "last-modified"
+] as const;
 
-  if (!url) {
-    return new Response("Missing URL", { status: 400 });
+export async function GET(request: Request) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return apiError("Unauthorized", 401);
   }
 
-  // Allow local URLs to pass through natively
-  if (url.startsWith("/")) {
-    return Response.redirect(new URL(url, request.nextUrl.origin), 302);
+  const requestedUrl = new URL(request.url).searchParams.get("url");
+
+  if (!requestedUrl) {
+    return apiError("Missing URL", 400, { code: "MEDIA_URL_MISSING" });
   }
 
-  // If not configured in private mode, just send a 302 redirect direct to the Vercel CDN URL.
-  if (process.env.BLOB_ACCESS_MODE !== "private") {
-    return Response.redirect(url, 302);
+  const target = await resolveAuthorizedMediaTarget(session.user.id, requestedUrl);
+
+  if (!target) {
+    return apiError("Media not found", 404, { code: "MEDIA_NOT_FOUND" });
+  }
+
+  if (target.kind === "relative") {
+    return Response.redirect(new URL(target.url, new URL(request.url).origin), 302);
+  }
+
+  const upstreamHeaders = new Headers();
+  const range = request.headers.get("range");
+
+  if (range) {
+    upstreamHeaders.set("range", range);
+  }
+
+  if (getBlobAccessMode() === "private") {
+    assertStorageConfiguration();
+    upstreamHeaders.set("authorization", `Bearer ${process.env.BLOB_READ_WRITE_TOKEN as string}`);
   }
 
   try {
-    const isVercelBlob = url.includes(".blob.vercel-storage.com");
-    const headers = new Headers();
-    
-    // Pass user's range request for video seeking
-    const range = request.headers.get("range");
-    if (range) {
-      headers.set("range", range);
-    }
-
-    if (isVercelBlob && process.env.BLOB_READ_WRITE_TOKEN) {
-      // Vercel blob private stores require the token as Bearer authorization
-      headers.set("authorization", `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`);
-    }
-
-    const response = await fetch(url, { headers });
+    const response = await fetch(target.url, {
+      headers: upstreamHeaders,
+      cache: "no-store"
+    });
 
     if (!response.ok) {
-      return new Response(`Failed to fetch media: ${response.status}`, { status: response.status });
+      return apiError("Failed to fetch media.", response.status, {
+        code: "MEDIA_FETCH_FAILED"
+      });
     }
 
-    // Proxy the response headers back to the client (content-type, cache-control, etc)
-    const proxyHeaders = new Headers(response.headers);
-    proxyHeaders.set("Access-Control-Allow-Origin", "*");
+    const contentType = response.headers.get("content-type") ?? "";
+
+    if (!contentType.startsWith("image/") && !contentType.startsWith("video/")) {
+      return apiError("Unsupported media type.", 415, {
+        code: "MEDIA_CONTENT_TYPE_INVALID"
+      });
+    }
+
+    const responseHeaders = new Headers();
+
+    for (const headerName of passthroughHeaders) {
+      const headerValue = response.headers.get(headerName);
+
+      if (headerValue) {
+        responseHeaders.set(headerName, headerValue);
+      }
+    }
 
     return new Response(response.body, {
       status: response.status,
-      headers: proxyHeaders,
+      headers: responseHeaders
     });
   } catch (error) {
-    console.error("Media proxy error:", error);
-    return new Response("Internal Server Error", { status: 500 });
+    return apiError("Failed to proxy media.", 502, {
+      code: "MEDIA_PROXY_FAILED",
+      details: error instanceof Error ? error.message : "Unknown media proxy failure"
+    });
   }
 }

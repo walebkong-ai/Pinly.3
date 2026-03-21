@@ -6,6 +6,7 @@ import { getSearchTerms, rankBySearch } from "@/lib/search";
 import { placeSearchSchema } from "@/lib/validation";
 import { buildWantToGoPlaceKey } from "@/lib/want-to-go";
 import type { PlaceSearchResult } from "@/types/app";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -53,6 +54,17 @@ function placeDisplayName(place: Pick<PlaceSearchResult, "placeName" | "city" | 
 }
 
 export async function GET(request: Request) {
+  const rateLimitResponse = enforceRateLimit({
+    scope: "places-search",
+    request,
+    limit: 60,
+    windowMs: 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const session = await auth();
   const { searchParams } = new URL(request.url);
   const parsed = placeSearchSchema.safeParse({

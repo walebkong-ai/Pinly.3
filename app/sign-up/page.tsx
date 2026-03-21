@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { Brand } from "@/components/brand";
 import { SignUpForm } from "@/components/auth/sign-up-form";
+import { LegalLinks } from "@/components/legal/legal-links";
 
 export default async function SignUpPage() {
   const session = await auth();
@@ -67,6 +68,7 @@ export default async function SignUpPage() {
           <div className="mt-8">
             <SignUpForm />
           </div>
+          <LegalLinks className="mt-6 justify-center border-t pt-4" />
         </div>
       </div>
     </main>

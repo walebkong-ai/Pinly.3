@@ -4,6 +4,7 @@ import { isPrismaSchemaNotReadyError } from "@/lib/prisma-errors";
 import { getRelationshipDetailsForTargets } from "@/lib/relationships";
 import { apiError } from "@/lib/api";
 import { getSearchTerms, rankBySearch } from "@/lib/search";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -12,6 +13,18 @@ export async function GET(request: Request) {
 
   if (!session?.user?.id) {
     return apiError("Unauthorized", 401);
+  }
+
+  const rateLimitResponse = enforceRateLimit({
+    scope: "friends-search",
+    request,
+    userId: session.user.id,
+    limit: 60,
+    windowMs: 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
   }
 
   const { searchParams } = new URL(request.url);

@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import { compare, hash } from "bcryptjs";
 import { ensureDemoDataset, type DemoProvisionPrisma } from "@/lib/demo-data";
 import { isDemoCredentials } from "@/lib/demo-config";
+import type { LegalAcceptanceRecord } from "@/lib/legal";
+import { normalizeProfileImageUrl } from "@/lib/media-url";
 import { signInSchema } from "@/lib/validation";
 import { createUniqueUsername, normalizeUsernameSeed } from "@/lib/usernames";
 
@@ -23,6 +25,12 @@ export type AuthUserPayload = {
   username: string;
   avatarUrl: string | null;
 };
+
+export class LegalAcceptanceRequiredError extends Error {
+  constructor() {
+    super("Legal acceptance is required before creating a new account.");
+  }
+}
 
 function toPayload(user: UserRecord): AuthUserPayload {
   return {
@@ -102,16 +110,22 @@ export async function ensureGoogleUser(
     email: string;
     name?: string | null;
     avatarUrl?: string | null;
-  }
+  },
+  legalAcceptance?: LegalAcceptanceRecord
 ) {
   const normalizedEmail = email.toLowerCase();
   const fallbackName = normalizedEmail.split("@")[0] || "Pinly Traveler";
   const displayName = (name ?? "").trim() || fallbackName;
+  const normalizedAvatarUrl = normalizeProfileImageUrl(avatarUrl ?? null);
   let existing = await prisma.user.findUnique({
     where: { email: normalizedEmail }
   });
 
   if (!existing) {
+    if (!legalAcceptance) {
+      throw new LegalAcceptanceRequiredError();
+    }
+
     const username = await createUniqueUsername(prisma, displayName);
     const passwordHash = await hash(randomUUID(), 10);
     existing = await prisma.user.create({
@@ -120,7 +134,8 @@ export async function ensureGoogleUser(
         name: displayName,
         username,
         passwordHash,
-        avatarUrl: avatarUrl ?? null
+        avatarUrl: normalizedAvatarUrl,
+        ...legalAcceptance
       }
     });
 
@@ -128,7 +143,7 @@ export async function ensureGoogleUser(
   }
 
   const needsUpdate =
-    (avatarUrl && existing.avatarUrl !== avatarUrl) ||
+    (normalizedAvatarUrl && existing.avatarUrl !== normalizedAvatarUrl) ||
     (!existing.name && displayName);
 
   if (!needsUpdate) {
@@ -139,7 +154,7 @@ export async function ensureGoogleUser(
     where: { id: existing.id },
     data: {
       name: existing.name || displayName,
-      avatarUrl: avatarUrl ?? existing.avatarUrl
+      avatarUrl: normalizedAvatarUrl ?? existing.avatarUrl
     }
   });
 

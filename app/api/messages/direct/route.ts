@@ -4,6 +4,7 @@ import { apiError } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { getFriendIds } from "@/lib/data";
 import { buildDirectPairKey } from "@/lib/friendships";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -20,6 +21,18 @@ export async function POST(request: Request) {
 
   const userId = session.user.id;
   let requestedFriendId: string | null = null;
+
+  const rateLimitResponse = enforceRateLimit({
+    scope: "messages-direct-open",
+    request,
+    userId,
+    limit: 30,
+    windowMs: 10 * 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
 
   try {
     const json = await request.json();

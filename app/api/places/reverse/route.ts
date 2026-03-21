@@ -1,6 +1,7 @@
 import { apiError, apiValidationError } from "@/lib/api";
 import { normalizeCountryForStorage } from "@/lib/country-flags";
 import { z } from "zod";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -10,6 +11,17 @@ const reverseSearchSchema = z.object({
 });
 
 export async function GET(request: Request) {
+  const rateLimitResponse = enforceRateLimit({
+    scope: "places-reverse",
+    request,
+    limit: 60,
+    windowMs: 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const { searchParams } = new URL(request.url);
   const parsed = reverseSearchSchema.safeParse({
     lat: searchParams.get("lat"),

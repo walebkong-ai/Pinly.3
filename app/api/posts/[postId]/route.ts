@@ -4,6 +4,7 @@ import { apiError, apiValidationError } from "@/lib/api";
 import { normalizeCountryForStorage } from "@/lib/country-flags";
 import { editPostSchema } from "@/lib/validation";
 import { prisma } from "@/lib/prisma";
+import { shouldProxyMediaUrl } from "@/lib/media-url";
 
 type Context = {
   params: Promise<{ postId: string }>;
@@ -150,7 +151,7 @@ export async function DELETE(request: Request, context: Context) {
 
   const post = await prisma.post.findUnique({
     where: { id: postId },
-    select: { userId: true, mediaUrl: true }
+    select: { userId: true, mediaUrl: true, thumbnailUrl: true }
   });
 
   if (!post) {
@@ -165,9 +166,11 @@ export async function DELETE(request: Request, context: Context) {
     where: { id: postId }
   });
 
-  if (post.mediaUrl.includes("vercel-storage.com")) {
+  const blobUrlsToDelete = [post.mediaUrl, post.thumbnailUrl].filter((url): url is string => shouldProxyMediaUrl(url));
+
+  if (blobUrlsToDelete.length > 0) {
     const { del } = await import("@vercel/blob");
-    await del(post.mediaUrl).catch(console.error);
+    await del(blobUrlsToDelete).catch(console.error);
   }
 
   return Response.json({ success: true });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getProviders, signIn } from "next-auth/react";
 import { toast } from "sonner";
@@ -26,6 +27,7 @@ export function SignUpForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const inviteToken = searchParams.get("invite");
+  const googleConsentRequired = searchParams.get("legal") === "required";
 
   const [loading, setLoading] = useState(false);
   const googleUiEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true";
@@ -35,6 +37,7 @@ export function SignUpForm() {
     register,
     handleSubmit,
     setError,
+    trigger,
     formState: { errors }
   } = useForm<SignUpValues>({
     resolver: zodResolver(signUpSchema),
@@ -43,6 +46,7 @@ export function SignUpForm() {
       username: "",
       email: "",
       password: "",
+      acceptLegal: false,
       inviteToken: inviteToken || undefined
     }
   });
@@ -126,8 +130,41 @@ export function SignUpForm() {
     router.refresh();
   }
 
+  async function prepareGoogleSignUp() {
+    const accepted = await trigger("acceptLegal");
+
+    if (!accepted) {
+      toast.error("Accept the Terms of Service and Privacy Policy to continue.");
+      return false;
+    }
+
+    try {
+      const response = await fetch("/api/auth/legal-consent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ acceptLegal: true })
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        toast.error(extractErrorMessage(data) ?? "Could not start Google sign up.");
+        return false;
+      }
+
+      return true;
+    } catch {
+      toast.error("Could not reach the server. Please try again.");
+      return false;
+    }
+  }
+
   return (
     <div className="space-y-4">
+      {googleConsentRequired ? (
+        <div className="rounded-2xl border bg-[var(--surface-soft)] px-4 py-3 text-sm leading-6 text-[var(--foreground)]/68">
+          Accept the Terms of Service and Privacy Policy below before continuing with Google.
+        </div>
+      ) : null}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
@@ -156,6 +193,27 @@ export function SignUpForm() {
           />
           {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
         </div>
+        <div className="rounded-2xl border bg-[var(--surface-soft)] px-4 py-3">
+          <label className="flex items-start gap-3 text-sm leading-6 text-[var(--foreground)]/72">
+            <input
+              type="checkbox"
+              {...register("acceptLegal")}
+              className="mt-1 h-4 w-4 shrink-0 rounded accent-[var(--foreground)]"
+            />
+            <span>
+              I agree to the{" "}
+              <Link href="/terms" target="_blank" rel="noreferrer" className="font-medium text-[var(--accent)] underline underline-offset-4">
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy" target="_blank" rel="noreferrer" className="font-medium text-[var(--accent)] underline underline-offset-4">
+                Privacy Policy
+              </Link>
+              .
+            </span>
+          </label>
+          {errors.acceptLegal && <p className="mt-2 text-xs text-red-500">{errors.acceptLegal.message}</p>}
+        </div>
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Creating account..." : "Create account"}
         </Button>
@@ -170,7 +228,11 @@ export function SignUpForm() {
             or
             <span className="h-px flex-1 bg-[var(--foreground)]/12" />
           </div>
-          <GoogleAuthButton mode="signup" />
+          <GoogleAuthButton
+            mode="signup"
+            callbackUrl={inviteToken ? `/invite/${inviteToken}` : "/map"}
+            beforeAuth={prepareGoogleSignUp}
+          />
         </>
       )}
     </div>

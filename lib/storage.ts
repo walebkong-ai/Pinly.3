@@ -2,6 +2,23 @@ import { put } from "@vercel/blob";
 import crypto from "node:crypto";
 
 const DEFAULT_VERCEL_UPLOAD_LIMIT_MB = 4;
+const DEFAULT_BLOB_ACCESS_MODE = "private";
+
+const uploadMimeTypes = new Map<
+  string,
+  {
+    mediaType: "IMAGE" | "VIDEO";
+    extensions: string[];
+  }
+>([
+  ["image/jpeg", { mediaType: "IMAGE", extensions: ["jpg", "jpeg"] }],
+  ["image/png", { mediaType: "IMAGE", extensions: ["png"] }],
+  ["image/webp", { mediaType: "IMAGE", extensions: ["webp"] }],
+  ["image/gif", { mediaType: "IMAGE", extensions: ["gif"] }],
+  ["video/mp4", { mediaType: "VIDEO", extensions: ["mp4"] }],
+  ["video/webm", { mediaType: "VIDEO", extensions: ["webm"] }],
+  ["video/quicktime", { mediaType: "VIDEO", extensions: ["mov", "qt"] }]
+]);
 
 export type StorageDriver = "vercel-blob";
 
@@ -15,6 +32,14 @@ export class StorageConfigError extends Error {
 function normalizeUploadExtension(file: File) {
   const extension = file.name.includes(".") ? file.name.split(".").pop() ?? "bin" : "bin";
   return extension.toLowerCase().replace(/[^a-z0-9]/g, "") || "bin";
+}
+
+function normalizeBlobPrefix(prefix: string) {
+  return prefix
+    .split("/")
+    .map((segment) => segment.trim().replace(/[^a-zA-Z0-9_-]/g, ""))
+    .filter(Boolean)
+    .join("/");
 }
 
 export function getStorageDriver(): StorageDriver {
@@ -38,16 +63,43 @@ export function assertStorageConfiguration() {
   }
 }
 
-export async function saveFileToVercelBlob(file: File) {
-  assertStorageConfiguration();
+export function getBlobAccessMode() {
+  const configuredValue = (process.env.BLOB_ACCESS_MODE ?? DEFAULT_BLOB_ACCESS_MODE).trim().toLowerCase();
+
+  if (configuredValue !== "public" && configuredValue !== "private") {
+    throw new StorageConfigError("BLOB_ACCESS_MODE must be either 'public' or 'private'.");
+  }
+
+  return configuredValue as "public" | "private";
+}
+
+export function inferMediaType(file: File) {
+  const definition = uploadMimeTypes.get(file.type.toLowerCase());
+
+  if (!definition) {
+    throw new Error("Unsupported file type");
+  }
+
   const extension = normalizeUploadExtension(file);
-  const prefix = process.env.BLOB_UPLOAD_PREFIX ?? "posts";
-  const pathname = `${prefix}/${crypto.randomUUID()}.${extension}`;
-  // Read access mode from env to support private Blob stores, defaulting to public
-  const accessMode = process.env.BLOB_ACCESS_MODE || "public";
+
+  if (!definition.extensions.includes(extension)) {
+    throw new Error("Unsupported file extension");
+  }
+
+  return definition.mediaType;
+}
+
+export async function saveFileToVercelBlob(file: File, options?: { ownerId?: string }) {
+  assertStorageConfiguration();
+  inferMediaType(file);
+  const extension = normalizeUploadExtension(file);
+  const prefix = normalizeBlobPrefix(process.env.BLOB_UPLOAD_PREFIX ?? "posts") || "posts";
+  const ownerPrefix = options?.ownerId ? normalizeBlobPrefix(options.ownerId) : null;
+  const pathname = [prefix, ownerPrefix, `${crypto.randomUUID()}.${extension}`].filter(Boolean).join("/");
+  const accessMode = getBlobAccessMode();
 
   const blob = await put(pathname, file, {
-    access: accessMode as "public", // typecast to satisfy older SDK typings if needed
+    access: accessMode as "public",
     addRandomSuffix: false,
     contentType: file.type || undefined
   });
@@ -55,19 +107,7 @@ export async function saveFileToVercelBlob(file: File) {
   return blob.url;
 }
 
-export async function saveUploadedFile(file: File) {
+export async function saveUploadedFile(file: File, options?: { ownerId?: string }) {
   assertStorageConfiguration();
-  return saveFileToVercelBlob(file);
-}
-
-export function inferMediaType(file: File) {
-  if (file.type.startsWith("image/")) {
-    return "IMAGE" as const;
-  }
-
-  if (file.type.startsWith("video/")) {
-    return "VIDEO" as const;
-  }
-
-  throw new Error("Unsupported file type");
+  return saveFileToVercelBlob(file, options);
 }

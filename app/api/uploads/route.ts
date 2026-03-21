@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { StorageConfigError, assertStorageConfiguration, getMaxUploadSizeBytes, inferMediaType, saveUploadedFile } from "@/lib/storage";
 import { apiError } from "@/lib/api";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import type { NextRequest } from "next/server";
 
 export const runtime = "nodejs";
@@ -11,6 +12,18 @@ export async function POST(request: NextRequest) {
 
   if (!token?.id) {
     return apiError("Unauthorized", 401);
+  }
+
+  const rateLimitResponse = enforceRateLimit({
+    scope: "uploads",
+    request,
+    userId: token.id,
+    limit: 12,
+    windowMs: 10 * 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
   }
 
   let formData: FormData;
@@ -57,7 +70,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const mediaType = inferMediaType(file);
-    const mediaUrl = await saveUploadedFile(file);
+    const mediaUrl = await saveUploadedFile(file, { ownerId: token.id });
 
     return Response.json({
       mediaUrl,
@@ -67,7 +80,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error(error);
 
-    if (error instanceof Error && error.message === "Unsupported file type") {
+    if (
+      error instanceof Error &&
+      (error.message === "Unsupported file type" || error.message === "Unsupported file extension")
+    ) {
       return apiError("Only images and videos are supported.", 415, {
         code: "UPLOAD_UNSUPPORTED_FILE_TYPE"
       });

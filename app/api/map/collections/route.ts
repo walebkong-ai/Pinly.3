@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { apiError } from "@/lib/api";
 import { getMapCollectionOverlays } from "@/lib/data";
 import type { TimeFilter } from "@/types/app";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -26,6 +27,18 @@ export async function GET(request: Request) {
 
   if (!session?.user?.id) {
     return apiError("Unauthorized", 401);
+  }
+
+  const rateLimitResponse = enforceRateLimit({
+    scope: "map-collections",
+    request,
+    userId: session.user.id,
+    limit: 120,
+    windowMs: 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
   }
 
   const { searchParams } = new URL(request.url);

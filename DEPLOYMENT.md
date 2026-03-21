@@ -1,12 +1,12 @@
 # Pinly Deployment
 
-Pinly is ready to deploy on Vercel with Neon Postgres and Prisma. This document covers the production path and the remaining caveats.
+Pinly is ready to deploy on Vercel with PostgreSQL and Prisma. This document covers the production path and the remaining caveats.
 
 ## Required Vercel Environment Variables
 - `DATABASE_URL`
-  - Neon pooled connection string for runtime queries
+  - Production PostgreSQL connection string for runtime queries
 - `DIRECT_URL`
-  - Neon direct connection string for Prisma migrations
+  - Direct PostgreSQL connection string for Prisma migrations
 - `AUTH_SECRET`
   - Random 32+ byte secret for Auth.js session signing
 - `AUTH_URL`
@@ -15,6 +15,8 @@ Pinly is ready to deploy on Vercel with Neon Postgres and Prisma. This document 
   - Set to `vercel-blob` in production
 - `BLOB_READ_WRITE_TOKEN`
   - Vercel Blob token for media uploads
+- `BLOB_ACCESS_MODE`
+  - Keep this at `private` so media stays behind app authorization
 
 ## Recommended Vercel Environment Variables
 - `NEXTAUTH_URL`
@@ -29,13 +31,15 @@ Pinly is ready to deploy on Vercel with Neon Postgres and Prisma. This document 
   - Keep this at `4` for server uploads on Vercel
 - `BLOB_UPLOAD_PREFIX`
   - Optional folder prefix, default is `posts`
+- `AUTH_DEBUG_RESET_LINKS`
+  - Optional local-only password reset preview. Leave unset or `false` outside development.
 - `ALLOW_DESTRUCTIVE_SEED`
   - Leave unset in production; only use `pinly-demo` for intentional demo or staging reseeds
 
-## Neon Setup
-1. Create a Neon project and database.
-2. Copy the pooled connection string into `DATABASE_URL`.
-3. Copy the direct connection string into `DIRECT_URL`.
+## Database Setup
+1. Create the production PostgreSQL database.
+2. Copy the runtime connection string into `DATABASE_URL`.
+3. Copy the direct migration connection string into `DIRECT_URL`.
 4. Ensure both URLs include `sslmode=require`.
 5. In Prisma, runtime queries use `DATABASE_URL`; schema migrations use `DIRECT_URL`.
 
@@ -60,9 +64,10 @@ This repo now includes a checked-in baseline migration under `prisma/migrations/
 2. Import the repo into Vercel.
 3. Add the required environment variables.
 4. Create or connect a Vercel Blob store and copy `BLOB_READ_WRITE_TOKEN`.
-5. Set the build command to the default project build or leave it blank so Vercel uses `npm run build`.
-6. Run `npm run prisma:migrate:deploy` against the production database before first launch.
-7. Deploy.
+5. Set `BLOB_ACCESS_MODE=private`.
+6. Set the build command to the default project build or leave it blank so Vercel uses `npm run build`.
+7. Run `npm run prisma:migrate:deploy` against the production database before first launch.
+8. Deploy.
 
 If enabling Google auth, configure OAuth redirect URIs in Google Cloud:
 - Local: `http://localhost:3000/api/auth/callback/google`
@@ -76,13 +81,14 @@ If enabling Google auth, configure OAuth redirect URIs in Google Cloud:
 - Public images are now allowlisted in `next.config.ts`; new remote media hosts must be added there before use.
 
 ## Launch Checklist
-- [ ] Neon database created
-- [ ] `DATABASE_URL` set to pooled Neon URL
-- [ ] `DIRECT_URL` set to direct Neon URL
+- [ ] Production PostgreSQL database created
+- [ ] `DATABASE_URL` set to the runtime connection string
+- [ ] `DIRECT_URL` set to the direct migration connection string
 - [ ] `AUTH_SECRET` set
 - [ ] `AUTH_URL` set to production domain
 - [ ] `STORAGE_DRIVER=vercel-blob`
 - [ ] `BLOB_READ_WRITE_TOKEN` set
+- [ ] `BLOB_ACCESS_MODE=private`
 - [ ] `NEXTAUTH_URL` set to production domain
 - [ ] `npm run prisma:migrate:deploy` executed successfully
 - [ ] Upload flow tested in production

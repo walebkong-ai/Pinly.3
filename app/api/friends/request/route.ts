@@ -5,6 +5,7 @@ import { createNotificationSafely } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { friendRequestSchema, normalizeUsername } from "@/lib/validation";
 import { apiError, apiValidationError } from "@/lib/api";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -13,6 +14,18 @@ export async function POST(request: Request) {
 
   if (!session?.user?.id) {
     return apiError("Unauthorized", 401);
+  }
+
+  const rateLimitResponse = enforceRateLimit({
+    scope: "friend-request-send",
+    request,
+    userId: session.user.id,
+    limit: 20,
+    windowMs: 15 * 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
   }
 
   let body: unknown;

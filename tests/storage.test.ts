@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { StorageConfigError, assertStorageConfiguration, getMaxUploadSizeBytes, getStorageDriver } from "@/lib/storage";
+import { StorageConfigError, assertStorageConfiguration, getBlobAccessMode, getMaxUploadSizeBytes, getStorageDriver, inferMediaType } from "@/lib/storage";
 
 const originalEnv = { ...process.env };
 
@@ -28,6 +28,15 @@ describe("storage configuration", () => {
     expect(() => assertStorageConfiguration()).toThrow(StorageConfigError);
   });
 
+  test("defaults blob uploads to private access", () => {
+    process.env = {
+      ...originalEnv,
+      BLOB_READ_WRITE_TOKEN: "token"
+    };
+
+    expect(getBlobAccessMode()).toBe("private");
+  });
+
   test("rejects invalid upload size configuration", () => {
     process.env = {
       ...originalEnv,
@@ -36,5 +45,14 @@ describe("storage configuration", () => {
     };
 
     expect(() => getMaxUploadSizeBytes()).toThrow(StorageConfigError);
+  });
+
+  test("rejects disallowed upload file extensions", () => {
+    const fakeFile = {
+      name: "avatar.svg",
+      type: "image/svg+xml"
+    } as File;
+
+    expect(() => inferMediaType(fakeFile)).toThrow("Unsupported file type");
   });
 });

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { Brand } from "@/components/brand";
 import { SignInForm } from "@/components/auth/sign-in-form";
+import { LegalLinks } from "@/components/legal/legal-links";
 import { DEFAULT_DEMO_USER_EMAIL, DEMO_PASSWORD } from "@/lib/demo-config";
 
 export default async function SignInPage() {
@@ -38,6 +39,10 @@ export default async function SignInPage() {
             <div className="mt-8">
               <SignInForm />
             </div>
+            <p className="mt-6 text-center text-xs text-[var(--foreground)]/52">
+              Review the current Pinly terms and privacy details below.
+            </p>
+            <LegalLinks className="mt-2 justify-center" />
           </div>
         </div>
       </div>

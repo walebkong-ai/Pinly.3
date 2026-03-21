@@ -13,6 +13,9 @@ export const normalizedUsernameSchema = z.preprocess(
   (value) => (typeof value === "string" ? normalizeUsername(value) : value),
   usernameSchema
 );
+export const requiredLegalAcceptanceSchema = z.boolean().refine((value) => value, {
+  message: "You must accept the Terms of Service and Privacy Policy."
+});
 const mapCategoryValues = ["photo", "video", "food", "nature", "landmark", "neighborhood"] as const satisfies readonly MapCategory[];
 
 const csvArray = <T extends z.ZodTypeAny>(itemSchema: T) =>
@@ -39,7 +42,12 @@ export const signUpSchema = z.object({
   username: usernameSchema,
   email: z.string().email(),
   password: z.string().min(8, "Password must be at least 8 characters.").max(100),
+  acceptLegal: requiredLegalAcceptanceSchema,
   inviteToken: z.string().optional()
+});
+
+export const legalConsentSchema = z.object({
+  acceptLegal: requiredLegalAcceptanceSchema
 });
 
 export const signInSchema = z.object({

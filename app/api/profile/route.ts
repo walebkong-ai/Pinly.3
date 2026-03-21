@@ -4,6 +4,8 @@ import { apiError, apiValidationError } from "@/lib/api";
 import { getPrismaErrorCode } from "@/lib/prisma-errors";
 import { z } from "zod";
 import { normalizedUsernameSchema } from "@/lib/validation";
+import { normalizeProfileImageUrl } from "@/lib/media-url";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 const updateProfileSchema = z.object({
   username: normalizedUsernameSchema.optional(),
@@ -17,6 +19,18 @@ export async function PATCH(request: Request) {
 
   if (!session?.user?.id) {
     return apiError("Unauthorized", 401);
+  }
+
+  const rateLimitResponse = enforceRateLimit({
+    scope: "profile-update",
+    request,
+    userId: session.user.id,
+    limit: 20,
+    windowMs: 10 * 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
   }
 
   let body: unknown;
@@ -67,7 +81,19 @@ export async function PATCH(request: Request) {
   }
 
   if (avatarUrl !== undefined) {
-    updateData.avatarUrl = avatarUrl === "" ? null : avatarUrl;
+    if (avatarUrl === "") {
+      updateData.avatarUrl = null;
+    } else {
+      const normalizedAvatarUrl = normalizeProfileImageUrl(avatarUrl);
+
+      if (!normalizedAvatarUrl) {
+        return apiError("Avatar URLs must use a trusted Pinly or supported profile image host.", 400, {
+          code: "PROFILE_AVATAR_URL_INVALID"
+        });
+      }
+
+      updateData.avatarUrl = normalizedAvatarUrl;
+    }
   }
 
   if (Object.keys(updateData).length === 0) {

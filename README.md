@@ -6,7 +6,7 @@ Pinly is a private, friends-only social travel MVP built with Next.js, Prisma, P
 - Next.js 15 App Router + TypeScript
 - Tailwind CSS
 - NextAuth credentials auth with JWT sessions
-- Neon PostgreSQL + Prisma ORM
+- PostgreSQL (Supabase-compatible) + Prisma ORM
 - Leaflet + CARTO light tiles with staged server-side map aggregation
 - Vercel Blob for production uploads, local filesystem uploads for local MVP demos
 
@@ -91,8 +91,8 @@ After seeding, sign in with any of these and password `password123`:
 The deployed demo no longer depends on running the destructive seed script in production. The first demo sign-in bootstraps the reserved demo dataset non-destructively, and the landing page `Explore the demo` button signs in with the default demo account automatically.
 
 ## Environment variables
-- `DATABASE_URL`: Neon pooled PostgreSQL connection string
-- `DIRECT_URL`: Neon direct PostgreSQL connection string for migrations
+- `DATABASE_URL`: production PostgreSQL connection string for runtime queries
+- `DIRECT_URL`: direct PostgreSQL connection string for migrations
 - `AUTH_SECRET`: long random secret for NextAuth JWT signing
 - `NEXTAUTH_URL`: local or deployed app URL
 - `AUTH_URL`: set this to the same value as `NEXTAUTH_URL`
@@ -103,8 +103,10 @@ The deployed demo no longer depends on running the destructive seed script in pr
 - `STORAGE_DRIVER`: `local` for dev or `vercel-blob` for Vercel
 - `BLOB_READ_WRITE_TOKEN`: required when `STORAGE_DRIVER=vercel-blob`
 - `BLOB_UPLOAD_PREFIX`: optional blob folder prefix
+- `BLOB_ACCESS_MODE`: set to `private` for friend-gated media delivery through `/api/media`
 - `UPLOAD_DIR`: defaults to `public/uploads`
 - `MAX_UPLOAD_SIZE_MB`: upload cap, keep this at `4` for Vercel server uploads
+- `AUTH_DEBUG_RESET_LINKS`: optional local-only preview for password reset links; keep `false` outside development
 - `ALLOW_DESTRUCTIVE_SEED`: leave unset locally; only use `pinly-demo` for intentional demo/staging reseeds
 
 ## Useful commands
@@ -124,7 +126,7 @@ python3 tools/check_env.py
 - Map queries are bounds-based and zoom-aware so the client only asks for relevant staged markers.
 - City discovery reuses the same protected visibility rules as the map.
 - Production uploads are routed through Vercel Blob; local filesystem storage remains available for local development.
-- Prisma migrations are checked into `prisma/migrations/` so `prisma migrate deploy` can safely bootstrap Neon in production.
+- Prisma migrations are checked into `prisma/migrations/` so `prisma migrate deploy` can safely bootstrap production PostgreSQL in deployment environments.
 - Lightweight groups are currently friend-backed filter options and are intentionally structured to support a future persistent group model without changing the map flow.
 - Categories are derived from post media type and text cues so the filter system is explicit today without needing a stored taxonomy.
 
@@ -136,7 +138,7 @@ python3 tools/check_env.py
 - Server-side uploads on Vercel should stay small. Larger media needs a future client-upload path.
 
 ## Deployment
-- Production target: Vercel + Neon + Prisma + Vercel Blob
+- Production target: Vercel + PostgreSQL + Prisma + Vercel Blob
 - Exact deployment steps and the launch checklist live in [DEPLOYMENT.md](/Users/kalebwong/Library/CloudStorage/OneDrive-WilfridLaurierUniversity/TravelMediaFolder/DEPLOYMENT.md)
 - Final go-live runbook and manual QA flows live in [GO_LIVE.md](/Users/kalebwong/Library/CloudStorage/OneDrive-WilfridLaurierUniversity/TravelMediaFolder/GO_LIVE.md)
 - First live deployment command order and failure-mode playbook live in [FIRST_DEPLOY_EXECUTION_PLAN.md](/Users/kalebwong/Library/CloudStorage/OneDrive-WilfridLaurierUniversity/TravelMediaFolder/FIRST_DEPLOY_EXECUTION_PLAN.md)

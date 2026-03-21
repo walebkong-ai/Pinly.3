@@ -8,7 +8,8 @@ describe("schema validation", () => {
         name: "Avery Chen",
         username: "Avery",
         email: "avery@example.com",
-        password: "password123"
+        password: "password123",
+        acceptLegal: true
       }).success
     ).toBe(false);
   });
@@ -59,7 +60,8 @@ describe("schema validation", () => {
       name: "Avery Chen",
       username: "avery",
       email: "avery@example.com",
-      password: "short"
+      password: "short",
+      acceptLegal: true
     });
 
     expect(result.success).toBe(false);
@@ -115,5 +117,21 @@ describe("schema validation", () => {
         longitude: -73.5878
       }).success
     ).toBe(true);
+  });
+
+  test("sign up requires legal acceptance", () => {
+    const result = signUpSchema.safeParse({
+      name: "Avery Chen",
+      username: "avery",
+      email: "avery@example.com",
+      password: "password123",
+      acceptLegal: false
+    });
+
+    expect(result.success).toBe(false);
+
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe("You must accept the Terms of Service and Privacy Policy.");
+    }
   });
 });

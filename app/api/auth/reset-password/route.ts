@@ -1,24 +1,49 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
+import { z } from "zod";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
+const resetPasswordSchema = z.object({
+  token: z.string().min(1),
+  newPassword: z.string().min(8).max(100)
+});
+
 export async function POST(req: Request) {
   try {
-    const { token, newPassword } = await req.json();
+    const rateLimitResponse = enforceRateLimit({
+      scope: "reset-password",
+      request: req,
+      limit: 10,
+      windowMs: 15 * 60 * 1000
+    });
 
-    if (!token || typeof token !== "string") {
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
+    const parsed = resetPasswordSchema.safeParse(await req.json());
+
+    if (!parsed.success) {
+      const newPasswordError = parsed.error.flatten().fieldErrors.newPassword?.[0];
+
+      if (newPasswordError) {
+        return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
+      }
+
       return NextResponse.json({ error: "Missing or invalid token" }, { status: 400 });
     }
 
-    if (!newPassword || newPassword.length < 8) {
-      return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
-    }
+    const { token, newPassword } = parsed.data;
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
-    // Find the token
-    const resetToken = await prisma.passwordResetToken.findUnique({
-      where: { token },
+    const resetToken = await prisma.passwordResetToken.findFirst({
+      where: {
+        OR: [{ token: hashedToken }, { token }]
+      },
     });
 
     if (!resetToken) {
@@ -43,9 +68,8 @@ export async function POST(req: Request) {
       data: { passwordHash },
     });
 
-    // Invalidate the token so it cannot be reused
-    await prisma.passwordResetToken.delete({
-      where: { id: resetToken.id },
+    await prisma.passwordResetToken.deleteMany({
+      where: { email: resetToken.email },
     });
 
     return NextResponse.json({ message: "Password updated successfully." });

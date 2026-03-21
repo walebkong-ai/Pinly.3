@@ -4,6 +4,7 @@ import { createNotificationSafely } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { apiError } from "@/lib/api";
 import { z } from "zod";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -63,6 +64,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ post
 export async function POST(request: Request, { params }: { params: Promise<{ postId: string }> }) {
   const session = await auth();
   if (!session?.user?.id) return apiError("Unauthorized", 401);
+
+  const rateLimitResponse = enforceRateLimit({
+    scope: "post-comments-create",
+    request,
+    userId: session.user.id,
+    limit: 30,
+    windowMs: 10 * 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
 
   const { postId } = await params;
   const post = await getVisiblePostById(session.user.id, postId);

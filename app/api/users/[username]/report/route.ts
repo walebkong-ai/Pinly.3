@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { normalizeUsername } from "@/lib/validation";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export async function POST(
   request: Request,
@@ -10,6 +12,18 @@ export async function POST(
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const rateLimitResponse = enforceRateLimit({
+      scope: "user-report",
+      request,
+      userId: session.user.id,
+      limit: 10,
+      windowMs: 60 * 60 * 1000
+    });
+
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
 
     const { username } = await params;
@@ -25,7 +39,7 @@ export async function POST(
     }
 
     const targetUser = await prisma.user.findUnique({
-      where: { username },
+      where: { username: normalizeUsername(username) },
       select: { id: true },
     });
 

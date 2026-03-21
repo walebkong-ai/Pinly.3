@@ -1,7 +1,14 @@
 import { hash } from "bcryptjs";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { createLegalAcceptanceRecord } from "@/lib/legal";
 import { DEFAULT_DEMO_USER_EMAIL, DEMO_PASSWORD } from "@/lib/demo-config";
-import { authorizeCredentials, createUniqueUsername, ensureGoogleUser, normalizeUsernameSeed } from "@/lib/auth-helpers";
+import {
+  authorizeCredentials,
+  createUniqueUsername,
+  ensureGoogleUser,
+  LegalAcceptanceRequiredError,
+  normalizeUsernameSeed
+} from "@/lib/auth-helpers";
 
 const { ensureDemoDatasetMock } = vi.hoisted(() => ({
   ensureDemoDatasetMock: vi.fn()
@@ -170,6 +177,8 @@ describe("auth helpers", () => {
   });
 
   test("google sign in creates a user when email does not exist", async () => {
+    const acceptedAt = new Date("2026-03-21T12:00:00.000Z");
+    const legalAcceptance = createLegalAcceptanceRecord(acceptedAt);
     const prisma = {
       user: {
         findUnique: vi
@@ -193,11 +202,68 @@ describe("auth helpers", () => {
     const user = await ensureGoogleUser(prisma as never, {
       email: "newgoogle@pinly.demo",
       name: "New Google",
-      avatarUrl: "https://example.com/avatar.jpg"
-    });
+      avatarUrl: "https://lh3.googleusercontent.com/a/test-avatar"
+    }, legalAcceptance);
 
     expect(user?.email).toBe("newgoogle@pinly.demo");
     expect(user?.username.startsWith("new_google")).toBe(true);
     expect(prisma.user.create).toHaveBeenCalledTimes(1);
+    expect(prisma.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          avatarUrl: "https://lh3.googleusercontent.com/a/test-avatar",
+          termsAcceptedAt: acceptedAt,
+          privacyAcceptedAt: acceptedAt,
+          termsVersion: legalAcceptance.termsVersion,
+          privacyVersion: legalAcceptance.privacyVersion
+        })
+      })
+    );
+  });
+
+  test("google sign in requires legal acceptance for new users", async () => {
+    const prisma = {
+      user: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        create: vi.fn(),
+        update: vi.fn()
+      }
+    };
+
+    await expect(
+      ensureGoogleUser(prisma as never, {
+        email: "newgoogle@pinly.demo",
+        name: "New Google",
+        avatarUrl: "https://lh3.googleusercontent.com/a/test-avatar"
+      })
+    ).rejects.toBeInstanceOf(LegalAcceptanceRequiredError);
+
+    expect(prisma.user.create).not.toHaveBeenCalled();
+  });
+
+  test("existing google users can still sign in without a new acceptance record", async () => {
+    const prisma = {
+      user: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "google_existing",
+          name: "Existing Google",
+          username: "existing_google",
+          email: "existing@pinly.demo",
+          passwordHash: "hashed",
+          avatarUrl: null
+        }),
+        create: vi.fn(),
+        update: vi.fn()
+      }
+    };
+
+    const user = await ensureGoogleUser(prisma as never, {
+      email: "existing@pinly.demo",
+      name: "Existing Google"
+    });
+
+    expect(user?.id).toBe("google_existing");
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(prisma.user.update).not.toHaveBeenCalled();
   });
 });

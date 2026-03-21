@@ -247,4 +247,33 @@ describe("posts route", () => {
     expect(response.status).toBe(403);
     expect(postCreateMock).not.toHaveBeenCalled();
   });
+
+  test("POST rejects media URLs that do not come from trusted storage", async () => {
+    getFriendIdsMock.mockResolvedValue([]);
+    postCollectionFindManyMock.mockResolvedValue([]);
+
+    const { POST } = await import("@/app/api/posts/route");
+    const response = await POST(
+      new Request("http://localhost/api/posts", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          mediaType: "IMAGE",
+          mediaUrl: "https://evil.example.com/track.jpg",
+          thumbnailUrl: null,
+          caption: "A full day in the city.",
+          placeName: "Old Port",
+          city: "Montreal",
+          country: "Canada",
+          latitude: 45.5,
+          longitude: -73.55,
+          visitedAt: new Date().toISOString(),
+          taggedUserIds: []
+        })
+      })
+    );
+
+    expect(response.status).toBe(400);
+    expect(postCreateMock).not.toHaveBeenCalled();
+  });
 });

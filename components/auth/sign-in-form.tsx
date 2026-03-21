@@ -10,9 +10,18 @@ import { Input } from "@/components/ui/input";
 import { GoogleAuthButton } from "@/components/auth/google-auth-button";
 import { DEFAULT_DEMO_USER_EMAIL, DEMO_PASSWORD } from "@/lib/demo-config";
 
+function normalizeCallbackUrl(value: string | null) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return "/map";
+  }
+
+  return value;
+}
+
 export function SignInForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const callbackUrl = normalizeCallbackUrl(searchParams.get("callbackUrl"));
   const [pendingMode, setPendingMode] = useState<"credentials" | "demo" | null>(null);
   const googleUiEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true";
   const [googleEnabled, setGoogleEnabled] = useState(googleUiEnabled);
@@ -51,6 +60,7 @@ export function SignInForm() {
       result = await signIn("credentials", {
         email,
         password,
+        callbackUrl,
         redirect: false
       });
     } catch {
@@ -66,7 +76,7 @@ export function SignInForm() {
       return;
     }
 
-    router.push("/map");
+    router.push(callbackUrl);
     router.refresh();
   }
 
@@ -123,7 +133,7 @@ export function SignInForm() {
             or
             <span className="h-px flex-1 bg-[var(--foreground)]/12" />
           </div>
-          <GoogleAuthButton mode="signin" />
+          <GoogleAuthButton mode="signin" callbackUrl={callbackUrl} />
         </>
       )}
     </div>

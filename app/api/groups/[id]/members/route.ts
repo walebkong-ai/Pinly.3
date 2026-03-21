@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { apiError } from "@/lib/api";
 import { z } from "zod";
 import { getFriendIds } from "@/lib/data";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -21,6 +22,19 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
   const userId = session.user.id;
   const groupId = params.id;
 
+  const rateLimitResponse = enforceRateLimit({
+    scope: "group-members-add",
+    request,
+    userId,
+    key: groupId,
+    limit: 15,
+    windowMs: 10 * 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const parsed = addMembersSchema.safeParse(await request.json());
   if (!parsed.success) {
     return apiError("Invalid member data.", 400);
@@ -38,6 +52,12 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
   const isMember = group.members.some((m: { userId: string }) => m.userId === userId);
   if (!isMember) {
     return apiError("Forbidden", 403);
+  }
+
+  const viewerMembership = group.members.find((member: { userId: string; role?: string }) => member.userId === userId);
+
+  if (viewerMembership?.role !== "OWNER") {
+    return apiError("Only the group owner can add people.", 403);
   }
 
   if (group.isDirect) {
