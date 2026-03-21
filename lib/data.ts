@@ -1031,11 +1031,13 @@ export async function getVisibleCollectionsForUser(viewerId: string, targetUserI
 export async function getMapCollectionOverlays({
   viewerId,
   layer,
-  groups
+  groups,
+  time
 }: {
   viewerId: string;
   layer: LayerMode;
   groups: string[];
+  time: TimeFilter;
 }): Promise<MapCollectionOverlay[]> {
   try {
     const friendIds = await getFriendIds(viewerId);
@@ -1045,6 +1047,7 @@ export async function getMapCollectionOverlays({
       selectedGroupIds: groups,
       layer
     });
+    const visitedAfter = getTimeFilterStart(time);
     const visibleCollectionWhere = buildMapCollectionOverlayWhere(viewerId, scopedUserIds);
 
     if (!visibleCollectionWhere) {
@@ -1059,7 +1062,8 @@ export async function getMapCollectionOverlays({
             posts: {
               some: {
                 post: {
-                  isArchived: false
+                  isArchived: false,
+                  ...(visitedAfter ? { visitedAt: { gte: visitedAfter } } : {})
                 }
               }
             }
@@ -1076,7 +1080,8 @@ export async function getMapCollectionOverlays({
         posts: {
           where: {
             post: {
-              isArchived: false
+              isArchived: false,
+              ...(visitedAfter ? { visitedAt: { gte: visitedAfter } } : {})
             }
           },
           orderBy: [{ post: { visitedAt: "asc" } }, { post: { createdAt: "asc" } }],

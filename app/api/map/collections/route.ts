@@ -1,12 +1,21 @@
 import { auth } from "@/lib/auth";
 import { apiError } from "@/lib/api";
 import { getMapCollectionOverlays } from "@/lib/data";
+import type { TimeFilter } from "@/types/app";
 
 export const runtime = "nodejs";
 
 function parseLayer(value: string | null) {
   if (value === "friends" || value === "you" || value === "both") {
     return value;
+  }
+
+  return null;
+}
+
+function parseTime(value: string | null): TimeFilter | null {
+  if (value === null || value === "all" || value === "30d" || value === "6m" || value === "1y") {
+    return value ?? "all";
   }
 
   return null;
@@ -21,9 +30,14 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const layer = parseLayer(searchParams.get("layer"));
+  const time = parseTime(searchParams.get("time"));
 
   if (!layer) {
     return apiError("Invalid collection overlay mode.", 400, { code: "MAP_COLLECTIONS_MODE_INVALID" });
+  }
+
+  if (!time) {
+    return apiError("Invalid collection overlay time filter.", 400, { code: "MAP_COLLECTIONS_TIME_INVALID" });
   }
 
   const groups = (searchParams.get("groups") ?? "")
@@ -34,7 +48,8 @@ export async function GET(request: Request) {
   const collections = await getMapCollectionOverlays({
     viewerId: session.user.id,
     layer,
-    groups
+    groups,
+    time
   });
 
   return Response.json({ collections });

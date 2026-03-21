@@ -130,7 +130,7 @@ export function MapPageClient() {
         mode: activeMapMode,
         satelliteApiKey
       }),
-    [activeMapMode, satelliteApiKey]
+    [activeMapMode]
   );
 
   useEffect(() => {
@@ -224,7 +224,8 @@ export function MapPageClient() {
       setCollectionsOverlayLoading(true);
 
       const params = new URLSearchParams({
-        layer: overlayLayer
+        layer: overlayLayer,
+        time
       });
 
       if (selectedGroupIds.length) {
@@ -273,8 +274,8 @@ export function MapPageClient() {
       setCollectionOverlays(nextCollectionOverlays);
       setCollectionOverlayFitBoundsTarget(
         buildCollectionOverlayFitBoundsTarget(
-          `collections-overlay:${collectionsOverlayMode}:${selectedGroupIds.join(",")}:${nextCollectionOverlays
-            .map((collectionOverlay) => `${collectionOverlay.id}:${collectionOverlay.postIds.length}`)
+          `collections-overlay:${collectionsOverlayMode}:${time}:${selectedGroupIds.join(",")}:${nextCollectionOverlays
+            .map((collectionOverlay) => `${collectionOverlay.id}:${collectionOverlay.postIds.join(",")}`)
             .join("|")}`,
           nextCollectionOverlays
         )
@@ -288,7 +289,7 @@ export function MapPageClient() {
       ignore = true;
       abortController.abort();
     };
-  }, [collectionsOverlayMode, selectedGroupIds]);
+  }, [collectionsOverlayMode, selectedGroupIds, time]);
 
   useEffect(() => {
     const abortController = new AbortController();

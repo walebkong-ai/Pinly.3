@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const {
   postCollectionFindManyMock,
@@ -41,6 +41,8 @@ describe("map collections overlay data", () => {
   const acceptedFriendId = "friend_1";
 
   beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-21T12:00:00.000Z"));
     postCollectionFindManyMock.mockReset();
     postFindManyMock.mockReset();
     friendshipFindManyMock.mockReset();
@@ -51,6 +53,10 @@ describe("map collections overlay data", () => {
     friendRequestFindManyMock.mockResolvedValue([]);
     blockFindManyMock.mockResolvedValue([]);
     postFindManyMock.mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   test("loads only accepted-friend collections in friends mode", async () => {
@@ -81,7 +87,8 @@ describe("map collections overlay data", () => {
       getMapCollectionOverlays({
         viewerId,
         layer: "friends",
-        groups: []
+        groups: [],
+        time: "all"
       })
     ).resolves.toEqual([
       {
@@ -121,6 +128,85 @@ describe("map collections overlay data", () => {
         })
       })
     );
+  });
+
+  test("applies the active time filter to collection overlay route points", async () => {
+    const updatedAt = new Date("2026-03-19T12:00:00.000Z");
+    const inRangeVisitedAt = new Date("2026-03-09T12:00:00.000Z");
+
+    postCollectionFindManyMock.mockResolvedValue([
+      {
+        id: "collection_2",
+        userId: viewerId,
+        name: "Avery spring trip",
+        color: "#3A6EC9",
+        updatedAt,
+        posts: [
+          {
+            post: {
+              id: "post_recent",
+              latitude: 35.017,
+              longitude: 135.6774,
+              visitedAt: inRangeVisitedAt
+            }
+          }
+        ]
+      }
+    ]);
+
+    await expect(
+      getMapCollectionOverlays({
+        viewerId,
+        layer: "you",
+        groups: [],
+        time: "30d"
+      })
+    ).resolves.toEqual([
+      {
+        id: "collection_2",
+        ownerId: viewerId,
+        name: "Avery spring trip",
+        color: "#3A6EC9",
+        updatedAt,
+        postIds: ["post_recent"],
+        routePoints: [
+          {
+            postId: "post_recent",
+            latitude: 35.017,
+            longitude: 135.6774,
+            visitedAt: inRangeVisitedAt
+          }
+        ]
+      }
+    ]);
+
+    const calledArgs = postCollectionFindManyMock.mock.calls[0]?.[0];
+    const cutoffFromCollectionWhere = calledArgs?.where?.AND?.[1]?.posts?.some?.post?.visitedAt?.gte;
+    const cutoffFromPostSelectWhere = calledArgs?.select?.posts?.where?.post?.visitedAt?.gte;
+
+    expect(calledArgs?.where?.AND).toEqual(
+      expect.arrayContaining([
+        {
+          userId: viewerId
+        },
+        {
+          posts: {
+            some: {
+              post: expect.objectContaining({
+                isArchived: false,
+                visitedAt: {
+                  gte: expect.any(Date)
+                }
+              })
+            }
+          }
+        }
+      ])
+    );
+    expect(cutoffFromCollectionWhere).toBeInstanceOf(Date);
+    expect(cutoffFromCollectionWhere.toISOString().startsWith("2026-02-19")).toBe(true);
+    expect(cutoffFromPostSelectWhere).toBeInstanceOf(Date);
+    expect(cutoffFromPostSelectWhere.toISOString().startsWith("2026-02-19")).toBe(true);
   });
 
   test("filters map posts down to visible collection memberships when the overlay is active", async () => {
