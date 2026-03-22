@@ -103,7 +103,7 @@ export async function POST(request: Request) {
 
   const userId = session.user.id;
 
-  const rateLimitResponse = enforceRateLimit({
+  const rateLimitResponse = await enforceRateLimit({
     scope: "groups-create",
     request,
     userId,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getProviders, signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -51,42 +51,45 @@ export function SignInForm() {
     };
   }, [googleUiEnabled]);
 
-  async function signInWithEmail(email: string, password: string, mode: "credentials" | "demo") {
-    setPendingMode(mode);
+  const signInWithEmail = useCallback(
+    async (email: string, password: string, mode: "credentials" | "demo") => {
+      setPendingMode(mode);
 
-    let result: Awaited<ReturnType<typeof signIn>>;
+      let result: Awaited<ReturnType<typeof signIn>>;
 
-    try {
-      result = await signIn("credentials", {
-        email,
-        password,
-        callbackUrl,
-        redirect: false
-      });
-    } catch {
+      try {
+        result = await signIn("credentials", {
+          email,
+          password,
+          callbackUrl,
+          redirect: false
+        });
+      } catch {
+        setPendingMode(null);
+        toast.error(mode === "demo" ? "Demo sign in could not reach the server. Please try again." : "Could not reach the server. Please try again.");
+        return;
+      }
+
       setPendingMode(null);
-      toast.error(mode === "demo" ? "Demo sign in could not reach the server. Please try again." : "Could not reach the server. Please try again.");
-      return;
-    }
 
-    setPendingMode(null);
+      if (result?.error) {
+        toast.error(mode === "demo" ? "Demo sign in did not work. Please try again." : "That email and password combination did not work.");
+        return;
+      }
 
-    if (result?.error) {
-      toast.error(mode === "demo" ? "Demo sign in did not work. Please try again." : "That email and password combination did not work.");
-      return;
-    }
-
-    router.push(callbackUrl);
-    router.refresh();
-  }
+      router.push(callbackUrl);
+      router.refresh();
+    },
+    [callbackUrl, router]
+  );
 
   async function onSubmit(formData: FormData) {
     await signInWithEmail(String(formData.get("email") ?? ""), String(formData.get("password") ?? ""), "credentials");
   }
 
-  async function handleDemoSignIn() {
+  const handleDemoSignIn = useCallback(async () => {
     await signInWithEmail(DEFAULT_DEMO_USER_EMAIL, DEMO_PASSWORD, "demo");
-  }
+  }, [signInWithEmail]);
 
   useEffect(() => {
     if (searchParams.get("demo") !== "1" || autoDemoStartedRef.current) {
@@ -95,7 +98,7 @@ export function SignInForm() {
 
     autoDemoStartedRef.current = true;
     void handleDemoSignIn();
-  }, [searchParams]);
+  }, [handleDemoSignIn, searchParams]);
 
   return (
     <div className="space-y-4">

@@ -14,7 +14,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const rateLimitResponse = enforceRateLimit({
+    const rateLimitResponse = await enforceRateLimit({
       scope: "user-report",
       request,
       userId: session.user.id,

@@ -7,11 +7,14 @@ This runbook is for the first real Pinly deployment on Vercel with Neon Postgres
 - [ ] `DIRECT_URL` points to the Neon direct connection URL
 - [ ] `AUTH_SECRET` is a strong random secret
 - [ ] `NEXTAUTH_URL` matches the production domain
-- [ ] `STORAGE_DRIVER=vercel-blob`
 - [ ] `BLOB_READ_WRITE_TOKEN` is set
+- [ ] `BLOB_ACCESS_MODE=private`
+- [ ] `RATE_LIMIT_DRIVER` is unset in production
 - [ ] `MAX_UPLOAD_SIZE_MB=4`
+- [ ] `npm run type-check` passes locally
 - [ ] `npm test` passes locally
 - [ ] `npm run build` passes locally with production-like env vars
+- [ ] `npm run e2e` passes locally or in CI
 - [ ] `python3 tools/check_env.py` shows all required vars set
 - [ ] `npm run prisma:migrate:deploy` has been tested against a non-production Neon branch or staging database
 - [ ] Nobody plans to run `npm run prisma:seed` against production
@@ -53,7 +56,7 @@ This runbook is for the first real Pinly deployment on Vercel with Neon Postgres
 - Re-run `npm run prisma:migrate:deploy` after the corrected migration is committed.
 
 ### Upload failures
-- Check `STORAGE_DRIVER`, `BLOB_READ_WRITE_TOKEN`, and `MAX_UPLOAD_SIZE_MB`.
+- Check `BLOB_READ_WRITE_TOKEN`, `BLOB_ACCESS_MODE`, and `MAX_UPLOAD_SIZE_MB`.
 - If uploads suddenly fail in production, verify that Vercel Blob is still attached to the project and the token has not been rotated or removed.
 - If needed, roll back to the previous Vercel deployment while keeping the database unchanged.
 

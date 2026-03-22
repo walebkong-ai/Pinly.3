@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     return apiError("Unauthorized", 401);
   }
 
-  const rateLimitResponse = enforceRateLimit({
+  const rateLimitResponse = await enforceRateLimit({
     scope: "friends-search",
     request,
     userId: session.user.id,

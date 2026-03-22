@@ -13,7 +13,7 @@ import { legalConsentSchema } from "@/lib/validation";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const rateLimitResponse = enforceRateLimit({
+  const rateLimitResponse = await enforceRateLimit({
     scope: "legal-consent",
     request,
     limit: 12,
@@ -53,4 +53,3 @@ export async function POST(request: Request) {
     privacyVersion: PRIVACY_VERSION
   });
 }
-

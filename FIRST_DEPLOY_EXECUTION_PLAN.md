@@ -17,6 +17,7 @@ Run in repo root:
 ```bash
 npm install
 python3 tools/check_env.py
+npm run type-check
 npm test
 AUTH_SECRET=testsecret NEXTAUTH_URL=http://localhost:3000 AUTH_URL=http://localhost:3000 DIRECT_URL=postgresql://postgres:postgres@localhost:5432/pinly?schema=public DATABASE_URL=postgresql://postgres:postgres@localhost:5432/pinly?schema=public npm run build
 ```
@@ -34,12 +35,13 @@ Required:
 - `AUTH_SECRET` = strong random string
 - `NEXTAUTH_URL` = `https://<your-production-domain>`
 - `AUTH_URL` = `https://<your-production-domain>`
-- `STORAGE_DRIVER` = `vercel-blob`
 - `BLOB_READ_WRITE_TOKEN` = Vercel Blob RW token
 
 Recommended:
+- `BLOB_ACCESS_MODE` = `private`
 - `BLOB_UPLOAD_PREFIX` = `posts`
 - `MAX_UPLOAD_SIZE_MB` = `4`
+- `RATE_LIMIT_DRIVER` = unset
 - `ALLOW_DESTRUCTIVE_SEED` = unset in production
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (only if enabling Google auth)
 - `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true` (optional fallback for Google button visibility)
@@ -84,7 +86,7 @@ Local development:
 - Fix: set `AUTH_SECRET`, set both `NEXTAUTH_URL` and `AUTH_URL` to production domain, redeploy.
 
 4. Upload endpoint returns storage misconfigured errors.
-- Likely cause: `STORAGE_DRIVER=vercel-blob` without `BLOB_READ_WRITE_TOKEN`.
+- Likely cause: missing `BLOB_READ_WRITE_TOKEN`.
 - Fix: set token, confirm Blob store attached to project, redeploy.
 
 5. Uploads fail for larger files.

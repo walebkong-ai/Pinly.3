@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { Heart } from "lucide-react";
 import { toast } from "sonner";
 import { shouldDispatchGestureLike } from "@/lib/post-tap-gesture";
@@ -41,37 +41,40 @@ export function LikeButton({
     setCount(nextCount);
   }
 
-  function submitLikeChange(wasLiked: boolean) {
-    if (pendingLikeRef.current) {
-      return;
-    }
+  const submitLikeChange = useCallback(
+    (wasLiked: boolean) => {
+      if (pendingLikeRef.current) {
+        return;
+      }
 
-    const previousCount = countRef.current;
-    const nextCount = wasLiked ? Math.max(0, previousCount - 1) : previousCount + 1;
-    pendingLikeRef.current = true;
-    syncLikeState(!wasLiked, nextCount);
+      const previousCount = countRef.current;
+      const nextCount = wasLiked ? Math.max(0, previousCount - 1) : previousCount + 1;
+      pendingLikeRef.current = true;
+      syncLikeState(!wasLiked, nextCount);
 
-    startTransition(async () => {
-      try {
-        const response = await fetch(`/api/posts/${postId}/like`, {
-          method: wasLiked ? "DELETE" : "POST"
-        });
+      startTransition(async () => {
+        try {
+          const response = await fetch(`/api/posts/${postId}/like`, {
+            method: wasLiked ? "DELETE" : "POST"
+          });
 
-        if (response.ok) {
-          const data = await response.json();
-          syncLikeState(Boolean(data.liked), Number(data.likeCount ?? nextCount));
-        } else {
+          if (response.ok) {
+            const data = await response.json();
+            syncLikeState(Boolean(data.liked), Number(data.likeCount ?? nextCount));
+          } else {
+            syncLikeState(wasLiked, previousCount);
+            toast.error("Could not update like right now.");
+          }
+        } catch {
           syncLikeState(wasLiked, previousCount);
           toast.error("Could not update like right now.");
+        } finally {
+          pendingLikeRef.current = false;
         }
-      } catch {
-        syncLikeState(wasLiked, previousCount);
-        toast.error("Could not update like right now.");
-      } finally {
-        pendingLikeRef.current = false;
-      }
-    });
-  }
+      });
+    },
+    [postId, startTransition]
+  );
 
   function toggleLike() {
     submitLikeChange(likedRef.current);
@@ -94,7 +97,7 @@ export function LikeButton({
     const eventName = `like-post-${postId}`;
     window.addEventListener(eventName, handleDoubleTapLike);
     return () => window.removeEventListener(eventName, handleDoubleTapLike);
-  }, [postId]);
+  }, [postId, submitLikeChange]);
 
   return (
     <button

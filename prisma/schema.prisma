@@ -331,6 +331,17 @@ model PasswordResetToken {
   @@index([token])
 }
 
+model RateLimitEvent {
+  id            String   @id @default(cuid())
+  scope         String
+  bucketKeyHash String
+  createdAt     DateTime @default(now())
+  expiresAt     DateTime
+
+  @@index([scope, bucketKeyHash, createdAt])
+  @@index([expiresAt])
+}
+
 model Block {
   id        String   @id @default(cuid())
   blockerId String

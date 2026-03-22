@@ -12,7 +12,7 @@ const forgotPasswordSchema = z.object({
 
 export async function POST(req: Request) {
   try {
-    const rateLimitResponse = enforceRateLimit({
+    const rateLimitResponse = await enforceRateLimit({
       scope: "forgot-password",
       request: req,
       limit: 5,

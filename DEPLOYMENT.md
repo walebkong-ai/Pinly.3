@@ -11,8 +11,6 @@ Pinly is ready to deploy on Vercel with PostgreSQL and Prisma. This document cov
   - Random 32+ byte secret for Auth.js session signing
 - `AUTH_URL`
   - Production app URL, same value as `NEXTAUTH_URL`
-- `STORAGE_DRIVER`
-  - Set to `vercel-blob` in production
 - `BLOB_READ_WRITE_TOKEN`
   - Vercel Blob token for media uploads
 - `BLOB_ACCESS_MODE`
@@ -33,6 +31,8 @@ Pinly is ready to deploy on Vercel with PostgreSQL and Prisma. This document cov
   - Optional folder prefix, default is `posts`
 - `AUTH_DEBUG_RESET_LINKS`
   - Optional local-only password reset preview. Leave unset or `false` outside development.
+- `RATE_LIMIT_DRIVER`
+  - Leave unset in production so the database-backed limiter stays active
 - `ALLOW_DESTRUCTIVE_SEED`
   - Leave unset in production; only use `pinly-demo` for intentional demo or staging reseeds
 
@@ -77,7 +77,7 @@ If enabling Google auth, configure OAuth redirect URIs in Google Cloud:
 - Vercel server uploads are small-request friendly. Keep uploads short and keep `MAX_UPLOAD_SIZE_MB` at `4` unless you move to client-side uploads.
 - Nominatim place search is good for prototype scale, but it is not the final production-grade places provider if usage grows.
 - Do not run the destructive seed script against production data. The public demo login now bootstraps the reserved demo dataset non-destructively on first use, so production demo access does not rely on `npm run prisma:seed`.
-- `STORAGE_DRIVER=local` is only for local development. Vercel production should use `vercel-blob`.
+- Uploads are Blob-backed in every environment, so production only needs the Blob token and access mode.
 - Public images are now allowlisted in `next.config.ts`; new remote media hosts must be added there before use.
 
 ## Launch Checklist
@@ -86,13 +86,13 @@ If enabling Google auth, configure OAuth redirect URIs in Google Cloud:
 - [ ] `DIRECT_URL` set to the direct migration connection string
 - [ ] `AUTH_SECRET` set
 - [ ] `AUTH_URL` set to production domain
-- [ ] `STORAGE_DRIVER=vercel-blob`
 - [ ] `BLOB_READ_WRITE_TOKEN` set
 - [ ] `BLOB_ACCESS_MODE=private`
 - [ ] `NEXTAUTH_URL` set to production domain
+- [ ] `RATE_LIMIT_DRIVER` left unset
 - [ ] `npm run prisma:migrate:deploy` executed successfully
 - [ ] Upload flow tested in production
 - [ ] Sign in, add friend, create post, map browse, and feed browse smoke-tested
 
-For the full go-live runbook, rollback notes, and manual QA scenarios, use [GO_LIVE.md](/Users/kalebwong/Library/CloudStorage/OneDrive-WilfridLaurierUniversity/TravelMediaFolder/GO_LIVE.md).
-For exact first-deploy command order and failure-mode fixes, use [FIRST_DEPLOY_EXECUTION_PLAN.md](/Users/kalebwong/Library/CloudStorage/OneDrive-WilfridLaurierUniversity/TravelMediaFolder/FIRST_DEPLOY_EXECUTION_PLAN.md).
+For the full go-live runbook, rollback notes, and manual QA scenarios, use [GO_LIVE.md](./GO_LIVE.md).
+For exact first-deploy command order and failure-mode fixes, use [FIRST_DEPLOY_EXECUTION_PLAN.md](./FIRST_DEPLOY_EXECUTION_PLAN.md).

@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     return apiError("Unauthorized", 401);
   }
 
-  const rateLimitResponse = enforceRateLimit({
+  const rateLimitResponse = await enforceRateLimit({
     scope: "map-posts",
     request,
     userId: session.user.id,
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
     return apiError("Unauthorized", 401);
   }
 
-  const rateLimitResponse = enforceRateLimit({
+  const rateLimitResponse = await enforceRateLimit({
     scope: "posts-create",
     request,
     userId: session.user.id,

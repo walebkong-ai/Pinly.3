@@ -1,0 +1,121 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      AUTH_SECRET: ci-auth-secret
+      AUTH_URL: http://127.0.0.1:3000
+      BLOB_ACCESS_MODE: private
+      BLOB_READ_WRITE_TOKEN: ci-blob-token
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/pinly?schema=public
+      DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:5432/pinly?schema=public
+      NEXTAUTH_URL: http://127.0.0.1:3000
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Production build
+        run: npm run build
+
+  e2e:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: pinly
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d pinly"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      AUTH_SECRET: ci-auth-secret
+      AUTH_URL: http://127.0.0.1:3000
+      BLOB_ACCESS_MODE: private
+      BLOB_READ_WRITE_TOKEN: ci-blob-token
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/pinly?schema=public
+      DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:5432/pinly?schema=public
+      NEXTAUTH_URL: http://127.0.0.1:3000
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Apply Prisma migrations
+        run: npm run prisma:migrate:deploy
+
+      - name: Seed demo data
+        run: npm run prisma:seed
+
+      - name: Build app for e2e
+        run: npm run build
+
+      - name: Start app server
+        run: npm run start:e2e > /tmp/pinly-e2e-server.log 2>&1 &
+
+      - name: Wait for app server
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:3000/sign-in > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Pinly app server did not become ready in time."
+          cat /tmp/pinly-e2e-server.log
+          exit 1
+
+      - name: Run mobile smoke e2e
+        run: npm run e2e
+
+      - name: Upload Playwright artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            playwright-report
+            test-results
+            /tmp/pinly-e2e-server.log

@@ -65,7 +65,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pos
   const session = await auth();
   if (!session?.user?.id) return apiError("Unauthorized", 401);
 
-  const rateLimitResponse = enforceRateLimit({
+  const rateLimitResponse = await enforceRateLimit({
     scope: "post-comments-create",
     request,
     userId: session.user.id,

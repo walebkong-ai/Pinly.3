@@ -45,7 +45,7 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
   const userId = session.user.id;
   const groupId = params.id;
 
-  const rateLimitResponse = enforceRateLimit({
+  const rateLimitResponse = await enforceRateLimit({
     scope: "group-messages-send",
     request,
     userId,

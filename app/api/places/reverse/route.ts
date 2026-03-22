@@ -11,7 +11,7 @@ const reverseSearchSchema = z.object({
 });
 
 export async function GET(request: Request) {
-  const rateLimitResponse = enforceRateLimit({
+  const rateLimitResponse = await enforceRateLimit({
     scope: "places-reverse",
     request,
     limit: 60,

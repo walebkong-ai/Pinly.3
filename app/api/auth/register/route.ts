@@ -9,7 +9,7 @@ import { enforceRateLimit } from "@/lib/rate-limit";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const rateLimitResponse = enforceRateLimit({
+  const rateLimitResponse = await enforceRateLimit({
     scope: "register",
     request,
     limit: 8,

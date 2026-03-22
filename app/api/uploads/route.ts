@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     return apiError("Unauthorized", 401);
   }
 
-  const rateLimitResponse = enforceRateLimit({
+  const rateLimitResponse = await enforceRateLimit({
     scope: "uploads",
     request,
     userId: token.id,

@@ -14,7 +14,7 @@ const resetPasswordSchema = z.object({
 
 export async function POST(req: Request) {
   try {
-    const rateLimitResponse = enforceRateLimit({
+    const rateLimitResponse = await enforceRateLimit({
       scope: "reset-password",
       request: req,
       limit: 10,

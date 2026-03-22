@@ -54,7 +54,7 @@ function placeDisplayName(place: Pick<PlaceSearchResult, "placeName" | "city" | 
 }
 
 export async function GET(request: Request) {
-  const rateLimitResponse = enforceRateLimit({
+  const rateLimitResponse = await enforceRateLimit({
     scope: "places-search",
     request,
     limit: 60,

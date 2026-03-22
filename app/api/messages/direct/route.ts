@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   const userId = session.user.id;
   let requestedFriendId: string | null = null;
 
-  const rateLimitResponse = enforceRateLimit({
+  const rateLimitResponse = await enforceRateLimit({
     scope: "messages-direct-open",
     request,
     userId,

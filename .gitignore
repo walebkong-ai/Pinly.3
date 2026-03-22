@@ -4,6 +4,10 @@ node_modules
 .env.local
 coverage
 dist
+playwright-report
+test-results
 public/uploads
 prisma/dev.db
+dump.sql
+tsconfig.tsbuildinfo
 *.log

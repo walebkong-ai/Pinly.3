@@ -28,6 +28,7 @@ export function assertSafeSeedEnvironment(databaseUrl = process.env.DIRECT_URL ?
 async function main() {
   assertSafeSeedEnvironment();
 
+  await prisma.rateLimitEvent.deleteMany();
   await prisma.friendRequest.deleteMany();
   await prisma.friendship.deleteMany();
   await prisma.post.deleteMany();

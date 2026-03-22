@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     return apiError("Unauthorized", 401);
   }
 
-  const rateLimitResponse = enforceRateLimit({
+  const rateLimitResponse = await enforceRateLimit({
     scope: "friend-request-send",
     request,
     userId: session.user.id,

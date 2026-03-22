@@ -49,16 +49,15 @@ def main() -> None:
     for key, status in check_required().items():
         print(f"{key}: {status}")
 
-    storage_driver = os.environ.get("STORAGE_DRIVER", "local")
-    print(f"STORAGE_DRIVER: {storage_driver}")
-    if storage_driver == "vercel-blob":
-        blob_status = "set" if os.environ.get("BLOB_READ_WRITE_TOKEN") else "missing"
-        print(f"BLOB_READ_WRITE_TOKEN: {blob_status}")
-    if storage_driver == "local" and os.environ.get("VERCEL"):
-        print("STORAGE warning: local uploads are not supported on Vercel")
+    blob_status = "set" if os.environ.get("BLOB_READ_WRITE_TOKEN") else "missing"
+    print("UPLOAD_BACKEND: vercel-blob")
+    print(f"BLOB_READ_WRITE_TOKEN: {blob_status}")
+    print(f"BLOB_ACCESS_MODE: {os.environ.get('BLOB_ACCESS_MODE', 'private')}")
 
     max_upload_size = os.environ.get("MAX_UPLOAD_SIZE_MB", "(default)")
     print(f"MAX_UPLOAD_SIZE_MB: {max_upload_size}")
+    rate_limit_driver = os.environ.get("RATE_LIMIT_DRIVER", "(database default)")
+    print(f"RATE_LIMIT_DRIVER: {rate_limit_driver}")
     if os.environ.get("ALLOW_DESTRUCTIVE_SEED"):
         print("ALLOW_DESTRUCTIVE_SEED: set (use only for intentional demo/staging reseeds)")
 
@@ -73,6 +72,8 @@ def main() -> None:
         print(f"GOOGLE_CLIENT_SECRET: {google_secret}")
     if google_ui_enabled and not (google_client_id_set and google_client_secret_set):
         print("GOOGLE_AUTH warning: UI is enabled but Google client credentials are incomplete")
+    if rate_limit_driver == "memory" and os.environ.get("NODE_ENV") == "production":
+        print("RATE_LIMIT warning: memory mode is not suitable for multi-instance production deployments")
 
     print(f"DATABASE socket: {check_database_socket()}")
 
