@@ -53,7 +53,6 @@ export default function ForgotPasswordPage() {
           <div className="space-y-4 text-center">
             <div className="rounded-xl bg-green-50 p-4 text-sm text-green-700">
               <p>If an account exists for that email, a reset link has been sent.</p>
-              <p className="mt-2 text-xs opacity-75">(Check the server console in development mode)</p>
             </div>
             <Link href="/sign-in" className="w-full">
               <Button variant="secondary" className="w-full">
