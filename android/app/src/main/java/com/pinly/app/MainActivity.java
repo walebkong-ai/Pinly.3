@@ -1,0 +1,5 @@
+package com.pinly.app;
+
+import com.getcapacitor.BridgeActivity;
+
+public class MainActivity extends BridgeActivity {}

@@ -4,7 +4,7 @@ const securityHeaders = [
   {
     key: "Content-Security-Policy",
     value: [
-      "default-src 'self'",
+      "default-src 'self' capacitor: https:",
       "base-uri 'self'",
       "frame-ancestors 'none'",
       "form-action 'self'",
@@ -14,7 +14,7 @@ const securityHeaders = [
       "img-src 'self' data: blob: https://api.dicebear.com https://interactive-examples.mdn.mozilla.net https://lh3.googleusercontent.com https://picsum.photos https://public.blob.vercel-storage.com https://*.blob.vercel-storage.com https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://services.arcgisonline.com",
       "media-src 'self' blob: https://interactive-examples.mdn.mozilla.net https://public.blob.vercel-storage.com https://*.blob.vercel-storage.com",
       "font-src 'self' data:",
-      "connect-src 'self' https://api.maptiler.com https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://nominatim.openstreetmap.org https://services.arcgisonline.com",
+      "connect-src 'self' capacitor: https://api.maptiler.com https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://nominatim.openstreetmap.org https://services.arcgisonline.com",
       "worker-src 'self' blob:",
       "frame-src 'none'",
       "upgrade-insecure-requests"
@@ -56,6 +56,7 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
