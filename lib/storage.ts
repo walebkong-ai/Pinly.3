@@ -1,9 +1,9 @@
 import crypto from "node:crypto";
 import {
   buildSupabasePublicMediaUrl,
-  createSupabaseAdminClient,
+  createSupabaseUploadClient,
   getSupabasePublicBaseUrl,
-  getSupabaseServiceRoleKey,
+  getSupabaseUploadKey,
   getSupabaseStorageBucket
 } from "@/lib/supabase-storage";
 
@@ -46,7 +46,14 @@ function normalizeObjectPathSegment(value: string) {
 export function getStorageDriver(): StorageDriver {
   const configuredValue = (process.env.STORAGE_DRIVER ?? "supabase").trim().toLowerCase();
 
-  if (!configuredValue || configuredValue === "supabase") {
+  if (
+    !configuredValue ||
+    configuredValue === "supabase" ||
+    configuredValue === "local" ||
+    configuredValue === "blob" ||
+    configuredValue === "vercel-blob" ||
+    configuredValue === "vercel_blob"
+  ) {
     return "supabase";
   }
 
@@ -68,7 +75,7 @@ export function assertStorageConfiguration() {
   try {
     getStorageDriver();
     getSupabasePublicBaseUrl();
-    getSupabaseServiceRoleKey();
+    getSupabaseUploadKey();
     getSupabaseStorageBucket();
   } catch (error) {
     if (error instanceof Error) {
@@ -103,7 +110,7 @@ export async function saveFileToSupabase(file: File, options?: { ownerId?: strin
   const ownerSegment = options?.ownerId ? normalizeObjectPathSegment(options.ownerId) : "shared";
   const objectPath = `${ownerSegment}/${crypto.randomUUID()}.${extension}`;
   const bucket = getSupabaseStorageBucket();
-  const supabase = createSupabaseAdminClient();
+  const supabase = createSupabaseUploadClient();
   const arrayBuffer = await file.arrayBuffer();
   const uint8Array = new Uint8Array(arrayBuffer);
 

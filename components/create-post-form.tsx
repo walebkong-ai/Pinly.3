@@ -49,6 +49,7 @@ export function CreatePostForm() {
   const [uploadState, setUploadState] = useState<UploadState>(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const [placeName, setPlaceName] = useState("");
   const [city, setCity] = useState("");
@@ -345,6 +346,7 @@ export function CreatePostForm() {
 
   async function uploadFile(file: File) {
     if (!isOnline) {
+      setUploadError(null);
       toast.error("Reconnect to upload a photo or video.");
       return;
     }
@@ -352,6 +354,7 @@ export function CreatePostForm() {
     const fileToUpload = file.type.startsWith("image/") ? await optimizeImageForUpload(file) : file;
     const formData = new FormData();
     setUploading(true);
+    setUploadError(null);
     formData.set("file", fileToUpload);
 
     try {
@@ -362,7 +365,12 @@ export function CreatePostForm() {
 
       if (!response.ok) {
         const data = await response.json().catch(() => null);
-        toast.error(data?.error ?? "Upload failed.");
+        const message =
+          data?.code === "UPLOAD_STORAGE_MISCONFIGURED"
+            ? "Uploads need Supabase storage configured for this environment."
+            : data?.error ?? "Upload failed.";
+        setUploadError(message);
+        toast.error(message);
         return;
       }
 
@@ -374,6 +382,7 @@ export function CreatePostForm() {
           : normalizeStoredMediaUrl(data.thumbnailUrl);
 
       if (!mediaUrl || (data?.thumbnailUrl && !thumbnailUrl)) {
+        setUploadError("Upload returned an invalid media URL.");
         toast.error("Upload returned an invalid media URL.");
         return;
       }
@@ -383,8 +392,10 @@ export function CreatePostForm() {
         mediaType: data.mediaType,
         thumbnailUrl
       });
+      setUploadError(null);
       toast.success("Media uploaded.");
     } catch {
+      setUploadError("Upload failed. Check your connection and try again.");
       toast.error("Upload failed. Check your connection and try again.");
     } finally {
       setUploading(false);
@@ -587,6 +598,11 @@ export function CreatePostForm() {
           <p className="mt-3 text-sm leading-6 text-[var(--foreground)]/66">
             Add a photo or video from a place you intentionally want to remember. No background tracking, ever.
           </p>
+          {uploadError ? (
+            <div className="mt-4 rounded-[1.5rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {uploadError}
+            </div>
+          ) : null}
           {/* Hidden file inputs stay mounted so camera and library actions work consistently on mobile. */}
           <input
             ref={cameraFileRef}
@@ -641,7 +657,10 @@ export function CreatePostForm() {
               {/* Remove button — clears preview and returns to upload picker */}
               <button
                 type="button"
-                onClick={() => setUploadState(null)}
+                onClick={() => {
+                  setUploadState(null);
+                  setUploadError(null);
+                }}
                 className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition hover:bg-black/80"
                 aria-label="Remove media"
               >

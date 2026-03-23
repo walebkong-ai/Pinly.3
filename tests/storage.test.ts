@@ -3,22 +3,22 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 const {
   uploadMock,
   getSupabasePublicBaseUrlMock,
-  getSupabaseServiceRoleKeyMock,
+  getSupabaseUploadKeyMock,
   getSupabaseStorageBucketMock,
-  createSupabaseAdminClientMock
+  createSupabaseUploadClientMock
 } = vi.hoisted(() => ({
   uploadMock: vi.fn(),
   getSupabasePublicBaseUrlMock: vi.fn(),
-  getSupabaseServiceRoleKeyMock: vi.fn(),
+  getSupabaseUploadKeyMock: vi.fn(),
   getSupabaseStorageBucketMock: vi.fn(),
-  createSupabaseAdminClientMock: vi.fn()
+  createSupabaseUploadClientMock: vi.fn()
 }));
 
 vi.mock("@/lib/supabase-storage", () => ({
   buildSupabasePublicMediaUrl: vi.fn((objectPath: string, bucket: string) => `https://demo.supabase.co/storage/v1/object/public/${bucket}/${objectPath}`),
-  createSupabaseAdminClient: createSupabaseAdminClientMock,
+  createSupabaseUploadClient: createSupabaseUploadClientMock,
   getSupabasePublicBaseUrl: getSupabasePublicBaseUrlMock,
-  getSupabaseServiceRoleKey: getSupabaseServiceRoleKeyMock,
+  getSupabaseUploadKey: getSupabaseUploadKeyMock,
   getSupabaseStorageBucket: getSupabaseStorageBucketMock
 }));
 
@@ -38,15 +38,15 @@ describe("storage configuration", () => {
     process.env = { ...originalEnv };
     uploadMock.mockReset();
     getSupabasePublicBaseUrlMock.mockReset();
-    getSupabaseServiceRoleKeyMock.mockReset();
+    getSupabaseUploadKeyMock.mockReset();
     getSupabaseStorageBucketMock.mockReset();
-    createSupabaseAdminClientMock.mockReset();
+    createSupabaseUploadClientMock.mockReset();
 
     getSupabasePublicBaseUrlMock.mockReturnValue("https://demo.supabase.co");
-    getSupabaseServiceRoleKeyMock.mockReturnValue("service-role");
+    getSupabaseUploadKeyMock.mockReturnValue("upload-key");
     getSupabaseStorageBucketMock.mockReturnValue("media");
     uploadMock.mockResolvedValue({ error: null });
-    createSupabaseAdminClientMock.mockReturnValue({
+    createSupabaseUploadClientMock.mockReturnValue({
       storage: {
         from: vi.fn().mockReturnValue({
           upload: uploadMock
@@ -69,13 +69,13 @@ describe("storage configuration", () => {
     expect(getStorageDriver()).toBe("supabase");
   });
 
-  test("fails loudly when a legacy storage driver is configured", () => {
+  test("treats legacy storage driver values as stale aliases for Supabase", () => {
     process.env = {
       ...originalEnv,
       STORAGE_DRIVER: "local"
     };
 
-    expect(() => getStorageDriver()).toThrow(StorageConfigError);
+    expect(getStorageDriver()).toBe("supabase");
   });
 
   test("uploads files to Supabase public storage", async () => {
@@ -96,7 +96,7 @@ describe("storage configuration", () => {
   test("validates the Supabase storage configuration", () => {
     expect(() => assertStorageConfiguration()).not.toThrow();
     expect(getSupabasePublicBaseUrlMock).toHaveBeenCalled();
-    expect(getSupabaseServiceRoleKeyMock).toHaveBeenCalled();
+    expect(getSupabaseUploadKeyMock).toHaveBeenCalled();
     expect(getSupabaseStorageBucketMock).toHaveBeenCalled();
   });
 

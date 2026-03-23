@@ -1,5 +1,10 @@
 import { describe, expect, test } from "vitest";
-import { normalizeProfileImageUrl, normalizeStoredMediaUrl } from "@/lib/media-url";
+import {
+  normalizeProfileImageUrl,
+  normalizeRenderableProfileImageUrl,
+  normalizeRenderableStoredMediaUrl,
+  normalizeStoredMediaUrl
+} from "@/lib/media-url";
 import { TEST_IMAGE_URL } from "@/tests/fixtures/media";
 
 describe("media url hardening", () => {
@@ -16,5 +21,13 @@ describe("media url hardening", () => {
     expect(normalizeProfileImageUrl(TEST_IMAGE_URL)).toBe(TEST_IMAGE_URL);
     expect(normalizeProfileImageUrl("https://api.dicebear.com/9.x/thumbs/svg?seed=avery")).toBeNull();
     expect(normalizeProfileImageUrl("https://evil.example.com/avatar.jpg")).toBeNull();
+  });
+
+  test("keeps strict write validation while allowing legacy render fallbacks", () => {
+    expect(normalizeStoredMediaUrl("/logo.png")).toBeNull();
+    expect(normalizeRenderableStoredMediaUrl("/logo.png")).toBe("/logo.png");
+    expect(normalizeRenderableStoredMediaUrl("/uploads/legacy-photo.jpg")).toBe("/logo.png");
+    expect(normalizeRenderableProfileImageUrl("/pinly-globe-icon.svg")).toBe("/pinly-globe-icon.svg");
+    expect(normalizeRenderableProfileImageUrl("https://evil.example.com/avatar.jpg")).toBeNull();
   });
 });

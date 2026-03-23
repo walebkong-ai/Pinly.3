@@ -63,14 +63,39 @@ export function getSupabaseServiceRoleKey() {
   return serviceRoleKey;
 }
 
+export function getSupabaseUploadKey() {
+  const uploadKey = (
+    process.env.SUPABASE_SERVICE_ROLE_KEY ??
+    process.env.SUPABASE_ANON_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+    ""
+  ).trim();
+
+  if (!uploadKey) {
+    throw new SupabaseMediaConfigError(
+      "Set SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY, or NEXT_PUBLIC_SUPABASE_ANON_KEY for Pinly uploads."
+    );
+  }
+
+  return uploadKey;
+}
+
 export function getSupabaseStorageBucket() {
   return normalizeStorageBucket(process.env.SUPABASE_STORAGE_BUCKET ?? "media");
 }
 
-export function createSupabaseAdminClient() {
-  return createClient(getSupabasePublicBaseUrl(), getSupabaseServiceRoleKey(), {
+function createSupabaseClient(key: string) {
+  return createClient(getSupabasePublicBaseUrl(), key, {
     auth: { persistSession: false }
   });
+}
+
+export function createSupabaseAdminClient() {
+  return createSupabaseClient(getSupabaseServiceRoleKey());
+}
+
+export function createSupabaseUploadClient() {
+  return createSupabaseClient(getSupabaseUploadKey());
 }
 
 function encodePath(pathname: string) {

@@ -220,4 +220,17 @@ describe("map marker rendering", () => {
     expect(html).toContain("<img");
     expect(html).toContain('fill="#38B6C9"');
   });
+
+  test("renders the bundled legacy avatar placeholder for older profile rows", () => {
+    const marker = makeBubbleMarker() as Extract<MapMarker, { type: "profileBubble" }>;
+    marker.post = makePost({
+      user: {
+        ...makePost().user,
+        avatarUrl: "/pinly-globe-icon.svg"
+      }
+    });
+    const html = getMarkerHtml(marker, false, "default");
+
+    expect(html).toContain("/pinly-globe-icon.svg");
+  });
 });

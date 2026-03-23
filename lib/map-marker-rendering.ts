@@ -1,4 +1,4 @@
-import { normalizeProfileImageUrl } from "@/lib/media-url";
+import { normalizeRenderableProfileImageUrl } from "@/lib/media-url";
 import type { MapMarker, MapVisualMode } from "@/types/app";
 
 const PIN_PATH =
@@ -45,7 +45,7 @@ function escapeHtml(value: string) {
 }
 
 function sanitizeImageUrl(value?: string | null) {
-  const normalizedUrl = normalizeProfileImageUrl(value);
+  const normalizedUrl = normalizeRenderableProfileImageUrl(value);
   return normalizedUrl ? escapeHtml(normalizedUrl) : null;
 }
 

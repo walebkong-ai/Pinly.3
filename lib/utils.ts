@@ -1,6 +1,9 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { normalizeProfileImageUrl, normalizeStoredMediaUrl } from "@/lib/media-url";
+import {
+  normalizeRenderableProfileImageUrl,
+  normalizeRenderableStoredMediaUrl
+} from "@/lib/media-url";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -29,9 +32,9 @@ export function parseCitySlug(slug: string) {
 }
 
 export function getMediaProxyUrl(url: string | null | undefined): string {
-  return normalizeStoredMediaUrl(url) ?? "";
+  return normalizeRenderableStoredMediaUrl(url) ?? "";
 }
 
 export function getProfileImageUrl(url: string | null | undefined): string {
-  return normalizeProfileImageUrl(url) ?? "";
+  return normalizeRenderableProfileImageUrl(url) ?? "";
 }
