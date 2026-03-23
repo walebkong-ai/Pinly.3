@@ -1,8 +1,21 @@
 import { put } from "@vercel/blob";
 import crypto from "node:crypto";
+import fs from "node:fs/promises";
+import path from "node:path";
 
 const DEFAULT_VERCEL_UPLOAD_LIMIT_MB = 4;
 const DEFAULT_BLOB_ACCESS_MODE = "private";
+const localMediaContentTypes = new Map<string, string>([
+  [".jpg", "image/jpeg"],
+  [".jpeg", "image/jpeg"],
+  [".png", "image/png"],
+  [".webp", "image/webp"],
+  [".gif", "image/gif"],
+  [".mp4", "video/mp4"],
+  [".webm", "video/webm"],
+  [".mov", "video/quicktime"],
+  [".qt", "video/quicktime"]
+]);
 
 const uploadMimeTypes = new Map<
   string,
@@ -20,7 +33,7 @@ const uploadMimeTypes = new Map<
   ["video/quicktime", { mediaType: "VIDEO", extensions: ["mov", "qt"] }]
 ]);
 
-export type StorageDriver = "vercel-blob";
+export type StorageDriver = "local" | "vercel-blob";
 
 export class StorageConfigError extends Error {
   constructor(message: string) {
@@ -42,8 +55,22 @@ function normalizeBlobPrefix(prefix: string) {
     .join("/");
 }
 
+function normalizeLocalPathSegment(value: string) {
+  return value.trim().replace(/[^a-zA-Z0-9_-]/g, "") || "file";
+}
+
 export function getStorageDriver(): StorageDriver {
-  return "vercel-blob";
+  const configuredValue = (process.env.STORAGE_DRIVER ?? "").trim().toLowerCase();
+
+  if (!configuredValue) {
+    return process.env.BLOB_READ_WRITE_TOKEN ? "vercel-blob" : "local";
+  }
+
+  if (configuredValue === "local" || configuredValue === "vercel-blob") {
+    return configuredValue;
+  }
+
+  throw new StorageConfigError("STORAGE_DRIVER must be either 'local' or 'vercel-blob'.");
 }
 
 export function getMaxUploadSizeBytes() {
@@ -58,6 +85,11 @@ export function getMaxUploadSizeBytes() {
 }
 
 export function assertStorageConfiguration() {
+  if (getStorageDriver() === "local") {
+    getLocalUploadDirectory();
+    return;
+  }
+
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     throw new StorageConfigError("STORAGE_DRIVER=vercel-blob requires BLOB_READ_WRITE_TOKEN.");
   }
@@ -71,6 +103,68 @@ export function getBlobAccessMode() {
   }
 
   return configuredValue as "public" | "private";
+}
+
+function getLocalUploadDirectory() {
+  const configuredPath = (process.env.UPLOAD_DIR ?? "").trim();
+
+  if (!configuredPath) {
+    throw new StorageConfigError("STORAGE_DRIVER=local requires UPLOAD_DIR.");
+  }
+
+  const absoluteDirectory = path.resolve(process.cwd(), configuredPath);
+  const publicDirectory = path.resolve(process.cwd(), "public");
+  const relativeToPublic = path.relative(publicDirectory, absoluteDirectory);
+
+  if (!relativeToPublic || relativeToPublic.startsWith("..") || path.isAbsolute(relativeToPublic)) {
+    throw new StorageConfigError("UPLOAD_DIR must be a subdirectory inside public/.");
+  }
+
+  return {
+    absoluteDirectory,
+    publicPathPrefix: `/${relativeToPublic.split(path.sep).join("/")}`
+  };
+}
+
+export function isOwnedLocalUploadUrl(uploadUrl: string, ownerId: string) {
+  if (getStorageDriver() !== "local") {
+    return false;
+  }
+
+  const { publicPathPrefix } = getLocalUploadDirectory();
+  const ownerPrefix = `${publicPathPrefix}/${normalizeLocalPathSegment(ownerId)}/`;
+  return uploadUrl.startsWith(ownerPrefix);
+}
+
+export function resolveLocalUploadPath(uploadUrl: string) {
+  if (getStorageDriver() !== "local") {
+    return null;
+  }
+
+  const { absoluteDirectory, publicPathPrefix } = getLocalUploadDirectory();
+
+  if (!uploadUrl.startsWith(`${publicPathPrefix}/`)) {
+    return null;
+  }
+
+  const relativePath = uploadUrl.slice(publicPathPrefix.length + 1);
+
+  if (!relativePath) {
+    return null;
+  }
+
+  const absolutePath = path.resolve(absoluteDirectory, relativePath.split("/").join(path.sep));
+  const relativeToUploadRoot = path.relative(absoluteDirectory, absolutePath);
+
+  if (!relativeToUploadRoot || relativeToUploadRoot.startsWith("..") || path.isAbsolute(relativeToUploadRoot)) {
+    return null;
+  }
+
+  return absolutePath;
+}
+
+export function getLocalUploadContentType(uploadUrl: string) {
+  return localMediaContentTypes.get(path.extname(uploadUrl).toLowerCase()) ?? "application/octet-stream";
 }
 
 export function inferMediaType(file: File) {
@@ -107,7 +201,29 @@ export async function saveFileToVercelBlob(file: File, options?: { ownerId?: str
   return blob.url;
 }
 
+export async function saveFileToLocalDisk(file: File, options?: { ownerId?: string }) {
+  const { absoluteDirectory, publicPathPrefix } = getLocalUploadDirectory();
+  inferMediaType(file);
+
+  const extension = normalizeUploadExtension(file);
+  const ownerSegment = options?.ownerId ? normalizeLocalPathSegment(options.ownerId) : null;
+  const targetDirectory = ownerSegment ? path.join(absoluteDirectory, ownerSegment) : absoluteDirectory;
+  const filename = `${crypto.randomUUID()}.${extension}`;
+  const fileBuffer = Buffer.from(await file.arrayBuffer());
+
+  await fs.mkdir(targetDirectory, { recursive: true });
+  await fs.writeFile(path.join(targetDirectory, filename), fileBuffer);
+
+  const pathSegments = [publicPathPrefix, ownerSegment, filename].filter(Boolean);
+  return pathSegments.join("/");
+}
+
 export async function saveUploadedFile(file: File, options?: { ownerId?: string }) {
   assertStorageConfiguration();
+
+  if (getStorageDriver() === "local") {
+    return saveFileToLocalDisk(file, options);
+  }
+
   return saveFileToVercelBlob(file, options);
 }

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getRecentFeedPosts } from "@/lib/data";
@@ -65,12 +66,12 @@ export default async function FeedPage() {
               Memories from you and your friends will show up here. Start by creating your first memory or adding friends.
             </p>
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-              <a href="/create" className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90">
+              <Link href="/create" className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90">
                 Create your first memory
-              </a>
-              <a href="/friends" className="inline-flex items-center justify-center gap-2 rounded-full border bg-[var(--surface-soft)] px-4 py-2.5 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--foreground)]/5">
+              </Link>
+              <Link href="/friends" className="inline-flex items-center justify-center gap-2 rounded-full border bg-[var(--surface-soft)] px-4 py-2.5 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--foreground)]/5">
                 Add friends
-              </a>
+              </Link>
             </div>
           </div>
         )}

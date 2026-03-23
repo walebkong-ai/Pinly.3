@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { apiError } from "@/lib/api";
 import { resolveAuthorizedMediaTarget } from "@/lib/media-authorization";
-import { assertStorageConfiguration, getBlobAccessMode } from "@/lib/storage";
+import { assertStorageConfiguration, getBlobAccessMode, getStorageDriver } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
     upstreamHeaders.set("range", range);
   }
 
-  if (getBlobAccessMode() === "private") {
+  if (getStorageDriver() === "vercel-blob" && getBlobAccessMode() === "private") {
     assertStorageConfiguration();
     upstreamHeaders.set("authorization", `Bearer ${process.env.BLOB_READ_WRITE_TOKEN as string}`);
   }

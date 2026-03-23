@@ -9,7 +9,7 @@ import { enforceRateLimit } from "@/lib/rate-limit";
 
 const updateProfileSchema = z.object({
   username: normalizedUsernameSchema.optional(),
-  avatarUrl: z.string().url("Invalid avatar URL").optional().or(z.literal(""))
+  avatarUrl: z.string().trim().min(1, "Invalid avatar URL").optional().or(z.literal(""))
 });
 
 export const runtime = "nodejs";

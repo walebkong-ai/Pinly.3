@@ -82,7 +82,8 @@ describe("AppShell notification toggle", () => {
       </AppShell>
     );
 
-    expect(html).not.toContain('aria-current="page"');
+    expect(html).toContain('href="/notifications" aria-label="Notifications"');
+    expect(html).not.toContain('href="/notifications" aria-label="Notifications" aria-current="page"');
     expect(html).not.toContain(`color:${NOTIFICATION_BUTTON_ACTIVE_ICON}`);
     expect(html).not.toContain(`border-color:${NOTIFICATION_BUTTON_ACTIVE_BACKGROUND}`);
   });

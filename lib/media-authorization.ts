@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { normalizeStoredMediaUrl } from "@/lib/media-url";
 import { getRelationshipDetails, getVisibleUserIdsForViewer } from "@/lib/relationships";
+import { isOwnedLocalUploadUrl } from "@/lib/storage";
 
 export type AuthorizedMediaTarget =
   | {
@@ -72,10 +73,28 @@ export async function resolveAuthorizedMediaTarget(
   }
 
   if (normalizedUrl.startsWith("/")) {
-    return {
-      kind: "relative",
-      url: normalizedUrl
-    };
+    if (isOwnedLocalUploadUrl(normalizedUrl, viewerId)) {
+      return {
+        kind: "relative",
+        url: normalizedUrl
+      };
+    }
+
+    if (await canViewerAccessPostAsset(viewerId, normalizedUrl)) {
+      return {
+        kind: "relative",
+        url: normalizedUrl
+      };
+    }
+
+    if (await canViewerAccessAvatar(viewerId, normalizedUrl)) {
+      return {
+        kind: "relative",
+        url: normalizedUrl
+      };
+    }
+
+    return null;
   }
 
   if (await canViewerAccessPostAsset(viewerId, normalizedUrl)) {

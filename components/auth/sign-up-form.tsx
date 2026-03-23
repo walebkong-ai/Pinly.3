@@ -148,13 +148,13 @@ export function SignUpForm() {
 
     if (signInResult?.error) {
       toast.error("Account created, but automatic sign-in failed. Please sign in.");
-      router.push("/sign-in");
+      router.replace("/sign-in");
       router.refresh();
       return;
     }
 
     toast.success("Your map is ready. Add a memory or friend to get started.");
-    router.push("/map?welcome=1");
+    router.replace("/map?welcome=1");
     router.refresh();
   }
 
@@ -213,11 +213,11 @@ export function SignUpForm() {
             />
             <span>
               I agree to the{" "}
-              <Link href="/terms" target="_blank" rel="noreferrer" className="font-medium text-[var(--accent)] underline underline-offset-4">
+              <Link href="/terms" className="font-medium text-[var(--accent)] underline underline-offset-4">
                 Terms of Service
               </Link>{" "}
               and{" "}
-              <Link href="/privacy" target="_blank" rel="noreferrer" className="font-medium text-[var(--accent)] underline underline-offset-4">
+              <Link href="/privacy" className="font-medium text-[var(--accent)] underline underline-offset-4">
                 Privacy Policy
               </Link>
               .

@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Toaster } from "sonner";
 import "@/app/globals.css";
+import { NativeAppBridge } from "@/components/app/native-app-bridge";
+import { NetworkStatusProvider } from "@/components/network/network-status-provider";
+import { OfflineBanner } from "@/components/network/offline-banner";
 import { PwaBoot } from "@/components/pwa/pwa-boot";
 
 export const metadata: Metadata = {
@@ -30,10 +33,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="font-[var(--font-sans)] antialiased">
-        <PwaBoot />
-        {children}
-        <Toaster richColors position="top-center" />
+      <body className="bg-[var(--background)] font-[var(--font-sans)] text-[var(--foreground)] antialiased">
+        <NetworkStatusProvider>
+          <NativeAppBridge />
+          <PwaBoot />
+          <OfflineBanner />
+          {children}
+          <Toaster richColors position="top-center" />
+        </NetworkStatusProvider>
       </body>
     </html>
   );

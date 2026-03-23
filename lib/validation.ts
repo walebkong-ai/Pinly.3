@@ -65,9 +65,9 @@ export const friendRequestActionSchema = z.object({
 });
 
 export const uploadUrlSchema = z.object({
-  mediaUrl: z.string().url(),
+  mediaUrl: z.string().min(1),
   mediaType: z.enum(["IMAGE", "VIDEO"]),
-  thumbnailUrl: z.string().url().optional().nullable()
+  thumbnailUrl: z.string().min(1).optional().nullable()
 });
 
 export const postSchema = z.object({

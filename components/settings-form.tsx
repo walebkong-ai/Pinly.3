@@ -6,6 +6,7 @@ import { LoaderCircle, Settings2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { AvatarPhotoEditor } from "@/components/profile/avatar-photo-editor";
 
 type SettingsFormProps = {
@@ -183,41 +184,39 @@ export function SettingsForm({ initialProfile, initialSettings }: SettingsFormPr
       </section>
 
       <section className="space-y-4">
-        <label className="flex items-center justify-between rounded-2xl border bg-[var(--surface-soft)] p-4">
+        <div className="flex items-center justify-between rounded-2xl border bg-[var(--surface-soft)] p-4">
           <div className="pr-4">
             <p className="text-sm font-medium">Show like counts</p>
             <p className="mt-0.5 text-xs text-[var(--foreground)]/55">
               Only hides the numbers on your device. Likes still work normally.
             </p>
           </div>
-          <input
-            type="checkbox"
+          <Switch
             checked={showLikeCounts}
             disabled={savingKey === "likes"}
-            onChange={(event) => {
-              void toggleLikeCounts(event.target.checked);
+            aria-label="Show like counts"
+            onCheckedChange={(nextValue) => {
+              void toggleLikeCounts(nextValue);
             }}
-            className="h-5 w-5 rounded accent-[var(--foreground)]"
           />
-        </label>
+        </div>
 
-        <label className="flex items-center justify-between rounded-2xl border bg-[var(--surface-soft)] p-4">
+        <div className="flex items-center justify-between rounded-2xl border bg-[var(--surface-soft)] p-4">
           <div className="pr-4">
             <p className="text-sm font-medium">Allow comments on your posts</p>
             <p className="mt-0.5 text-xs text-[var(--foreground)]/55">
               When off, comments are hidden and nobody can view or add them on your memories.
             </p>
           </div>
-          <input
-            type="checkbox"
+          <Switch
             checked={commentsEnabled}
             disabled={savingKey === "comments"}
-            onChange={(event) => {
-              void toggleComments(event.target.checked);
+            aria-label="Allow comments on your posts"
+            onCheckedChange={(nextValue) => {
+              void toggleComments(nextValue);
             }}
-            className="h-5 w-5 rounded accent-[var(--foreground)]"
           />
-        </label>
+        </div>
       </section>
     </div>
   );

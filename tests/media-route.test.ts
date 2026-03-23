@@ -4,6 +4,7 @@ const authMock = vi.fn();
 const resolveAuthorizedMediaTargetMock = vi.fn();
 const assertStorageConfigurationMock = vi.fn();
 const getBlobAccessModeMock = vi.fn();
+const getStorageDriverMock = vi.fn();
 const fetchMock = vi.fn();
 
 vi.mock("@/lib/auth", () => ({
@@ -16,7 +17,8 @@ vi.mock("@/lib/media-authorization", () => ({
 
 vi.mock("@/lib/storage", () => ({
   assertStorageConfiguration: assertStorageConfigurationMock,
-  getBlobAccessMode: getBlobAccessModeMock
+  getBlobAccessMode: getBlobAccessModeMock,
+  getStorageDriver: getStorageDriverMock
 }));
 
 describe("media route", () => {
@@ -28,11 +30,13 @@ describe("media route", () => {
     resolveAuthorizedMediaTargetMock.mockReset();
     assertStorageConfigurationMock.mockReset();
     getBlobAccessModeMock.mockReset();
+    getStorageDriverMock.mockReset();
     authMock.mockResolvedValue({
       user: {
         id: "viewer_1"
       }
     });
+    getStorageDriverMock.mockReturnValue("vercel-blob");
     getBlobAccessModeMock.mockReturnValue("private");
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);

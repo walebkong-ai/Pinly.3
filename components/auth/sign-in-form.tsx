@@ -77,7 +77,7 @@ export function SignInForm() {
         return;
       }
 
-      router.push(callbackUrl);
+      router.replace(callbackUrl);
       router.refresh();
     },
     [callbackUrl, router]

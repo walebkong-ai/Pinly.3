@@ -115,6 +115,7 @@ export function MapCanvas({
   markers,
   mapMode,
   mapStyle,
+  userLocation,
   collectionOverlays,
   collectionOverlayFitBoundsTarget,
   onExpandPost,
@@ -128,6 +129,7 @@ export function MapCanvas({
   mapStyle: MapStyleValue;
   expandedPostId: string | null;
   focusedCoordinates: { latitude: number; longitude: number; key: string } | null;
+  userLocation: { latitude: number; longitude: number } | null;
   initialViewState?: {
     longitude: number;
     latitude: number;
@@ -398,6 +400,7 @@ export function MapCanvas({
       <Map
         ref={mapRef}
         initialViewState={initialViewState ?? defaultCenter}
+        reuseMaps
         style={{ width: "100%", height: "100%", backgroundColor: "transparent" }}
         onError={(event) => {
           if (event.error) {
@@ -415,6 +418,12 @@ export function MapCanvas({
         maxPitch={85}
         projection="globe"
       >
+        {userLocation ? (
+          <Marker longitude={userLocation.longitude} latitude={userLocation.latitude} anchor="center">
+            <span className="pinly-user-location-marker" aria-label="Your current location" />
+          </Marker>
+        ) : null}
+
         {routeGeojsons.map((routeGeojson) => (
           <Source key={routeGeojson.id} id={`collection-route-${routeGeojson.id}`} type="geojson" data={routeGeojson.data}>
             <Layer

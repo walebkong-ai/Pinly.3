@@ -3,10 +3,12 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { startTransition, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
-import { Filter, LoaderCircle, Plus, Search } from "lucide-react";
+import { Crosshair, Filter, LoaderCircle, Plus, Search } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Brand } from "@/components/brand";
+import { NoConnectionCard } from "@/components/network/no-connection-card";
+import { useNetworkStatus } from "@/components/network/network-status-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BottomSheet } from "@/components/map/bottom-sheet";
@@ -67,10 +69,29 @@ function hasRenderableMapData(mapData: MapResponse) {
   return mapData.markers.length > 0 || mapData.cityContext !== null || mapData.friendActivity.length > 0;
 }
 
+function buildCurrentLocationViewport(latitude: number, longitude: number): MapViewport {
+  return canonicalizeViewportForDataQuery({
+    zoom: 12.75,
+    bounds: {
+      north: latitude + 0.18,
+      south: latitude - 0.18,
+      east: longitude + 0.18,
+      west: longitude - 0.18
+    }
+  });
+}
+
+function getMapLoadErrorMessage(isOnline: boolean) {
+  return isOnline
+    ? "Pinly could not refresh the map right now. Retry to keep exploring."
+    : "You're offline. Reconnect to load the map and friend activity.";
+}
+
 export function MapPageClient() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { isOnline } = useNetworkStatus();
   const focusedPostFromQuery = useMemo(() => parseMapFocusedPostTarget(searchParams), [searchParams]);
   const didToastSatelliteFallbackRef = useRef(false);
   const lastAppliedFocusedPostKeyRef = useRef<string | null>(null);
@@ -78,6 +99,8 @@ export function MapPageClient() {
   const mapRequestIdRef = useRef(0);
   const [mapData, setMapData] = useState<MapResponse>(emptyMap);
   const [loadingMap, setLoadingMap] = useState(true);
+  const [mapLoadError, setMapLoadError] = useState<string | null>(null);
+  const [mapRetryNonce, setMapRetryNonce] = useState(0);
   const [groupOptions, setGroupOptions] = useState<MapGroupOption[]>([]);
   const [collectionsOverlayMode, setCollectionsOverlayMode] = useState<LayerMode | null>(null);
   const [collectionsOverlayLoading, setCollectionsOverlayLoading] = useState(false);
@@ -98,6 +121,14 @@ export function MapPageClient() {
   const [previewState, setPreviewState] = useState<MapPreviewState>(IDLE_MAP_PREVIEW_STATE);
   const [pendingFocusedPost, setPendingFocusedPost] = useState(focusedPostFromQuery);
   const [pendingMapFocusTarget, setPendingMapFocusTarget] = useState(focusedPostFromQuery);
+  const [manualFocusCoordinates, setManualFocusCoordinates] = useState<{
+    latitude: number;
+    longitude: number;
+    key: string;
+  } | null>(null);
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [locatingUser, setLocatingUser] = useState(false);
+  const [deviceLocationMessage, setDeviceLocationMessage] = useState<string | null>(null);
   const [viewport, setViewport] = useState<MapViewport>(() =>
     focusedPostFromQuery
       ? createFocusedPostViewport(focusedPostFromQuery)
@@ -189,16 +220,20 @@ export function MapPageClient() {
     let ignore = false;
 
     async function loadGroups() {
-      const response = await fetch("/api/friends/list");
+      try {
+        const response = await fetch("/api/friends/list");
 
-      if (!response.ok) {
-        return;
-      }
+        if (!response.ok) {
+          return;
+        }
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!ignore) {
-        setGroupOptions(buildLightweightMapGroups(data.friends ?? []));
+        if (!ignore) {
+          setGroupOptions(buildLightweightMapGroups(data.friends ?? []));
+        }
+      } catch {
+        // Keep the current UI responsive when the network is unavailable.
       }
     }
 
@@ -300,6 +335,7 @@ export function MapPageClient() {
 
     async function loadMap() {
       setLoadingMap(true);
+      setMapLoadError(null);
       const params = new URLSearchParams({
         north: String(viewport.bounds.north),
         south: String(viewport.bounds.south),
@@ -340,6 +376,7 @@ export function MapPageClient() {
         if (!hasRenderableMapData(latestMapDataRef.current)) {
           setMapData(emptyMap);
         }
+        setMapLoadError(getMapLoadErrorMessage(isOnline));
         setLoadingMap(false);
         return;
       }
@@ -351,6 +388,7 @@ export function MapPageClient() {
           if (!hasRenderableMapData(latestMapDataRef.current)) {
             setMapData(emptyMap);
           }
+          setMapLoadError(getMapLoadErrorMessage(isOnline));
           setLoadingMap(false);
         }
         return;
@@ -366,6 +404,7 @@ export function MapPageClient() {
         cityContext: data.cityContext ?? null,
         friendActivity: data.friendActivity ?? []
       });
+      setMapLoadError(null);
       setLoadingMap(false);
     }
 
@@ -375,7 +414,7 @@ export function MapPageClient() {
       ignore = true;
       abortController.abort();
     };
-  }, [viewport, deferredQuery, effectiveLayer, time, selectedGroupIds, selectedCategories, collectionsOverlayEnabled]);
+  }, [viewport, deferredQuery, effectiveLayer, time, selectedGroupIds, selectedCategories, collectionsOverlayEnabled, isOnline, mapRetryNonce]);
 
   useEffect(() => {
     setPreviewState((currentState) => syncPreviewStateWithMarkers(currentState, mapData.markers));
@@ -427,6 +466,8 @@ export function MapPageClient() {
   const collectionsOverlayCount = collectionOverlays.length;
   const activeSearchQuery = deferredQuery.trim();
   const showEmptySearchState = activeSearchQuery.length > 0 && !loadingMap && mapData.markers.length === 0;
+  const showMapErrorState = Boolean(mapLoadError) && !hasRenderableMapData(mapData);
+  const showMapErrorBanner = Boolean(mapLoadError) && hasRenderableMapData(mapData);
   const minimalCopy = useMemo(
     () =>
       mapData.stage === "world"
@@ -467,6 +508,10 @@ export function MapPageClient() {
     setCollectionOverlayFitBoundsTarget(null);
     setCollectionsOverlayLoading(false);
   }
+
+  const handleRetryMap = useCallback(() => {
+    setMapRetryNonce((current) => current + 1);
+  }, []);
 
   const handleToggleCollectionsOverlay = useCallback(() => {
     setCollectionsOverlayMode((currentMode) => (currentMode ? null : "both"));
@@ -527,7 +572,50 @@ export function MapPageClient() {
   }, [selectedLocationMarkerId]);
 
   const handleFocusedCoordinatesApplied = useCallback((focusKey: string) => {
+    setManualFocusCoordinates((currentCoordinates) =>
+      currentCoordinates?.key === focusKey ? null : currentCoordinates
+    );
     setPendingMapFocusTarget((currentTarget) => clearConsumedMapFocusTarget(currentTarget, focusKey));
+  }, []);
+
+  const handleLocateUser = useCallback(() => {
+    if (typeof window === "undefined" || !("geolocation" in navigator)) {
+      const message = "Current location is not available on this device.";
+      setDeviceLocationMessage(message);
+      toast.error(message);
+      return;
+    }
+
+    setLocatingUser(true);
+    setDeviceLocationMessage("Finding your current location...");
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const nextLocation = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        };
+        const focusKey = `device-location:${nextLocation.latitude.toFixed(5)}:${nextLocation.longitude.toFixed(5)}:${Date.now()}`;
+
+        setLocatingUser(false);
+        setUserLocation(nextLocation);
+        setManualFocusCoordinates({ ...nextLocation, key: focusKey });
+        setViewport(buildCurrentLocationViewport(nextLocation.latitude, nextLocation.longitude));
+        setFilterOpen(false);
+        setDeviceLocationMessage("Centered on your current location.");
+        toast.success("Centered on your current location.");
+      },
+      (error) => {
+        setLocatingUser(false);
+        const message =
+          error.code === error.PERMISSION_DENIED
+            ? "Location permission is turned off. Enable it to center the map on you."
+            : "Pinly could not determine your current location.";
+        setDeviceLocationMessage(message);
+        toast.error(message);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60_000 }
+    );
   }, []);
 
   const handleCloseLocationCluster = useCallback(() => {
@@ -545,43 +633,59 @@ export function MapPageClient() {
   return (
     <section className="relative isolate min-h-[calc(100vh-7.5rem)] overflow-hidden rounded-[2.2rem] border bg-[var(--surface-soft)] shadow-2xl shadow-black/5">
       <MapErrorBoundary>
-      <DynamicMapCanvas
-        markers={mapData.markers}
-        mapMode={activeMapMode}
-        mapStyle={mapStyle}
-        expandedPostId={expandedPost?.id ?? null}
-        selectedLocationMarkerId={selectedLocationMarkerId}
-        collectionOverlays={collectionOverlays}
-        collectionOverlayFitBoundsTarget={collectionOverlayFitBoundsTarget}
-        initialViewState={
-          mapFocusTarget
-            ? {
-                longitude: mapFocusTarget.longitude,
-                latitude: mapFocusTarget.latitude,
-                zoom: 13,
-                pitch: 45,
-                bearing: 0
-              }
-            : undefined
-        }
-        focusedCoordinates={
-          mapFocusTarget
-            ? {
-                latitude: mapFocusTarget.latitude,
-                longitude: mapFocusTarget.longitude,
-                key: mapFocusTarget.key
-              }
-            : null
-        }
-        onExpandPost={handleExpandPost}
-        onFocusedCoordinatesApplied={handleFocusedCoordinatesApplied}
-        onOpenLocationCluster={handleOpenLocationCluster}
-        onMapError={handleMapError}
-        onViewportChange={onViewportChange}
-      />
+        <DynamicMapCanvas
+          markers={mapData.markers}
+          mapMode={activeMapMode}
+          mapStyle={mapStyle}
+          expandedPostId={expandedPost?.id ?? null}
+          selectedLocationMarkerId={selectedLocationMarkerId}
+          userLocation={userLocation}
+          collectionOverlays={collectionOverlays}
+          collectionOverlayFitBoundsTarget={collectionOverlayFitBoundsTarget}
+          initialViewState={
+            mapFocusTarget
+              ? {
+                  longitude: mapFocusTarget.longitude,
+                  latitude: mapFocusTarget.latitude,
+                  zoom: 13,
+                  pitch: 45,
+                  bearing: 0
+                }
+              : undefined
+          }
+          focusedCoordinates={
+            manualFocusCoordinates
+              ? manualFocusCoordinates
+              : mapFocusTarget
+                ? {
+                    latitude: mapFocusTarget.latitude,
+                    longitude: mapFocusTarget.longitude,
+                    key: mapFocusTarget.key
+                  }
+                : null
+          }
+          onExpandPost={handleExpandPost}
+          onFocusedCoordinatesApplied={handleFocusedCoordinatesApplied}
+          onOpenLocationCluster={handleOpenLocationCluster}
+          onMapError={handleMapError}
+          onViewportChange={onViewportChange}
+        />
       </MapErrorBoundary>
 
       <div className="pointer-events-none absolute inset-0 z-[700]">
+        {showMapErrorState ? (
+          <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center p-4">
+            <div className="pointer-events-auto w-full max-w-sm">
+              <NoConnectionCard
+                title={isOnline ? "Map unavailable" : "No connection"}
+                message={mapLoadError ?? "The map is temporarily unavailable."}
+                retryLabel="Retry map"
+                onRetry={handleRetryMap}
+              />
+            </div>
+          </div>
+        ) : null}
+
         {/* Always-visible Filters button — top-left, no zoom gate */}
         {!previewSurfaceOpen && (
           <div className="pointer-events-auto absolute left-4 top-4 z-10 md:left-5 md:top-5">
@@ -590,11 +694,28 @@ export function MapPageClient() {
                 type="button"
                 onClick={() => setFilterOpen(true)}
                 aria-label="Open filters"
-                className="flex min-h-10 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-[var(--foreground)]/70 transition hover:bg-[var(--foreground)]/5 md:gap-2 md:px-4 md:text-sm"
+                className="flex min-h-11 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-[var(--foreground)]/70 transition hover:bg-[var(--foreground)]/5 md:gap-2 md:px-4 md:text-sm"
               >
                 <Filter className="h-3.5 w-3.5 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">Filters</span>
                 {activeFilterCount > 0 && <span>({activeFilterCount})</span>}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!previewSurfaceOpen && (
+          <div className="pointer-events-auto absolute right-4 top-4 z-10 md:right-5 md:top-5">
+            <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
+              <button
+                type="button"
+                onClick={handleLocateUser}
+                aria-label="Use my current location"
+                disabled={locatingUser}
+                className="flex min-h-11 items-center gap-2 rounded-full px-3 py-2 text-xs font-medium text-[var(--foreground)]/74 transition hover:bg-[var(--foreground)]/5 disabled:cursor-not-allowed disabled:opacity-60 md:px-4 md:text-sm"
+              >
+                {locatingUser ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Crosshair className="h-4 w-4" />}
+                <span className="hidden sm:inline">{locatingUser ? "Locating..." : "Use my location"}</span>
               </button>
             </div>
           </div>
@@ -635,7 +756,7 @@ export function MapPageClient() {
                   </div>
                   {showControls ? (
                     <Link href="/create" className="pointer-events-auto">
-                      <Button className="gap-2">
+                      <Button className="h-11 gap-2">
                         <Plus className="h-4 w-4" />
                         Add memory
                       </Button>
@@ -646,6 +767,20 @@ export function MapPageClient() {
                   <div className="pointer-events-auto inline-flex max-w-lg items-center gap-2 rounded-2xl border bg-[var(--surface-strong)] px-4 py-2 text-sm text-[var(--foreground)]/68 shadow-sm">
                     <Search className="h-4 w-4 text-[var(--map-accent)]" />
                     <span>No places, people, countries, or captions matched that search.</span>
+                  </div>
+                ) : null}
+                {deviceLocationMessage ? (
+                  <div className="pointer-events-auto inline-flex max-w-lg items-center gap-2 rounded-2xl border bg-[var(--surface-strong)] px-4 py-2 text-sm text-[var(--foreground)]/68 shadow-sm">
+                    {locatingUser ? <LoaderCircle className="h-4 w-4 animate-spin text-[var(--map-accent)]" /> : <Crosshair className="h-4 w-4 text-[var(--map-accent)]" />}
+                    <span>{deviceLocationMessage}</span>
+                  </div>
+                ) : null}
+                {showMapErrorBanner ? (
+                  <div className="pointer-events-auto flex max-w-lg flex-wrap items-center gap-3 rounded-2xl border bg-[var(--surface-strong)] px-4 py-3 text-sm text-[var(--foreground)]/68 shadow-sm">
+                    <span className="min-w-0 flex-1">{mapLoadError}</span>
+                    <Button variant="secondary" className="h-11 px-4" onClick={handleRetryMap}>
+                      Retry
+                    </Button>
                   </div>
                 ) : null}
               </div>

@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
+import { isNativePlatform } from "@/lib/native-platform";
 
 export function PwaBoot() {
   useEffect(() => {
-    if (!("serviceWorker" in navigator)) {
+    if (isNativePlatform() || !("serviceWorker" in navigator)) {
       return;
     }
 

@@ -8,7 +8,7 @@ test("landing page exposes the demo entry point", async ({ page }) => {
       name: /see the world through your friends, not through a feed/i
     })
   ).toBeVisible();
-  await expect(page.getByText("Explore the demo")).toBeVisible();
+  await expect(page.getByRole("button", { name: /explore the demo/i }).first()).toBeVisible();
 });
 
 test("protected map redirects signed-out visitors to sign in", async ({ page }) => {

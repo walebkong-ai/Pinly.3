@@ -3,8 +3,10 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Crosshair, LoaderCircle, MapPin, Search, Upload, X } from "lucide-react";
+import { Camera, Crosshair, Images, LoaderCircle, MapPin, Search, Upload, X } from "lucide-react";
 import { toast } from "sonner";
+import { NoConnectionCard } from "@/components/network/no-connection-card";
+import { useNetworkStatus } from "@/components/network/network-status-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +20,7 @@ import {
   parseCoordinateInput,
   serializeVisitedDateInput
 } from "@/lib/create-post-location";
+import { isNativePlatform } from "@/lib/native-platform";
 import type { PlaceSearchResult } from "@/types/app";
 
 type UploadState = {
@@ -36,7 +39,9 @@ const DynamicLocationPicker = dynamic(
 
 export function CreatePostForm() {
   const router = useRouter();
-  const fileRef = useRef<HTMLInputElement | null>(null);
+  const { isOnline } = useNetworkStatus();
+  const cameraFileRef = useRef<HTMLInputElement | null>(null);
+  const libraryFileRef = useRef<HTMLInputElement | null>(null);
   const [uploadState, setUploadState] = useState<UploadState>(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -158,6 +163,22 @@ export function CreatePostForm() {
             : "Updating the pin location and confirming the place..."
     });
 
+    if (!isOnline) {
+      reverseLookupAbortRef.current = null;
+      setResolvingLocation(false);
+      if (source === "device") {
+        setGettingLocation(false);
+      }
+      setLocationFeedback({
+        tone: "success",
+        message:
+          source === "device"
+            ? "Current location pinned. Reconnect to confirm the place automatically, or type the place details yourself."
+            : "Pin placed offline. Reconnect to confirm the place automatically, or type the place details yourself."
+      });
+      return;
+    }
+
     try {
       const response = await fetch(`/api/places/reverse?lat=${latitude}&lon=${longitude}`, {
         signal: controller.signal
@@ -233,37 +254,47 @@ export function CreatePostForm() {
   }
 
   // Debounced place search — 300ms delay, cancels in-flight requests
-  const searchPlaces = useCallback(async (q: string, signal: AbortSignal) => {
-    if (q.trim().length < 2) {
-      setPlaceResults([]);
-      setSearchingPlaces(false);
-      setPlaceSearchError(null);
-      return;
-    }
-
-    setSearchingPlaces(true);
-    setPlaceSearchError(null);
-    try {
-      const response = await fetch(`/api/places/search?q=${encodeURIComponent(q.trim())}`, { signal });
-      if (signal.aborted) return;
-      if (!response.ok) {
+  const searchPlaces = useCallback(
+    async (q: string, signal: AbortSignal) => {
+      if (q.trim().length < 2) {
         setPlaceResults([]);
-        setPlaceSearchError("Place search is temporarily unavailable. Try again or place the pin manually.");
         setSearchingPlaces(false);
+        setPlaceSearchError(null);
         return;
       }
-      const data = await response.json();
-      if (!signal.aborted) {
-        setPlaceResults(data.places ?? []);
+
+      if (!isOnline) {
+        setPlaceResults([]);
+        setSearchingPlaces(false);
+        setPlaceSearchError("Reconnect to search places, or place the pin manually on the map.");
+        return;
       }
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
-      setPlaceResults([]);
-      setPlaceSearchError("Place search is temporarily unavailable. Try again or place the pin manually.");
-    } finally {
-      if (!signal.aborted) setSearchingPlaces(false);
-    }
-  }, []);
+
+      setSearchingPlaces(true);
+      setPlaceSearchError(null);
+      try {
+        const response = await fetch(`/api/places/search?q=${encodeURIComponent(q.trim())}`, { signal });
+        if (signal.aborted) return;
+        if (!response.ok) {
+          setPlaceResults([]);
+          setPlaceSearchError("Place search is temporarily unavailable. Try again or place the pin manually.");
+          setSearchingPlaces(false);
+          return;
+        }
+        const data = await response.json();
+        if (!signal.aborted) {
+          setPlaceResults(data.places ?? []);
+        }
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setPlaceResults([]);
+        setPlaceSearchError("Place search is temporarily unavailable. Try again or place the pin manually.");
+      } finally {
+        if (!signal.aborted) setSearchingPlaces(false);
+      }
+    },
+    [isOnline]
+  );
 
   useEffect(() => {
     // Clear previous timer
@@ -307,6 +338,11 @@ export function CreatePostForm() {
   }, [locationQuery, searchPlaces]);
 
   async function uploadFile(file: File) {
+    if (!isOnline) {
+      toast.error("Reconnect to upload a photo or video.");
+      return;
+    }
+
     const formData = new FormData();
     formData.set("file", file);
     setUploading(true);
@@ -338,12 +374,20 @@ export function CreatePostForm() {
     applyResolvedLocation(place, "Place selected.");
   }
 
+  function handleSelectedFile(file: File | null | undefined) {
+    if (!file) {
+      return;
+    }
+
+    void uploadFile(file);
+  }
+
   function getCurrentLocation() {
     if (typeof window === "undefined") {
       return;
     }
 
-    const secureContext = window.isSecureContext;
+    const secureContext = window.isSecureContext || isNativePlatform();
     if (!secureContext) {
       const message = getGeolocationErrorMessage({
         supported: !!navigator.geolocation,
@@ -418,6 +462,11 @@ export function CreatePostForm() {
 
 
   async function onSubmit() {
+    if (!isOnline) {
+      toast.error("Reconnect to publish this memory.");
+      return;
+    }
+
     if (!uploadState) {
       toast.error("Upload a photo or video first.");
       return;
@@ -501,6 +550,13 @@ export function CreatePostForm() {
         </section>
       ) : null}
 
+      {!isOnline ? (
+        <NoConnectionCard
+          title="You're offline"
+          message="You can still pin coordinates, add your caption, and review this screen, but media upload, place search, and publishing need a connection."
+        />
+      ) : null}
+
       <div className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
         <section className="glass-panel rounded-[2rem] p-5">
           <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Step 1</p>
@@ -508,18 +564,27 @@ export function CreatePostForm() {
           <p className="mt-3 text-sm leading-6 text-[var(--foreground)]/66">
             Add a photo or video from a place you intentionally want to remember. No background tracking, ever.
           </p>
-          {/* Hidden file input — always mounted so fileRef.current.click() works from both the dashed area and the Replace button */}
+          {/* Hidden file inputs stay mounted so camera and library actions work consistently on mobile. */}
           <input
-            ref={fileRef}
+            ref={cameraFileRef}
             type="file"
             accept="image/*,video/*"
+            capture="environment"
+            data-testid="camera-upload-input"
             className="hidden"
             onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) {
-                void uploadFile(file);
-              }
-              // Reset input so re-selecting same file triggers onChange again
+              handleSelectedFile(event.target.files?.[0]);
+              event.target.value = "";
+            }}
+          />
+          <input
+            ref={libraryFileRef}
+            type="file"
+            accept="image/*,video/*"
+            data-testid="library-upload-input"
+            className="hidden"
+            onChange={(event) => {
+              handleSelectedFile(event.target.files?.[0]);
               event.target.value = "";
             }}
           />
@@ -558,7 +623,8 @@ export function CreatePostForm() {
               {/* Replace button — opens file picker to swap media */}
               <button
                 type="button"
-                onClick={() => fileRef.current?.click()}
+                onClick={() => libraryFileRef.current?.click()}
+                disabled={!isOnline}
                 className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm transition hover:bg-black/80"
               >
                 <Upload className="h-3.5 w-3.5" />
@@ -566,17 +632,36 @@ export function CreatePostForm() {
               </button>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="mt-6 flex h-64 w-full flex-col items-center justify-center rounded-[2rem] border border-dashed bg-[var(--surface-soft)] text-center transition hover:bg-[var(--surface-strong)]"
-            >
+            <div className="mt-6 flex h-64 w-full flex-col items-center justify-center rounded-[2rem] border border-dashed bg-[var(--surface-soft)] px-5 text-center">
               <Upload className="h-8 w-8 text-[var(--accent)]" />
               <p className="mt-4 font-medium">Choose image or video</p>
               <p className="mt-2 max-w-xs text-sm text-[var(--foreground)]/55">
-                Upload a photo or a short video for this memory moment.
+                Use the camera for something fresh or pull from your library when the moment already happened.
               </p>
-            </button>
+              <div className="mt-5 flex w-full max-w-sm flex-col gap-2 sm:flex-row">
+                <Button
+                  type="button"
+                  className="h-11 flex-1 gap-2"
+                  data-testid="camera-upload-button"
+                  onClick={() => cameraFileRef.current?.click()}
+                  disabled={!isOnline}
+                >
+                  <Camera className="h-4 w-4" />
+                  Use camera
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="h-11 flex-1 gap-2"
+                  data-testid="library-upload-button"
+                  onClick={() => libraryFileRef.current?.click()}
+                  disabled={!isOnline}
+                >
+                  <Images className="h-4 w-4" />
+                  Choose library
+                </Button>
+              </div>
+            </div>
           )}
         </section>
 
@@ -594,6 +679,7 @@ export function CreatePostForm() {
                   value={locationQuery}
                   onChange={(event) => setLocationQuery(event.target.value)}
                   placeholder="Search cities, landmarks, neighborhoods"
+                  disabled={!isOnline}
                 />
                 {searchingPlaces && <LoaderCircle className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[var(--map-accent)]" />}
               </div>
@@ -630,7 +716,7 @@ export function CreatePostForm() {
                 <Button
                   type="button"
                   variant="secondary"
-                  className="rounded-full bg-[var(--surface-strong)] text-xs font-medium hover:bg-[var(--card-strong)]"
+                  className="h-11 rounded-full bg-[var(--surface-strong)] text-xs font-medium hover:bg-[var(--card-strong)]"
                   onClick={getCurrentLocation}
                   disabled={gettingLocation || resolvingLocation}
                 >
@@ -780,8 +866,8 @@ export function CreatePostForm() {
           <Button
             type="button"
             onClick={onSubmit}
-            className="w-full"
-            disabled={submitting || uploading || gettingLocation || resolvingLocation}
+            className="h-11 w-full"
+            disabled={submitting || uploading || gettingLocation || resolvingLocation || !isOnline}
           >
             {submitting ? "Saving pin..." : "Publish memory"}
           </Button>

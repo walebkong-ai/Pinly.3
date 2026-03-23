@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Download, LoaderCircle, Share, SquarePlus, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { isNativePlatform } from "@/lib/native-platform";
 import { cn } from "@/lib/utils";
 import {
   detectInstallPlatform,
@@ -23,6 +24,8 @@ type BeforeInstallPromptEvent = Event & {
 };
 
 export function InstallAppCard({ className }: { className?: string }) {
+  const [mounted, setMounted] = useState(false);
+  const [nativeShell, setNativeShell] = useState(false);
   const [platform, setPlatform] = useState<InstallPlatform>("desktop");
   const [installed, setInstalled] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -36,6 +39,9 @@ export function InstallAppCard({ className }: { className?: string }) {
     if (typeof window === "undefined") {
       return;
     }
+
+    setMounted(true);
+    setNativeShell(isNativePlatform());
 
     const platformValue = detectInstallPlatform(window.navigator.userAgent);
     setPlatform(platformValue);
@@ -85,6 +91,10 @@ export function InstallAppCard({ className }: { className?: string }) {
       }
     };
   }, []);
+
+  if (!mounted || nativeShell) {
+    return null;
+  }
 
   async function handleInstallClick() {
     if (installed) {

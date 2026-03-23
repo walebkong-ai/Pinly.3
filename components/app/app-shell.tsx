@@ -144,8 +144,8 @@ export function AppShell({
   }, [refreshUnreadCounts]);
 
   return (
-    <div className="min-h-screen px-2 py-2 md:px-6 md:py-4">
-      <header className="glass-panel mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3 rounded-2xl px-3 py-2 md:rounded-[2rem] md:gap-4 md:px-4 md:py-3">
+    <div className="min-h-screen px-2 pb-[calc(var(--safe-area-bottom)+5.5rem)] pt-[max(0.5rem,var(--safe-area-top))] md:px-6 md:pb-8 md:pt-[max(1rem,var(--safe-area-top))]">
+      <header className="glass-panel sticky top-[max(0.5rem,var(--safe-area-top))] z-[940] mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3 rounded-2xl px-3 py-2 md:rounded-[2rem] md:gap-4 md:px-4 md:py-3">
         <div className="flex items-center gap-4">
           <Brand compact />
           <nav className="hidden items-center gap-2 md:flex">
@@ -153,8 +153,9 @@ export function AppShell({
               <Link
                 key={href}
                 href={href}
+                aria-current={isNavActive(pathname, href) ? "page" : undefined}
                 className={cn(
-                  "relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
+                  "relative inline-flex min-h-11 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
                   isNavActive(pathname, href)
                     ? "z-10 bg-[var(--foreground)] text-[var(--background)] shadow-sm"
                     : "bg-[var(--surface-soft)] text-[var(--foreground)]/72 hover:bg-[var(--surface-strong)]"
@@ -174,8 +175,9 @@ export function AppShell({
               <Link
                 key={href}
                 href={resolvedHref}
+                aria-current={isNavActive(pathname, resolvedHref) ? "page" : undefined}
                 className={cn(
-                  "relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
+                  "relative inline-flex min-h-11 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
                   isNavActive(pathname, resolvedHref)
                     ? "z-10 bg-[var(--foreground)] text-[var(--background)] shadow-sm"
                     : "text-[var(--foreground)]/70 hover:bg-[var(--surface-soft)]"
@@ -245,22 +247,23 @@ export function AppShell({
 
       <main
         className={cn(
-          "mx-auto max-w-[1600px] pb-20 pt-3 md:pb-24 md:pt-4",
+          "mx-auto max-w-[1600px] pb-4 pt-3 md:pb-6 md:pt-4",
           pathname === "/map" ? "max-w-[1700px]" : "max-w-[1500px]"
         )}
       >
         {children}
       </main>
 
-      <nav className="glass-panel fixed inset-x-2 bottom-2 z-[950] flex items-center justify-between rounded-full px-2 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] md:hidden">
+      <nav className="glass-panel fixed inset-x-2 bottom-[max(0.5rem,var(--safe-area-bottom))] z-[950] flex items-center justify-between rounded-[1.75rem] px-2 py-2 md:hidden">
         {[...primaryNavItems, ...secondaryNavItems.filter((item) => item.href !== "/cities" && item.href !== "/settings")].map(({ href, label, icon: Icon }) => {
           const resolvedHref = href === "/profile/me" ? `/profile/${user.username}` : href;
           return (
             <Link
               key={href}
               href={resolvedHref}
+              aria-current={isNavActive(pathname, resolvedHref) ? "page" : undefined}
               className={cn(
-                "flex flex-col items-center gap-0.5 rounded-full px-2 py-1.5 text-[10px] font-medium transition sm:px-3 sm:text-[11px]",
+                "flex min-h-11 min-w-[3.25rem] flex-col items-center justify-center gap-1 rounded-[1.15rem] px-2 py-1.5 text-[10px] font-medium transition sm:px-3 sm:text-[11px]",
                 isNavActive(pathname, resolvedHref)
                   ? "bg-[rgba(24,85,56,0.08)] text-[var(--foreground)]"
                   : "text-[var(--foreground)]/58 hover:bg-[var(--foreground)]/5"

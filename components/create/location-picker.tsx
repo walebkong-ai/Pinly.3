@@ -43,6 +43,7 @@ export function LocationPicker({
       <Map
         ref={mapRef}
         initialViewState={initialViewState}
+        reuseMaps
         style={{ width: "100%", height: "100%", backgroundColor: "transparent" }}
         onClick={handleMapClick}
         mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
