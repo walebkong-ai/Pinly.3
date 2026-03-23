@@ -9,26 +9,37 @@ type NetworkStatusContextValue = {
 
 const NetworkStatusContext = createContext<NetworkStatusContextValue | null>(null);
 const NETWORK_STATUS_HEALTHCHECK_PATH = "/api/health";
+const NETWORK_STATUS_SYNC_INTERVAL_MS = 15_000;
 
-async function resolveConfirmedNetworkStatus(signal?: AbortSignal) {
-  if (typeof navigator === "undefined") {
-    return true;
-  }
+type ResolveConfirmedNetworkStatusOptions = {
+  signal?: AbortSignal;
+  navigatorOnline?: boolean;
+  fetcher?: typeof fetch | null;
+};
 
-  if (navigator.onLine) {
-    return true;
+export async function resolveConfirmedNetworkStatus(options: ResolveConfirmedNetworkStatusOptions = {}) {
+  const navigatorOnline =
+    typeof options.navigatorOnline === "boolean"
+      ? options.navigatorOnline
+      : typeof navigator === "undefined"
+        ? true
+        : navigator.onLine;
+  const fetcher =
+    "fetcher" in options ? options.fetcher ?? null : typeof fetch === "function" ? fetch.bind(globalThis) : null;
+
+  if (!fetcher) {
+    return navigatorOnline;
   }
 
   try {
-    const response = await fetch(NETWORK_STATUS_HEALTHCHECK_PATH, {
+    await fetcher(NETWORK_STATUS_HEALTHCHECK_PATH, {
       cache: "no-store",
       headers: {
         "x-pinly-network-check": "1"
       },
-      signal
+      signal: options.signal
     });
-
-    return response.ok;
+    return true;
   } catch {
     return false;
   }
@@ -58,7 +69,7 @@ export function NetworkStatusProvider({ children }: { children: React.ReactNode 
       const controller = new AbortController();
       activeController = controller;
 
-      const nextStatus = await resolveConfirmedNetworkStatus(controller.signal);
+      const nextStatus = await resolveConfirmedNetworkStatus({ signal: controller.signal });
 
       if (isCancelled || controller.signal.aborted) {
         return;
@@ -68,11 +79,11 @@ export function NetworkStatusProvider({ children }: { children: React.ReactNode 
     }
 
     function handleOnline() {
-      updateStatus(true);
+      void syncStatus();
     }
 
     function handleOffline() {
-      updateStatus(false);
+      void syncStatus();
     }
 
     function handleWindowFocus() {
@@ -90,6 +101,11 @@ export function NetworkStatusProvider({ children }: { children: React.ReactNode 
     window.addEventListener("offline", handleOffline);
     window.addEventListener("focus", handleWindowFocus);
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    const syncInterval = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void syncStatus();
+      }
+    }, NETWORK_STATUS_SYNC_INTERVAL_MS);
 
     return () => {
       isCancelled = true;
@@ -98,6 +114,7 @@ export function NetworkStatusProvider({ children }: { children: React.ReactNode 
       window.removeEventListener("offline", handleOffline);
       window.removeEventListener("focus", handleWindowFocus);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.clearInterval(syncInterval);
     };
   }, []);
 
