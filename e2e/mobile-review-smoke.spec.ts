@@ -47,6 +47,7 @@ test("mobile shell navigation stays in-app and create flow shows offline fallbac
   });
 
   await signInAsDemo(page);
+  await expect(offlineBanner).toBeHidden();
 
   await page.evaluate(() => {
     (window as Window & { __pinlyNavMarker?: string }).__pinlyNavMarker = "native-shell-marker";
@@ -78,6 +79,7 @@ test("mobile shell navigation stays in-app and create flow shows offline fallbac
   await page.getByRole("link", { name: /^create$/i }).first().click();
   await expect(page).toHaveURL(/\/create(?:\?|$)/, { timeout: 15_000 });
   await expect(createPostForm).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId("create-offline-card")).toBeHidden();
   await expect
     .poll(() => page.evaluate(() => (window as Window & { __pinlyNavMarker?: string }).__pinlyNavMarker))
     .toBe("native-shell-marker");
