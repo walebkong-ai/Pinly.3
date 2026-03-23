@@ -25,6 +25,17 @@ test("mobile shell navigation stays in-app and create flow shows offline fallbac
   const notFoundUrls: string[] = [];
   const runId = `${Date.now()}`;
   const offlineBanner = page.getByTestId("offline-banner").first();
+  const createPostForm = page.getByRole("main").getByTestId("create-post-form").first();
+  const libraryUploadInput = page.getByRole("main").getByTestId("library-upload-input").first();
+  const replaceButton = createPostForm.getByRole("button", { name: /Replace/i }).first();
+  const publishButton = createPostForm.getByRole("button", { name: /Publish memory/i }).first();
+  const captionField = createPostForm.getByPlaceholder("What made this place feel special?");
+  const placeNameField = createPostForm.getByPlaceholder("Place name");
+  const cityField = createPostForm.getByPlaceholder("City");
+  const countryField = createPostForm.getByPlaceholder("Country");
+  const visitedAtField = createPostForm.locator('input[type="date"]').first();
+  const selectedLocationCard = createPostForm.getByTestId("create-selected-location").first();
+  const createLocationButton = createPostForm.getByRole("button", { name: /Use my current location/i }).first();
 
   page.on("pageerror", (error) => {
     pageErrors.push(error.message);
@@ -66,7 +77,7 @@ test("mobile shell navigation stays in-app and create flow shows offline fallbac
 
   await page.getByRole("link", { name: /^create$/i }).first().click();
   await expect(page).toHaveURL(/\/create(?:\?|$)/, { timeout: 15_000 });
-  await expect(page.getByTestId("create-post-form")).toBeVisible({ timeout: 15_000 });
+  await expect(createPostForm).toBeVisible({ timeout: 15_000 });
   await expect
     .poll(() => page.evaluate(() => (window as Window & { __pinlyNavMarker?: string }).__pinlyNavMarker))
     .toBe("native-shell-marker");
@@ -76,46 +87,48 @@ test("mobile shell navigation stays in-app and create flow shows offline fallbac
       (response) => new URL(response.url()).pathname === "/api/uploads" && response.request().method() === "POST",
       { timeout: 15_000 }
     ),
-    page.getByTestId("library-upload-input").setInputFiles(uploadPath)
+    libraryUploadInput.setInputFiles(uploadPath)
   ]);
   expect(uploadResponse.status()).toBe(200);
-  await expect(page.getByRole("button", { name: /Replace/i })).toBeVisible({ timeout: 15_000 });
+  await expect(replaceButton).toBeVisible({ timeout: 15_000 });
 
   await context.setOffline(true);
   await expect(offlineBanner).toBeVisible({ timeout: 10_000 });
   await expect(page.getByTestId("create-offline-card")).toBeVisible({ timeout: 10_000 });
-  await expect(page.getByRole("button", { name: /Publish memory/i })).toBeDisabled();
+  await expect(publishButton).toBeDisabled();
 
   await context.setOffline(false);
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await expect(page).toHaveURL(/\/create(?:\?|$)/, { timeout: 15_000 });
-  await expect(page.getByTestId("create-post-form")).toBeVisible({ timeout: 15_000 });
+  await expect.poll(() => page.evaluate(() => navigator.onLine), { timeout: 15_000 }).toBe(true);
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event("online"));
+  });
+  await expect(createPostForm).toBeVisible({ timeout: 15_000 });
 
   const [secondUploadResponse] = await Promise.all([
     page.waitForResponse(
       (response) => new URL(response.url()).pathname === "/api/uploads" && response.request().method() === "POST",
       { timeout: 15_000 }
     ),
-    page.getByTestId("library-upload-input").setInputFiles(uploadPath)
+    libraryUploadInput.setInputFiles(uploadPath)
   ]);
   expect(secondUploadResponse.status()).toBe(200);
-  await expect(page.getByRole("button", { name: /Replace/i })).toBeVisible({ timeout: 15_000 });
+  await expect(replaceButton).toBeVisible({ timeout: 15_000 });
 
-  await page.getByPlaceholder("What made this place feel special?").fill(`Runtime verification memory ${runId}`);
-  await page.getByPlaceholder("Place name").fill(`Codex Point ${runId}`);
-  await page.getByPlaceholder("City").fill("Toronto");
-  await page.getByPlaceholder("Country").fill("Canada");
-  await page.locator('input[type="date"]').fill("2026-03-22");
-  await page.getByRole("button", { name: /Use my current location/i }).click();
-  await expect(page.getByTestId("create-selected-location")).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByRole("button", { name: /Publish memory/i })).toBeEnabled({ timeout: 15_000 });
+  await captionField.fill(`Runtime verification memory ${runId}`);
+  await placeNameField.fill(`Codex Point ${runId}`);
+  await cityField.fill("Toronto");
+  await countryField.fill("Canada");
+  await visitedAtField.fill("2026-03-22");
+  await createLocationButton.click();
+  await expect(selectedLocationCard).toBeVisible({ timeout: 15_000 });
+  await expect(publishButton).toBeEnabled({ timeout: 15_000 });
 
   const [publishResponse] = await Promise.all([
     page.waitForResponse(
       (response) => new URL(response.url()).pathname === "/api/posts" && response.request().method() === "POST",
       { timeout: 15_000 }
     ),
-    page.getByRole("button", { name: /Publish memory/i }).click()
+    publishButton.click()
   ]);
   expect(publishResponse.status()).toBe(201);
   await expect(page).toHaveURL(/\/map(?:\?|$)/, { timeout: 30_000 });
