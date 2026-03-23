@@ -25,9 +25,12 @@ describe("media url hardening", () => {
 
   test("keeps strict write validation while allowing legacy render fallbacks", () => {
     expect(normalizeStoredMediaUrl("/logo.png")).toBeNull();
+    expect(normalizeStoredMediaUrl("/demo-media/posts/paris-cafe.jpg")).toBeNull();
     expect(normalizeRenderableStoredMediaUrl("/logo.png")).toBe("/logo.png");
     expect(normalizeRenderableStoredMediaUrl("/uploads/legacy-photo.jpg")).toBe("/logo.png");
+    expect(normalizeRenderableStoredMediaUrl("/demo-media/posts/paris-cafe.jpg")).toBe("/demo-media/posts/paris-cafe.jpg");
     expect(normalizeRenderableProfileImageUrl("/pinly-globe-icon.svg")).toBe("/pinly-globe-icon.svg");
+    expect(normalizeRenderableProfileImageUrl("/demo-media/avatars/avery.svg")).toBe("/demo-media/avatars/avery.svg");
     expect(normalizeRenderableProfileImageUrl("https://evil.example.com/avatar.jpg")).toBeNull();
   });
 

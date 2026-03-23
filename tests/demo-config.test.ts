@@ -11,11 +11,11 @@ describe("demo config", () => {
     process.env.PINLY_DEMO_AVATAR_URL = originalDemoAvatarUrl;
   });
 
-  test("returns null when no Supabase demo avatar is configured", () => {
+  test("falls back to bundled demo avatars when no Supabase demo avatar is configured", () => {
     process.env.PINLY_E2E_MODE = "1";
     process.env.PINLY_DEMO_AVATAR_URL = "";
 
-    expect(getDemoAvatarUrl("avery")).toBeNull();
+    expect(getDemoAvatarUrl("avery")).toBe("/demo-media/avatars/avery.svg");
   });
 
   test("uses a Supabase-hosted avatar when configured", () => {

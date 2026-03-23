@@ -80,6 +80,7 @@ npm run prisma:seed
 npm run dev
 ```
 7. If you want to test uploads locally, add real `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_STORAGE_BUCKET` values. Pinly now uploads directly to Supabase Storage in every environment, and the server upload path requires the service role key.
+8. If you only need the seeded demo content and legacy media repair locally, leaving `PINLY_DEMO_*` blank now falls back to bundled `/demo-media/...` assets. New uploads still require Supabase.
 
 ## Demo accounts
 After seeding, sign in with any of these and password `password123`:
@@ -111,8 +112,8 @@ The deployed demo no longer depends on running the destructive seed script in pr
 - `RATE_LIMIT_DRIVER`: optional local override. Leave unset to use the database-backed limiter; use `memory` only for short-lived local debugging.
 - `AUTH_DEBUG_RESET_LINKS`: optional local-only preview for password reset links; keep `false` outside development
 - `ALLOW_DESTRUCTIVE_SEED`: leave unset locally; only use `pinly-demo` for intentional demo/staging reseeds
-- `PINLY_DEMO_AVATAR_URL`, `PINLY_DEMO_IMAGE_URL`, `PINLY_DEMO_VIDEO_URL`, `PINLY_DEMO_VIDEO_THUMBNAIL_URL`: optional Supabase-hosted demo media used when seeding sample content
-- `PINLY_FALLBACK_AVATAR_URL`, `PINLY_FALLBACK_IMAGE_URL`, `PINLY_FALLBACK_VIDEO_URL`, `PINLY_FALLBACK_VIDEO_THUMBNAIL_URL`: optional Supabase-hosted fallbacks used by `npm run media:repair`
+- `PINLY_DEMO_AVATAR_URL`, `PINLY_DEMO_IMAGE_URL`, `PINLY_DEMO_VIDEO_URL`, `PINLY_DEMO_VIDEO_THUMBNAIL_URL`: optional Supabase-hosted demo media used when seeding sample content; if blank, Pinly falls back to bundled `/demo-media/...` assets
+- `PINLY_FALLBACK_AVATAR_URL`, `PINLY_FALLBACK_IMAGE_URL`, `PINLY_FALLBACK_VIDEO_URL`, `PINLY_FALLBACK_VIDEO_THUMBNAIL_URL`: optional Supabase-hosted fallbacks used by `npm run media:repair` before Pinly falls back to bundled demo assets
 
 ## Useful commands
 ```bash

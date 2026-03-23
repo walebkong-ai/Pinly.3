@@ -1,3 +1,4 @@
+import { getBundledDemoAvatarUrl } from "@/lib/demo-media";
 import { normalizeProfileImageUrl } from "@/lib/media-url";
 
 export const DEMO_PASSWORD = "password123";
@@ -43,8 +44,13 @@ export const DEFAULT_DEMO_USER_EMAIL = DEFAULT_DEMO_USER.email;
 const demoEmails = new Set<string>(DEMO_USERS.map((user) => user.email));
 
 export function getDemoAvatarUrl(seed: string) {
-  void seed;
-  return normalizeProfileImageUrl(process.env.PINLY_DEMO_AVATAR_URL ?? null);
+  const configuredAvatarUrl = normalizeProfileImageUrl(process.env.PINLY_DEMO_AVATAR_URL ?? null);
+
+  if (configuredAvatarUrl) {
+    return configuredAvatarUrl;
+  }
+
+  return getBundledDemoAvatarUrl(seed);
 }
 
 export function isReservedDemoEmail(email: string) {

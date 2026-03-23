@@ -2,6 +2,7 @@ import { hash } from "bcryptjs";
 import { MediaType } from "@prisma/client";
 import { addDays, subDays } from "date-fns";
 import { DEMO_PASSWORD, DEMO_USERS, type DemoUserKey, getDemoAvatarUrl } from "@/lib/demo-config";
+import { getBundledDemoPostImageUrl } from "@/lib/demo-media";
 import { normalizeFriendPair } from "@/lib/friendships";
 import { createLegalAcceptanceRecord } from "@/lib/legal";
 import { normalizeStoredMediaUrl } from "@/lib/media-url";
@@ -103,7 +104,11 @@ function resolveDemoPostMedia(_index: number, mediaType: "IMAGE" | "VIDEO") {
 
   if (mediaType === "VIDEO") {
     if (!videoUrl) {
-      return null;
+      return {
+        mediaType: MediaType.IMAGE,
+        mediaUrl: getBundledDemoPostImageUrl(`video-fallback:${_index}`),
+        thumbnailUrl: null
+      };
     }
 
     return {
@@ -114,7 +119,11 @@ function resolveDemoPostMedia(_index: number, mediaType: "IMAGE" | "VIDEO") {
   }
 
   if (!imageUrl) {
-    return null;
+    return {
+      mediaType: MediaType.IMAGE,
+      mediaUrl: getBundledDemoPostImageUrl(`image-fallback:${_index}`),
+      thumbnailUrl: null
+    };
   }
 
   return {

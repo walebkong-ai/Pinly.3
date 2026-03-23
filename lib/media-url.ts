@@ -1,4 +1,5 @@
 import { parseSupabasePublicMediaUrl } from "@/lib/supabase-storage";
+import { isTrustedBundledDemoAvatarPath, isTrustedBundledDemoMediaPath } from "@/lib/demo-media";
 
 const LEGACY_MEDIA_PLACEHOLDER_URL = "/logo.png";
 const LEGACY_AVATAR_PLACEHOLDER_URL = "/pinly-globe-icon.svg";
@@ -93,6 +94,10 @@ export function normalizeRenderableStoredMediaUrl(value: string | null | undefin
     return null;
   }
 
+  if (isTrustedBundledDemoMediaPath(appPath)) {
+    return appPath;
+  }
+
   if (appPath === LEGACY_MEDIA_PLACEHOLDER_URL) {
     warnMediaResolution("post-media", value, LEGACY_MEDIA_PLACEHOLDER_URL);
     return LEGACY_MEDIA_PLACEHOLDER_URL;
@@ -118,6 +123,10 @@ export function normalizeRenderableProfileImageUrl(value: string | null | undefi
 
   if (!appPath) {
     return null;
+  }
+
+  if (isTrustedBundledDemoAvatarPath(appPath)) {
+    return appPath;
   }
 
   if (appPath === LEGACY_AVATAR_PLACEHOLDER_URL) {
