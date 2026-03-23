@@ -1,6 +1,10 @@
 import { hash } from "bcryptjs";
 import { normalizeFriendPair } from "@/lib/friendships";
-import { createLegalAcceptanceRecord } from "@/lib/legal";
+import {
+  createExpiredPendingLegalConsentCookie,
+  createLegalAcceptanceRecord,
+  readPendingLegalConsentFromCookieHeader
+} from "@/lib/legal";
 import { prisma } from "@/lib/prisma";
 import { normalizeUsername, signUpSchema } from "@/lib/validation";
 import { apiError, apiValidationError } from "@/lib/api";
@@ -36,6 +40,7 @@ export async function POST(request: Request) {
 
   const email = parsed.data.email.toLowerCase();
   const username = normalizeUsername(parsed.data.username);
+  const pendingLegalAcceptance = readPendingLegalConsentFromCookieHeader(request.headers.get("cookie"));
 
   let existing;
   try {
@@ -58,7 +63,7 @@ export async function POST(request: Request) {
 
   let user;
   try {
-    const legalAcceptance = createLegalAcceptanceRecord();
+    const legalAcceptance = pendingLegalAcceptance ?? createLegalAcceptanceRecord();
     user = await prisma.user.create({
       data: {
         name: parsed.data.name,
@@ -113,5 +118,11 @@ export async function POST(request: Request) {
     return apiError("Database connection failed. Please try again later.", 500);
   }
 
-  return Response.json({ user }, { status: 201 });
+  const response = Response.json({ user }, { status: 201 });
+
+  if (pendingLegalAcceptance) {
+    response.headers.append("Set-Cookie", createExpiredPendingLegalConsentCookie());
+  }
+
+  return response;
 }

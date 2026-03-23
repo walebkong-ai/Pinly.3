@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { createPendingLegalConsentToken } from "@/lib/legal";
 
 const findFirstMock = vi.fn();
 const createMock = vi.fn();
@@ -57,11 +58,56 @@ describe("register route", () => {
         data: expect.objectContaining({
           termsAcceptedAt: expect.any(Date),
           privacyAcceptedAt: expect.any(Date),
-          termsVersion: "2026-03-21",
-          privacyVersion: "2026-03-21"
+          termsVersion: "2026-03-22",
+          privacyVersion: "2026-03-22"
         })
       })
     );
+  });
+
+  test("uses the pending legal consent cookie when it exists", async () => {
+    const acceptedAt = new Date();
+    const token = createPendingLegalConsentToken(acceptedAt);
+
+    hashMock.mockResolvedValue("hashed-password");
+    findFirstMock.mockResolvedValue(null);
+    createMock.mockResolvedValue({
+      id: "user_2",
+      name: "Noah Brooks",
+      username: "noah",
+      email: "noah@pinly.demo"
+    });
+
+    const { POST } = await import("@/app/api/auth/register/route");
+    const response = await POST(
+      new Request("http://localhost/api/auth/register", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          cookie: `pinly_legal_signup=${token}`
+        },
+        body: JSON.stringify({
+          name: "Noah Brooks",
+          username: "noah",
+          email: "noah@pinly.demo",
+          password: "password123",
+          acceptLegal: true
+        })
+      })
+    );
+
+    expect(response.status).toBe(201);
+    expect(createMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          termsAcceptedAt: acceptedAt,
+          privacyAcceptedAt: acceptedAt,
+          termsVersion: "2026-03-22",
+          privacyVersion: "2026-03-22"
+        })
+      })
+    );
+    expect(response.headers.get("set-cookie")).toContain("pinly_legal_signup=;");
   });
 
   test("returns conflict for duplicate user", async () => {

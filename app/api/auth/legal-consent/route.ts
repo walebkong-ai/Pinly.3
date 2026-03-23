@@ -2,8 +2,8 @@ import { cookies } from "next/headers";
 import { apiError, apiValidationError } from "@/lib/api";
 import {
   createPendingLegalConsentToken,
+  getPendingLegalConsentCookieOptions,
   LEGAL_CONSENT_COOKIE_NAME,
-  LEGAL_CONSENT_MAX_AGE_SECONDS,
   PRIVACY_VERSION,
   TERMS_VERSION
 } from "@/lib/legal";
@@ -39,13 +39,11 @@ export async function POST(request: Request) {
   }
 
   const cookieStore = await cookies();
-  cookieStore.set(LEGAL_CONSENT_COOKIE_NAME, createPendingLegalConsentToken(), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: LEGAL_CONSENT_MAX_AGE_SECONDS,
-    path: "/"
-  });
+  cookieStore.set(
+    LEGAL_CONSENT_COOKIE_NAME,
+    createPendingLegalConsentToken(),
+    getPendingLegalConsentCookieOptions()
+  );
 
   return Response.json({
     ok: true,

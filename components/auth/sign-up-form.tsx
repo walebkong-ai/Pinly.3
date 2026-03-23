@@ -75,8 +75,36 @@ export function SignUpForm() {
     };
   }, [googleUiEnabled]);
 
+  async function recordLegalAcceptance(errorMessage: string) {
+    try {
+      const response = await fetch("/api/auth/legal-consent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ acceptLegal: true })
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        toast.error(extractErrorMessage(data) ?? errorMessage);
+        return false;
+      }
+
+      return true;
+    } catch {
+      toast.error("Could not reach the server. Please try again.");
+      return false;
+    }
+  }
+
   async function onSubmit(payload: SignUpValues) {
     setLoading(true);
+
+    const recordedConsent = await recordLegalAcceptance("Could not save legal acceptance.");
+
+    if (!recordedConsent) {
+      setLoading(false);
+      return;
+    }
 
     let response: Response;
 
@@ -138,24 +166,7 @@ export function SignUpForm() {
       return false;
     }
 
-    try {
-      const response = await fetch("/api/auth/legal-consent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ acceptLegal: true })
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => null);
-        toast.error(extractErrorMessage(data) ?? "Could not start Google sign up.");
-        return false;
-      }
-
-      return true;
-    } catch {
-      toast.error("Could not reach the server. Please try again.");
-      return false;
-    }
+    return recordLegalAcceptance("Could not start Google sign up.");
   }
 
   return (

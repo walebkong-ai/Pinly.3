@@ -2,9 +2,9 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { z } from "zod";
 
-export const TERMS_VERSION = "2026-03-21";
-export const PRIVACY_VERSION = "2026-03-21";
-export const LEGAL_LAST_UPDATED_LABEL = "March 21, 2026";
+export const TERMS_VERSION = "2026-03-22";
+export const PRIVACY_VERSION = "2026-03-22";
+export const LEGAL_LAST_UPDATED_LABEL = "March 22, 2026";
 export const LEGAL_CONSENT_COOKIE_NAME = "pinly_legal_signup";
 export const LEGAL_CONSENT_MAX_AGE_SECONDS = 10 * 60;
 
@@ -39,7 +39,8 @@ export const termsSections: LegalSection[] = [
     title: "Acceptable use",
     paragraphs: [
       "Use Pinly respectfully and lawfully. Do not use the app to harass people, impersonate someone else, scrape data, spam users, or interfere with the service.",
-      "Do not upload illegal content, malware, or anything that could harm other users or the platform."
+      "Do not upload illegal content, malware, or anything that could harm other users or the platform.",
+      "Pinly includes blocking and reporting tools. Misusing the app or trying to work around those controls can lead to content removal, account restrictions, or account deletion."
     ]
   },
   {
@@ -66,7 +67,8 @@ export const termsSections: LegalSection[] = [
   {
     title: "Suspension and removal",
     paragraphs: [
-      "We may suspend, restrict, or remove accounts or content that create security, legal, or abuse risks, or that violate these terms."
+      "We may suspend, restrict, or remove accounts or content that create security, legal, or abuse risks, or that violate these terms.",
+      "You can also delete your own account from Settings or by using Pinly's web deletion page when you are signed in."
     ]
   },
   {
@@ -79,7 +81,8 @@ export const termsSections: LegalSection[] = [
   {
     title: "Questions",
     paragraphs: [
-      "If you need help with these terms or want to request account or content removal, use the contact channel, invite channel, or support path that was shared with you for this stage of Pinly."
+      "For self-serve account deletion, use Settings > Delete Account in the app or the /delete-account page while signed in.",
+      "If you need help with these terms beyond the in-app controls, use any support or contact path that Pinly currently provides."
     ]
   }
 ];
@@ -89,21 +92,23 @@ export const privacySections: LegalSection[] = [
     title: "What Pinly collects",
     paragraphs: [
       "Pinly collects the information you provide to create and use your account, including your name, username, email address, password hash, profile image, and any optional sign-in provider details.",
-      "We also store the content and activity needed to run the app, such as posts, captions, photos, videos, place names, map coordinates, visit dates, collections, saved items, comments, likes, friendships, invites, notifications, and messages."
+      "We also store the content and activity needed to run the app, such as posts, captions, photos, videos, place names, map coordinates, visit dates, collections, saved items, comments, likes, friendships, invites, notifications, and messages.",
+      "When you use Pinly's safety controls, we store block relationships, reports, and related moderation records. We also store legal acceptance timestamps and policy version records when you create an account."
     ]
   },
   {
     title: "How we use data",
     paragraphs: [
       "We use your data to operate the map, feed, profile, friendship, collection, notification, and messaging features of Pinly.",
-      "We also use it to protect accounts, prevent abuse, troubleshoot issues, and improve the product."
+      "We also use it to protect accounts, enforce sharing rules, prevent abuse, review safety reports, process account deletion, troubleshoot issues, and improve the product."
     ]
   },
   {
     title: "Visibility and sharing",
     paragraphs: [
       "Pinly is built around intentional sharing. Some content is visible only to you, some to accepted friends, and some can be made public depending on the feature and visibility setting you choose.",
-      "Messages are intended for the participants in that conversation. Collections, posts, and route points follow the sharing rules Pinly applies on the server at the time they are viewed."
+      "Messages are intended for the participants in that conversation. Collections, posts, and route points follow the sharing rules Pinly applies on the server at the time they are viewed.",
+      "If you block someone, Pinly removes that relationship from normal friend, profile, feed, and direct-message paths that the current product supports."
     ]
   },
   {
@@ -122,7 +127,8 @@ export const privacySections: LegalSection[] = [
   {
     title: "Your choices",
     paragraphs: [
-      "You can edit or remove much of your content from inside the app. For account deletion, privacy questions, or removal requests that you cannot complete yourself, use the contact path that was shared with you for Pinly access."
+      "You can edit or remove much of your content from inside the app. You can also block users, submit reports, and manage sharing settings where those controls appear.",
+      "You can delete your account from Settings or from the /delete-account page while signed in. Deleted accounts are removed from app access, although limited backup or log copies may remain for a short time."
     ]
   },
   {
@@ -167,6 +173,24 @@ export function createPendingLegalConsentToken(acceptedAt = new Date()) {
   const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString("base64url");
   const signature = signPendingConsentPayload(payloadBase64);
   return `${payloadBase64}.${signature}`;
+}
+
+function readCookieValue(cookieHeader: string | null | undefined, cookieName: string) {
+  if (!cookieHeader) {
+    return null;
+  }
+
+  const cookies = cookieHeader.split(";");
+
+  for (const cookie of cookies) {
+    const [name, ...rest] = cookie.trim().split("=");
+
+    if (name === cookieName) {
+      return rest.join("=") || null;
+    }
+  }
+
+  return null;
 }
 
 export function parsePendingLegalConsentToken(token: string | null | undefined) {
@@ -215,8 +239,26 @@ export function parsePendingLegalConsentToken(token: string | null | undefined) 
   }
 }
 
+export function readPendingLegalConsentFromCookieHeader(cookieHeader: string | null | undefined) {
+  return parsePendingLegalConsentToken(readCookieValue(cookieHeader, LEGAL_CONSENT_COOKIE_NAME));
+}
+
+export function getPendingLegalConsentCookieOptions(maxAge = LEGAL_CONSENT_MAX_AGE_SECONDS) {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    maxAge,
+    path: "/"
+  };
+}
+
+export function createExpiredPendingLegalConsentCookie() {
+  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  return `${LEGAL_CONSENT_COOKIE_NAME}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax${secure}`;
+}
+
 export async function readPendingLegalConsent() {
   const cookieStore = await cookies();
   return parsePendingLegalConsentToken(cookieStore.get(LEGAL_CONSENT_COOKIE_NAME)?.value);
 }
-

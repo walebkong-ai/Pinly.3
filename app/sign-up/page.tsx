@@ -21,7 +21,7 @@ export default async function SignUpPage() {
             <Brand compact />
             <h1 className="mt-10 font-[var(--font-serif)] text-4xl">Build your personal travel memory map.</h1>
             <p className="mt-4 text-sm leading-6 text-[var(--foreground)]/68">
-              Pinly keeps your posts intentional, place-based, and private to accepted friends.
+              Pinly keeps your posts intentional, place-based, and shared according to the visibility settings you choose.
             </p>
             <div className="mt-6 space-y-3">
               {[
