@@ -22,6 +22,7 @@ import { SameLocationSheet } from "@/components/map/same-location-sheet";
 import { WelcomeCard } from "@/components/map/welcome-card";
 import { buildCollectionOverlayFitBoundsTarget, buildResolvedMapCollectionOverlays } from "@/lib/map-collection-overlays";
 import { buildLightweightMapGroups } from "@/lib/map-groups";
+import { cn } from "@/lib/utils";
 import {
   backFromPostPreview,
   canReturnToLocationPreview,
@@ -476,6 +477,40 @@ export function MapPageClient() {
     [mapData.stage]
   );
 
+  function renderFilterControl(panelClassName?: string) {
+    return (
+      <div className={cn("glass-panel flex w-fit items-center rounded-full p-1 shadow-sm", panelClassName)}>
+        <button
+          type="button"
+          onClick={() => setFilterOpen(true)}
+          aria-label="Open filters"
+          className="flex min-h-11 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-[var(--foreground)]/70 transition hover:bg-[var(--foreground)]/5 md:gap-2 md:px-4 md:text-sm"
+        >
+          <Filter className="h-3.5 w-3.5 md:h-4 md:w-4" />
+          <span className="hidden sm:inline">Filters</span>
+          {activeFilterCount > 0 && <span>({activeFilterCount})</span>}
+        </button>
+      </div>
+    );
+  }
+
+  function renderLocationControl(panelClassName?: string) {
+    return (
+      <div className={cn("glass-panel flex w-fit items-center rounded-full p-1 shadow-sm", panelClassName)}>
+        <button
+          type="button"
+          onClick={handleLocateUser}
+          aria-label="Use my current location"
+          disabled={locatingUser}
+          className="flex min-h-11 items-center gap-2 rounded-full px-3 py-2 text-xs font-medium text-[var(--foreground)]/74 transition hover:bg-[var(--foreground)]/5 disabled:cursor-not-allowed disabled:opacity-60 md:px-4 md:text-sm"
+        >
+          {locatingUser ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Crosshair className="h-4 w-4" />}
+          <span className="hidden sm:inline">{locatingUser ? "Locating..." : "Use my location"}</span>
+        </button>
+      </div>
+    );
+  }
+
   function onViewportChange(nextViewport: MapViewport) {
     const nextQueryViewport = canonicalizeViewportForDataQuery(nextViewport);
     const nextFingerprint = createViewportFingerprint(nextQueryViewport);
@@ -686,38 +721,15 @@ export function MapPageClient() {
           </div>
         ) : null}
 
-        {/* Always-visible Filters button — top-left, no zoom gate */}
         {!previewSurfaceOpen && (
-          <div className="pointer-events-auto absolute left-4 top-4 z-10 md:left-5 md:top-5">
-            <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
-              <button
-                type="button"
-                onClick={() => setFilterOpen(true)}
-                aria-label="Open filters"
-                className="flex min-h-11 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-[var(--foreground)]/70 transition hover:bg-[var(--foreground)]/5 md:gap-2 md:px-4 md:text-sm"
-              >
-                <Filter className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                <span className="hidden sm:inline">Filters</span>
-                {activeFilterCount > 0 && <span>({activeFilterCount})</span>}
-              </button>
-            </div>
+          <div className="pointer-events-auto absolute left-4 top-4 z-10 hidden md:block md:left-5 md:top-5">
+            {renderFilterControl()}
           </div>
         )}
 
         {!previewSurfaceOpen && (
-          <div className="pointer-events-auto absolute right-4 top-4 z-10 md:right-5 md:top-5">
-            <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
-              <button
-                type="button"
-                onClick={handleLocateUser}
-                aria-label="Use my current location"
-                disabled={locatingUser}
-                className="flex min-h-11 items-center gap-2 rounded-full px-3 py-2 text-xs font-medium text-[var(--foreground)]/74 transition hover:bg-[var(--foreground)]/5 disabled:cursor-not-allowed disabled:opacity-60 md:px-4 md:text-sm"
-              >
-                {locatingUser ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Crosshair className="h-4 w-4" />}
-                <span className="hidden sm:inline">{locatingUser ? "Locating..." : "Use my location"}</span>
-              </button>
-            </div>
+          <div className="pointer-events-auto absolute right-4 top-4 z-10 hidden md:block md:right-5 md:top-5">
+            {renderLocationControl()}
           </div>
         )}
 
@@ -730,32 +742,38 @@ export function MapPageClient() {
                   <p className="text-sm text-[var(--foreground)]/62">{minimalCopy}</p>
                 </div>
 
-                <div className="pointer-events-auto flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between animate-in fade-in slide-in-from-top-4 duration-500 ease-out">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <div className="relative w-full sm:min-w-[280px] sm:max-w-xl">
-                      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--foreground)]/40" />
-                      <Input
-                        value={query}
-                        onChange={(event) => setQuery(event.target.value)}
-                        placeholder="Search places, cities, countries, people, captions"
-                        className="bg-[var(--surface-strong)] pl-11 pr-11 shadow-sm"
-                      />
-                      {activeSearchQuery ? (
-                        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[var(--foreground)]/40">
-                          {loadingMap ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
-                        </span>
-                      ) : null}
+                <div className="pointer-events-auto flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between animate-in fade-in slide-in-from-top-4 duration-500 ease-out">
+                  <div className="flex w-full max-w-xl flex-col gap-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <div className="relative w-full sm:min-w-[280px] sm:max-w-xl">
+                        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--foreground)]/40" />
+                        <Input
+                          value={query}
+                          onChange={(event) => setQuery(event.target.value)}
+                          placeholder="Search places, cities, countries, people, captions"
+                          className="bg-[var(--surface-strong)] pl-11 pr-11 shadow-sm"
+                        />
+                        {activeSearchQuery ? (
+                          <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[var(--foreground)]/40">
+                            {loadingMap ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {showControls && !collectionsOverlayEnabled ? (
+                          <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
+                            <LayerToggle value={layer} onChange={setLayer} />
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {showControls && !collectionsOverlayEnabled ? (
-                        <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
-                          <LayerToggle value={layer} onChange={setLayer} />
-                        </div>
-                      ) : null}
+                    <div className="flex items-center justify-between gap-3 md:hidden">
+                      {renderFilterControl("max-w-[calc(50%-0.375rem)]")}
+                      {renderLocationControl("ml-auto max-w-[calc(50%-0.375rem)]")}
                     </div>
                   </div>
                   {showControls ? (
-                    <Link href="/create" className="pointer-events-auto">
+                    <Link href="/create" className="pointer-events-auto self-start">
                       <Button className="h-11 gap-2">
                         <Plus className="h-4 w-4" />
                         Add memory

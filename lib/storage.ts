@@ -1,4 +1,3 @@
-import crypto from "node:crypto";
 import {
   buildSupabasePublicMediaUrl,
   createSupabaseUploadClient,
@@ -6,8 +5,7 @@ import {
   getSupabaseUploadKey,
   getSupabaseStorageBucket
 } from "@/lib/supabase-storage";
-
-const DEFAULT_UPLOAD_LIMIT_MB = 4;
+import crypto from "node:crypto";
 
 const uploadMimeTypes = new Map<
   string,
@@ -34,113 +32,16 @@ export class StorageConfigError extends Error {
   }
 }
 
-function isPrivateIpv4Hostname(hostname: string) {
-  if (/^10\./.test(hostname) || /^192\.168\./.test(hostname) || /^127\./.test(hostname)) {
-    return true;
-  }
-
-  const match = hostname.match(/^172\.(\d{1,3})\./);
-
-  if (!match) {
-    return false;
-  }
-
-  const secondOctet = Number(match[1]);
-  return Number.isInteger(secondOctet) && secondOctet >= 16 && secondOctet <= 31;
-}
-
-function isLocalLikeHostname(hostname: string) {
-  const normalized = hostname.trim().toLowerCase();
-
-  if (!normalized) {
-    return false;
-  }
-
-  return (
-    normalized === "localhost" ||
-    normalized === "127.0.0.1" ||
-    normalized === "::1" ||
-    normalized === "[::1]" ||
-    normalized === "host.docker.internal" ||
-    normalized.endsWith(".local") ||
-    isPrivateIpv4Hostname(normalized)
-  );
-}
-
-function hasLocalAppOrigin() {
-  const originCandidates = [
-    process.env.AUTH_URL,
-    process.env.NEXTAUTH_URL,
-    process.env.CAPACITOR_SERVER_URL
-  ];
-
-  for (const candidate of originCandidates) {
-    if (!candidate?.trim()) {
-      continue;
-    }
-
-    try {
-      const parsed = new URL(candidate);
-
-      if (isLocalLikeHostname(parsed.hostname)) {
-        return true;
-      }
-    } catch {
-      // Ignore invalid origin candidates and continue checking the rest.
-    }
-  }
-
-  return false;
-}
-
-function getSupabaseUploadConfigurationError() {
-  try {
-    getSupabasePublicBaseUrl();
-    getSupabaseUploadKey();
-    getSupabaseStorageBucket();
-    return null;
-  } catch (error) {
-    if (error instanceof Error) {
-      return error;
-    }
-
-    return new Error("Supabase media storage is misconfigured.");
-  }
-}
-
-function shouldUseEmbeddedDevelopmentUploads() {
-  if (getSupabaseUploadConfigurationError() === null) {
-    return false;
-  }
-
-  return process.env.NODE_ENV !== "production" || hasLocalAppOrigin();
-}
-
 function normalizeUploadExtension(file: File) {
   const extension = file.name.includes(".") ? file.name.split(".").pop() ?? "bin" : "bin";
   return extension.toLowerCase().replace(/[^a-z0-9]/g, "") || "bin";
 }
 
-function normalizeObjectPathSegment(value: string) {
+function normalizeLocalPathSegment(value: string) {
   return value.trim().replace(/[^a-zA-Z0-9_-]/g, "") || "file";
 }
 
-export function getStorageDriver(): StorageDriver {
-  const configuredValue = (process.env.STORAGE_DRIVER ?? "supabase").trim().toLowerCase();
-
-  if (
-    !configuredValue ||
-    configuredValue === "supabase" ||
-    configuredValue === "local" ||
-    configuredValue === "blob" ||
-    configuredValue === "vercel-blob" ||
-    configuredValue === "vercel_blob"
-  ) {
-    return "supabase";
-  }
-
-  throw new StorageConfigError("Pinly only supports Supabase storage. Remove legacy STORAGE_DRIVER overrides.");
-}
+const DEFAULT_UPLOAD_LIMIT_MB = 50;
 
 export function getMaxUploadSizeBytes() {
   const fallback = DEFAULT_UPLOAD_LIMIT_MB;
@@ -153,27 +54,26 @@ export function getMaxUploadSizeBytes() {
   return megabytes * 1024 * 1024;
 }
 
+export function getStorageDriver(): StorageDriver {
+  return "supabase";
+}
+
 export function assertStorageConfiguration() {
-  getStorageDriver();
-  const configurationError = getSupabaseUploadConfigurationError();
+  getSupabasePublicBaseUrl();
+  getSupabaseUploadKey();
+  getSupabaseStorageBucket();
+}
 
-  if (!configurationError) {
-    return;
-  }
+export function isOwnedLocalUploadUrl(uploadUrl: string, ownerId: string) {
+  return false;
+}
 
-  if (shouldUseEmbeddedDevelopmentUploads()) {
-    return;
-  }
+export function resolveLocalUploadPath(uploadUrl: string) {
+  return null;
+}
 
-  try {
-    throw configurationError;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new StorageConfigError(error.message);
-    }
-
-    throw new StorageConfigError("Supabase media storage is misconfigured.");
-  }
+export function getLocalUploadContentType(uploadUrl: string) {
+  return "application/octet-stream";
 }
 
 export function inferMediaType(file: File) {
@@ -194,17 +94,19 @@ export function inferMediaType(file: File) {
 
 export async function saveFileToSupabase(file: File, options?: { ownerId?: string }) {
   assertStorageConfiguration();
+
   inferMediaType(file);
 
   const extension = normalizeUploadExtension(file);
-  const ownerSegment = options?.ownerId ? normalizeObjectPathSegment(options.ownerId) : "shared";
-  const objectPath = `${ownerSegment}/${crypto.randomUUID()}.${extension}`;
+  const ownerSegment = options?.ownerId ? normalizeLocalPathSegment(options.ownerId) : "shared";
+  const filename = `${ownerSegment}/${crypto.randomUUID()}.${extension}`;
   const bucket = getSupabaseStorageBucket();
   const supabase = createSupabaseUploadClient();
+
   const arrayBuffer = await file.arrayBuffer();
   const uint8Array = new Uint8Array(arrayBuffer);
 
-  const { error } = await supabase.storage.from(bucket).upload(objectPath, uint8Array, {
+  const { error } = await supabase.storage.from(bucket).upload(filename, uint8Array, {
     contentType: file.type || "application/octet-stream",
     upsert: false
   });
@@ -213,21 +115,9 @@ export async function saveFileToSupabase(file: File, options?: { ownerId?: strin
     throw new Error(`Supabase storage upload failed: ${error.message}`);
   }
 
-  return buildSupabasePublicMediaUrl(objectPath, bucket);
-}
-
-async function saveEmbeddedDevelopmentUpload(file: File) {
-  const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
-
-  return `data:${file.type || "application/octet-stream"};base64,${buffer.toString("base64")}`;
+  return buildSupabasePublicMediaUrl(filename, bucket);
 }
 
 export async function saveUploadedFile(file: File, options?: { ownerId?: string }) {
-  if (shouldUseEmbeddedDevelopmentUploads()) {
-    inferMediaType(file);
-    return saveEmbeddedDevelopmentUpload(file);
-  }
-
   return saveFileToSupabase(file, options);
 }

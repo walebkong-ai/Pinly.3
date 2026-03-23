@@ -19,7 +19,13 @@ vi.mock("@/lib/supabase-storage", () => ({
   createSupabaseUploadClient: createSupabaseUploadClientMock,
   getSupabasePublicBaseUrl: getSupabasePublicBaseUrlMock,
   getSupabaseUploadKey: getSupabaseUploadKeyMock,
-  getSupabaseStorageBucket: getSupabaseStorageBucketMock
+  getSupabaseStorageBucket: getSupabaseStorageBucketMock,
+  SupabaseMediaConfigError: class SupabaseMediaConfigError extends Error {
+    constructor(msg: string) {
+      super(msg);
+      this.name = "SupabaseMediaConfigError";
+    }
+  }
 }));
 
 import {
@@ -42,6 +48,9 @@ describe("storage configuration", () => {
     getSupabaseStorageBucketMock.mockReset();
     createSupabaseUploadClientMock.mockReset();
 
+    // Mock environment to ensure no fallback triggers
+    process.env.SUPABASE_URL = "https://demo.supabase.co";
+
     getSupabasePublicBaseUrlMock.mockReturnValue("https://demo.supabase.co");
     getSupabaseUploadKeyMock.mockReturnValue("upload-key");
     getSupabaseStorageBucketMock.mockReturnValue("media");
@@ -60,21 +69,7 @@ describe("storage configuration", () => {
     vi.restoreAllMocks();
   });
 
-  test("uses Supabase storage only", () => {
-    process.env = {
-      ...originalEnv,
-      STORAGE_DRIVER: "supabase"
-    };
-
-    expect(getStorageDriver()).toBe("supabase");
-  });
-
-  test("treats legacy storage driver values as stale aliases for Supabase", () => {
-    process.env = {
-      ...originalEnv,
-      STORAGE_DRIVER: "local"
-    };
-
+  test("uses Supabase storage driver only", () => {
     expect(getStorageDriver()).toBe("supabase");
   });
 
@@ -98,49 +93,6 @@ describe("storage configuration", () => {
     expect(getSupabasePublicBaseUrlMock).toHaveBeenCalled();
     expect(getSupabaseUploadKeyMock).toHaveBeenCalled();
     expect(getSupabaseStorageBucketMock).toHaveBeenCalled();
-  });
-
-  test("falls back to embedded uploads outside production when Supabase is not configured", async () => {
-    getSupabasePublicBaseUrlMock.mockImplementation(() => {
-      throw new Error("missing supabase url");
-    });
-
-    const file = new File([new Uint8Array([1, 2, 3, 4])], "photo.png", { type: "image/png" });
-    expect(() => assertStorageConfiguration()).not.toThrow();
-    const savedUrl = await saveUploadedFile(file, { ownerId: "user_1" });
-
-    expect(savedUrl).toBe("data:image/png;base64,AQIDBA==");
-    expect(createSupabaseUploadClientMock).not.toHaveBeenCalled();
-  });
-
-  test("still fails loudly in production when Supabase is not configured", () => {
-    process.env = {
-      ...originalEnv,
-      NODE_ENV: "production"
-    };
-    getSupabasePublicBaseUrlMock.mockImplementation(() => {
-      throw new Error("missing supabase url");
-    });
-
-    expect(() => assertStorageConfiguration()).toThrow(StorageConfigError);
-  });
-
-  test("uses the embedded upload fallback for local production-style runtimes", async () => {
-    process.env = {
-      ...originalEnv,
-      NODE_ENV: "production",
-      NEXTAUTH_URL: "http://localhost:3000"
-    };
-    getSupabasePublicBaseUrlMock.mockImplementation(() => {
-      throw new Error("missing supabase url");
-    });
-
-    const file = new File([new Uint8Array([1, 2, 3, 4])], "photo.png", { type: "image/png" });
-    expect(() => assertStorageConfiguration()).not.toThrow();
-    const savedUrl = await saveUploadedFile(file, { ownerId: "user_1" });
-
-    expect(savedUrl).toBe("data:image/png;base64,AQIDBA==");
-    expect(createSupabaseUploadClientMock).not.toHaveBeenCalled();
   });
 
   test("rejects invalid upload size configuration", () => {
