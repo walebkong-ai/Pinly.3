@@ -34,6 +34,65 @@ export class StorageConfigError extends Error {
   }
 }
 
+function isPrivateIpv4Hostname(hostname: string) {
+  if (/^10\./.test(hostname) || /^192\.168\./.test(hostname) || /^127\./.test(hostname)) {
+    return true;
+  }
+
+  const match = hostname.match(/^172\.(\d{1,3})\./);
+
+  if (!match) {
+    return false;
+  }
+
+  const secondOctet = Number(match[1]);
+  return Number.isInteger(secondOctet) && secondOctet >= 16 && secondOctet <= 31;
+}
+
+function isLocalLikeHostname(hostname: string) {
+  const normalized = hostname.trim().toLowerCase();
+
+  if (!normalized) {
+    return false;
+  }
+
+  return (
+    normalized === "localhost" ||
+    normalized === "127.0.0.1" ||
+    normalized === "::1" ||
+    normalized === "[::1]" ||
+    normalized === "host.docker.internal" ||
+    normalized.endsWith(".local") ||
+    isPrivateIpv4Hostname(normalized)
+  );
+}
+
+function hasLocalAppOrigin() {
+  const originCandidates = [
+    process.env.AUTH_URL,
+    process.env.NEXTAUTH_URL,
+    process.env.CAPACITOR_SERVER_URL
+  ];
+
+  for (const candidate of originCandidates) {
+    if (!candidate?.trim()) {
+      continue;
+    }
+
+    try {
+      const parsed = new URL(candidate);
+
+      if (isLocalLikeHostname(parsed.hostname)) {
+        return true;
+      }
+    } catch {
+      // Ignore invalid origin candidates and continue checking the rest.
+    }
+  }
+
+  return false;
+}
+
 function getSupabaseUploadConfigurationError() {
   try {
     getSupabasePublicBaseUrl();
@@ -50,7 +109,11 @@ function getSupabaseUploadConfigurationError() {
 }
 
 function shouldUseEmbeddedDevelopmentUploads() {
-  return process.env.NODE_ENV !== "production" && getSupabaseUploadConfigurationError() !== null;
+  if (getSupabaseUploadConfigurationError() === null) {
+    return false;
+  }
+
+  return process.env.NODE_ENV !== "production" || hasLocalAppOrigin();
 }
 
 function normalizeUploadExtension(file: File) {

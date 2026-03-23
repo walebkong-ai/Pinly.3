@@ -125,6 +125,24 @@ describe("storage configuration", () => {
     expect(() => assertStorageConfiguration()).toThrow(StorageConfigError);
   });
 
+  test("uses the embedded upload fallback for local production-style runtimes", async () => {
+    process.env = {
+      ...originalEnv,
+      NODE_ENV: "production",
+      NEXTAUTH_URL: "http://localhost:3000"
+    };
+    getSupabasePublicBaseUrlMock.mockImplementation(() => {
+      throw new Error("missing supabase url");
+    });
+
+    const file = new File([new Uint8Array([1, 2, 3, 4])], "photo.png", { type: "image/png" });
+    expect(() => assertStorageConfiguration()).not.toThrow();
+    const savedUrl = await saveUploadedFile(file, { ownerId: "user_1" });
+
+    expect(savedUrl).toBe("data:image/png;base64,AQIDBA==");
+    expect(createSupabaseUploadClientMock).not.toHaveBeenCalled();
+  });
+
   test("rejects invalid upload size configuration", () => {
     process.env = {
       ...originalEnv,
