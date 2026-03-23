@@ -71,6 +71,51 @@ export type DemoProvisionPrisma = {
   };
 };
 
+type DemoResetPrisma = DemoProvisionPrisma & {
+  rateLimitEvent: {
+    deleteMany: (...args: any[]) => Promise<unknown>;
+  };
+  passwordResetToken: {
+    deleteMany: (...args: any[]) => Promise<unknown>;
+  };
+  group: {
+    deleteMany: (...args: any[]) => Promise<unknown>;
+  };
+  friendRequest: DemoProvisionPrisma["friendRequest"] & {
+    deleteMany: (...args: any[]) => Promise<unknown>;
+  };
+  friendship: DemoProvisionPrisma["friendship"] & {
+    deleteMany: (...args: any[]) => Promise<unknown>;
+  };
+  post: DemoProvisionPrisma["post"] & {
+    deleteMany: (...args: any[]) => Promise<unknown>;
+  };
+  user: DemoProvisionPrisma["user"] & {
+    deleteMany: (...args: any[]) => Promise<unknown>;
+  };
+};
+
+function resolveDemoPostMedia(index: number, mediaType: "IMAGE" | "VIDEO") {
+  if (process.env.PINLY_E2E_MODE === "1") {
+    return {
+      mediaType: MediaType.IMAGE,
+      mediaUrl: "/logo.png",
+      thumbnailUrl: null
+    };
+  }
+
+  const seedIndex = index + 1;
+
+  return {
+    mediaType: mediaType === "VIDEO" ? MediaType.VIDEO : MediaType.IMAGE,
+    mediaUrl:
+      mediaType === "IMAGE"
+        ? `https://picsum.photos/seed/pinly-${seedIndex}/1200/900`
+        : "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+    thumbnailUrl: mediaType === "VIDEO" ? `https://picsum.photos/seed/pinly-video-${seedIndex}/1200/900` : null
+  };
+}
+
 export async function ensureDemoDataset(prisma: DemoProvisionPrisma) {
   const passwordHash = await hash(DEMO_PASSWORD, 10);
   const legalAcceptance = createLegalAcceptanceRecord(new Date("2026-03-21T00:00:00.000Z"));
@@ -187,16 +232,13 @@ export async function ensureDemoDataset(prisma: DemoProvisionPrisma) {
     }
 
     const seedIndex = index + 1;
+    const resolvedMedia = resolveDemoPostMedia(index, mediaType);
     await prisma.post.create({
       data: {
         userId: user.id,
-        mediaType: mediaType === "VIDEO" ? MediaType.VIDEO : MediaType.IMAGE,
-        mediaUrl:
-          mediaType === "IMAGE"
-            ? `https://picsum.photos/seed/pinly-${seedIndex}/1200/900`
-            : "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-        thumbnailUrl:
-          mediaType === "VIDEO" ? `https://picsum.photos/seed/pinly-video-${seedIndex}/1200/900` : null,
+        mediaType: resolvedMedia.mediaType,
+        mediaUrl: resolvedMedia.mediaUrl,
+        thumbnailUrl: resolvedMedia.thumbnailUrl,
         caption,
         placeName,
         city,
@@ -208,4 +250,15 @@ export async function ensureDemoDataset(prisma: DemoProvisionPrisma) {
       }
     });
   }
+}
+
+export async function resetDemoDataset(prisma: DemoResetPrisma) {
+  await prisma.rateLimitEvent.deleteMany();
+  await prisma.passwordResetToken.deleteMany();
+  await prisma.group.deleteMany();
+  await prisma.friendRequest.deleteMany();
+  await prisma.friendship.deleteMany();
+  await prisma.post.deleteMany();
+  await prisma.user.deleteMany();
+  await ensureDemoDataset(prisma);
 }

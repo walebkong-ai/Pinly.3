@@ -64,6 +64,11 @@ export const friendRequestActionSchema = z.object({
   action: z.enum(["accept", "decline"])
 });
 
+export const pushTokenSchema = z.object({
+  token: z.string().trim().min(20).max(4096),
+  platform: z.enum(["ios", "android"])
+});
+
 export const uploadUrlSchema = z.object({
   mediaUrl: z.string().min(1),
   mediaType: z.enum(["IMAGE", "VIDEO"]),

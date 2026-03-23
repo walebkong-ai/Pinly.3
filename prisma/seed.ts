@@ -1,12 +1,15 @@
 import { PrismaClient } from "@prisma/client";
 import { pathToFileURL } from "node:url";
-import { ensureDemoDataset } from "../lib/demo-data";
+import { resetDemoDataset } from "../lib/demo-data";
 
 const prisma = new PrismaClient();
 const SEED_CONFIRMATION_TOKEN = "pinly-demo";
 
-export function assertSafeSeedEnvironment(databaseUrl = process.env.DIRECT_URL ?? process.env.DATABASE_URL ?? "") {
-  if (process.env.NODE_ENV === "production") {
+export function assertSafeSeedEnvironment(
+  databaseUrl = process.env.DIRECT_URL ?? process.env.DATABASE_URL ?? "",
+  options?: { allowProduction?: boolean }
+) {
+  if (process.env.NODE_ENV === "production" && !options?.allowProduction) {
     throw new Error("Refusing to run the demo seed while NODE_ENV=production.");
   }
 
@@ -27,13 +30,7 @@ export function assertSafeSeedEnvironment(databaseUrl = process.env.DIRECT_URL ?
 
 async function main() {
   assertSafeSeedEnvironment();
-
-  await prisma.rateLimitEvent.deleteMany();
-  await prisma.friendRequest.deleteMany();
-  await prisma.friendship.deleteMany();
-  await prisma.post.deleteMany();
-  await prisma.user.deleteMany();
-  await ensureDemoDataset(prisma);
+  await resetDemoDataset(prisma);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

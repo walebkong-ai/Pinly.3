@@ -20,6 +20,23 @@ describe("map style helpers", () => {
     ).toBe(DEFAULT_MAP_STYLE_URL);
   });
 
+  test("uses a blank in-process style for e2e builds", () => {
+    const previous = process.env.NEXT_PUBLIC_E2E_MAP_STYLE;
+    process.env.NEXT_PUBLIC_E2E_MAP_STYLE = "blank";
+
+    const mapStyle = getMapStyle({
+      mode: "default"
+    });
+
+    expect(mapStyle).toMatchObject({
+      version: 8,
+      name: "Pinly E2E Blank",
+      layers: [{ id: "pinly-e2e-background", type: "background" }]
+    });
+
+    process.env.NEXT_PUBLIC_E2E_MAP_STYLE = previous;
+  });
+
   test("reports satellite mode availability for the built-in fallback and keyed providers", () => {
     expect(isSatelliteModeAvailable("")).toBe(true);
     expect(isSatelliteModeAvailable("   ")).toBe(true);

@@ -14,7 +14,12 @@ export function OfflineBanner() {
   }
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-0 z-[1100] flex justify-center px-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+    <div
+      data-testid="offline-banner"
+      role="status"
+      aria-live="polite"
+      className="pointer-events-none fixed inset-x-0 top-0 z-[1100] flex justify-center px-3 pt-[max(0.75rem,env(safe-area-inset-top))]"
+    >
       <div className="pointer-events-auto flex w-full max-w-xl items-center gap-3 rounded-[1.5rem] border bg-[rgba(24,85,56,0.94)] px-4 py-3 text-[var(--background)] shadow-[0_20px_40px_rgba(24,85,56,0.22)] backdrop-blur">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/12">
           <WifiOff className="h-5 w-5" />

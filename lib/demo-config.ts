@@ -41,6 +41,10 @@ export const DEFAULT_DEMO_USER_EMAIL = DEFAULT_DEMO_USER.email;
 const demoEmails = new Set<string>(DEMO_USERS.map((user) => user.email));
 
 export function getDemoAvatarUrl(seed: string) {
+  if (process.env.PINLY_E2E_MODE === "1") {
+    return "/pinly-globe-icon.svg";
+  }
+
   return `https://api.dicebear.com/9.x/thumbs/svg?seed=${seed}`;
 }
 

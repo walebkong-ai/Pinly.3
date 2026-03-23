@@ -34,6 +34,14 @@ vi.mock("@/components/brand", () => ({
   Brand: () => <span>Brand</span>
 }));
 
+vi.mock("@/components/app/screen-transition", () => ({
+  ScreenTransition: ({ children }: { children: React.ReactNode }) => <>{children}</>
+}));
+
+vi.mock("@/components/push/native-push-manager", () => ({
+  NativePushManager: () => null
+}));
+
 vi.mock("@/components/sign-out-button", () => ({
   SignOutButton: () => <button type="button">Sign out</button>
 }));

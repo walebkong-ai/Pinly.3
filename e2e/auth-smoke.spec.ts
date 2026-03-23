@@ -1,4 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { resetDemoAppState } from "./helpers/test-state";
+
+test.beforeEach(async ({ request }) => {
+  await resetDemoAppState(request);
+});
 
 test("landing page exposes the demo entry point", async ({ page }) => {
   await page.goto("/");

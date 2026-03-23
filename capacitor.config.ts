@@ -1,3 +1,5 @@
+/// <reference types="@capacitor-firebase/messaging" />
+
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const serverUrl = process.env.CAPACITOR_SERVER_URL;
@@ -41,6 +43,9 @@ const config: CapacitorConfig = {
     StatusBar: {
       style: "DARK",
       backgroundColor: "#FCECDA"
+    },
+    FirebaseMessaging: {
+      presentationOptions: ["alert", "badge", "sound"]
     }
   }
 };

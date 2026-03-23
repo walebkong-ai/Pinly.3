@@ -4,10 +4,13 @@ import React, { type CSSProperties, useCallback, useEffect, useRef, useState } f
 import Link from "next/link";
 import { Bell, Map, Newspaper, Plus, Search, Settings, UserRound, UsersRound, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { ScreenTransition } from "@/components/app/screen-transition";
 import { Avatar } from "@/components/ui/avatar";
 import { Brand } from "@/components/brand";
+import { NativePushManager } from "@/components/push/native-push-manager";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ProfileLink } from "@/components/profile/profile-link";
+import { triggerLightImpact } from "@/lib/native-haptics";
 import { MESSAGES_UPDATED_EVENT, NOTIFICATIONS_UPDATED_EVENT } from "@/lib/notification-events";
 import { cn } from "@/lib/utils";
 
@@ -145,6 +148,7 @@ export function AppShell({
 
   return (
     <div className="min-h-screen px-2 pb-[calc(var(--safe-area-bottom)+5.5rem)] pt-[max(0.5rem,var(--safe-area-top))] md:px-6 md:pb-8 md:pt-[max(1rem,var(--safe-area-top))]">
+      <NativePushManager />
       <header className="glass-panel sticky top-[max(0.5rem,var(--safe-area-top))] z-[940] mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3 rounded-2xl px-3 py-2 md:rounded-[2rem] md:gap-4 md:px-4 md:py-3">
         <div className="flex items-center gap-4">
           <Brand compact />
@@ -155,11 +159,14 @@ export function AppShell({
                 href={href}
                 aria-current={isNavActive(pathname, href) ? "page" : undefined}
                 className={cn(
-                  "relative inline-flex min-h-11 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
+                  "pinly-pressable relative inline-flex min-h-11 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
                   isNavActive(pathname, href)
                     ? "z-10 bg-[var(--foreground)] text-[var(--background)] shadow-sm"
                     : "bg-[var(--surface-soft)] text-[var(--foreground)]/72 hover:bg-[var(--surface-strong)]"
                 )}
+                onClick={() => {
+                  void triggerLightImpact();
+                }}
               >
                 <Icon className="relative z-20 h-4 w-4" />
                 <span className="relative z-20">{label}</span>
@@ -177,11 +184,14 @@ export function AppShell({
                 href={resolvedHref}
                 aria-current={isNavActive(pathname, resolvedHref) ? "page" : undefined}
                 className={cn(
-                  "relative inline-flex min-h-11 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
+                  "pinly-pressable relative inline-flex min-h-11 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
                   isNavActive(pathname, resolvedHref)
                     ? "z-10 bg-[var(--foreground)] text-[var(--background)] shadow-sm"
                     : "text-[var(--foreground)]/70 hover:bg-[var(--surface-soft)]"
                 )}
+                onClick={() => {
+                  void triggerLightImpact();
+                }}
               >
                 <div className="relative">
                   <Icon className="relative z-20 h-4 w-4" />
@@ -203,12 +213,15 @@ export function AppShell({
             aria-label="Notifications"
             aria-current={notificationsActive ? "page" : undefined}
             className={cn(
-              "relative inline-flex h-11 w-11 items-center justify-center rounded-2xl border transition-[background-color,border-color,box-shadow]",
+              "pinly-pressable relative inline-flex h-11 w-11 items-center justify-center rounded-2xl border transition-[background-color,border-color,box-shadow]",
               notificationsActive
                 ? "shadow-[0_14px_30px_rgba(24,85,56,0.22)]"
                 : "border-[rgba(24,85,56,0.08)] bg-[var(--surface-soft)] text-[var(--foreground)] hover:bg-[var(--surface-strong)]"
             )}
             style={notificationButtonStyle}
+            onClick={() => {
+              void triggerLightImpact();
+            }}
           >
             <span
               aria-hidden="true"
@@ -251,7 +264,7 @@ export function AppShell({
           pathname === "/map" ? "max-w-[1700px]" : "max-w-[1500px]"
         )}
       >
-        {children}
+        <ScreenTransition>{children}</ScreenTransition>
       </main>
 
       <nav className="glass-panel fixed inset-x-2 bottom-[max(0.5rem,var(--safe-area-bottom))] z-[950] flex items-center justify-between rounded-[1.75rem] px-2 py-2 md:hidden">
@@ -263,11 +276,14 @@ export function AppShell({
               href={resolvedHref}
               aria-current={isNavActive(pathname, resolvedHref) ? "page" : undefined}
               className={cn(
-                "flex min-h-11 min-w-[3.25rem] flex-col items-center justify-center gap-1 rounded-[1.15rem] px-2 py-1.5 text-[10px] font-medium transition sm:px-3 sm:text-[11px]",
+                "pinly-pressable flex min-h-11 min-w-[3.25rem] flex-col items-center justify-center gap-1 rounded-[1.15rem] px-2 py-1.5 text-[10px] font-medium transition sm:px-3 sm:text-[11px]",
                 isNavActive(pathname, resolvedHref)
                   ? "bg-[rgba(24,85,56,0.08)] text-[var(--foreground)]"
                   : "text-[var(--foreground)]/58 hover:bg-[var(--foreground)]/5"
               )}
+              onClick={() => {
+                void triggerLightImpact();
+              }}
             >
               <div className="relative">
                 <Icon className="h-4 w-4" />

@@ -9,16 +9,18 @@ export function NoConnectionCard({
   message,
   retryLabel = "Retry",
   onRetry,
-  className
+  className,
+  testId
 }: {
   title?: string;
   message: string;
   retryLabel?: string;
   onRetry?: () => void;
   className?: string;
+  testId?: string;
 }) {
   return (
-    <div className={cn("glass-panel rounded-[1.75rem] p-5 text-left", className)}>
+    <div data-testid={testId} className={cn("glass-panel rounded-[1.75rem] p-5 text-left", className)}>
       <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[rgba(24,85,56,0.08)] text-[var(--foreground)]">
         <WifiOff className="h-5 w-5" />
       </div>

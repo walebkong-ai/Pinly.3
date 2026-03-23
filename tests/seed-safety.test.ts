@@ -16,6 +16,22 @@ describe("seed safety", () => {
     process.env.NODE_ENV = previousNodeEnv;
   });
 
+  test("allows explicit e2e resets against a local database in production mode", () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+
+    // @ts-expect-error
+    process.env.NODE_ENV = "production";
+
+    expect(() =>
+      assertSafeSeedEnvironment("postgresql://postgres:postgres@localhost:5432/pinly?schema=public", {
+        allowProduction: true
+      })
+    ).not.toThrow();
+
+    // @ts-expect-error
+    process.env.NODE_ENV = previousNodeEnv;
+  });
+
   test("blocks non-local seeding without explicit confirmation", () => {
     const previousConfirmation = process.env.ALLOW_DESTRUCTIVE_SEED;
 

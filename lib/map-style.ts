@@ -8,6 +8,21 @@ export const ARCGIS_WORLD_IMAGERY_TILE_URL = "https://services.arcgisonline.com/
 export const ARCGIS_WORLD_IMAGERY_ATTRIBUTION = "Source: Esri, Vantor, Earthstar Geographics, and the GIS User Community";
 export type MapStyleValue = string | StyleSpecification;
 
+const BLANK_E2E_MAP_STYLE = {
+  version: 8,
+  name: "Pinly E2E Blank",
+  sources: {},
+  layers: [
+    {
+      id: "pinly-e2e-background",
+      type: "background",
+      paint: {
+        "background-color": "#f3ecdf"
+      }
+    }
+  ]
+} satisfies StyleSpecification;
+
 export function isSatelliteModeAvailable(_apiKey?: string | null) {
   return true;
 }
@@ -27,6 +42,10 @@ export function getMapStyle({
   mode: MapVisualMode;
   satelliteApiKey?: string | null;
 }): MapStyleValue {
+  if (process.env.NEXT_PUBLIC_E2E_MAP_STYLE === "blank") {
+    return BLANK_E2E_MAP_STYLE;
+  }
+
   if (mode !== "satellite" || !isSatelliteModeAvailable(satelliteApiKey)) {
     return DEFAULT_MAP_STYLE_URL;
   }

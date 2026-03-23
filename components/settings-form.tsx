@@ -1,13 +1,15 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LoaderCircle, Settings2, Upload } from "lucide-react";
+import { BellRing, LoaderCircle, Settings2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { AvatarPhotoEditor } from "@/components/profile/avatar-photo-editor";
+import { isNativePlatform } from "@/lib/native-platform";
+import { PINLY_PUSH_OPEN_PROMPT_EVENT } from "@/lib/push-notifications";
 
 type SettingsFormProps = {
   initialProfile: {
@@ -30,6 +32,11 @@ export function SettingsForm({ initialProfile, initialSettings }: SettingsFormPr
   const [savingKey, setSavingKey] = useState<"likes" | "comments" | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
+  const [showNativePushSettings, setShowNativePushSettings] = useState(false);
+
+  useEffect(() => {
+    setShowNativePushSettings(isNativePlatform());
+  }, []);
 
   async function saveSettings(
     updates: { showLikeCounts?: boolean; commentsEnabled?: boolean },
@@ -184,6 +191,29 @@ export function SettingsForm({ initialProfile, initialSettings }: SettingsFormPr
       </section>
 
       <section className="space-y-4">
+        {showNativePushSettings ? (
+          <div className="flex items-center justify-between rounded-2xl border bg-[var(--surface-soft)] p-4">
+            <div className="pr-4">
+              <div className="flex items-center gap-2">
+                <BellRing className="h-4 w-4 text-[var(--social-accent)]" />
+                <p className="text-sm font-medium">Push notifications</p>
+              </div>
+              <p className="mt-1 text-xs text-[var(--foreground)]/55">
+                Likes, comments, shares, and friend updates can open straight into the app.
+              </p>
+            </div>
+            <Button
+              variant="secondary"
+              className="h-11 shrink-0"
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent(PINLY_PUSH_OPEN_PROMPT_EVENT));
+              }}
+            >
+              Manage
+            </Button>
+          </div>
+        ) : null}
+
         <div className="flex items-center justify-between rounded-2xl border bg-[var(--surface-soft)] p-4">
           <div className="pr-4">
             <p className="text-sm font-medium">Show like counts</p>

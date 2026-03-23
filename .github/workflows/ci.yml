@@ -16,10 +16,12 @@ jobs:
       AUTH_SECRET: ci-auth-secret
       AUTH_URL: http://127.0.0.1:3000
       BLOB_ACCESS_MODE: private
-      BLOB_READ_WRITE_TOKEN: ci-blob-token
+      BLOB_READ_WRITE_TOKEN: ""
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/pinly?schema=public
       DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:5432/pinly?schema=public
       NEXTAUTH_URL: http://127.0.0.1:3000
+      STORAGE_DRIVER: local
+      UPLOAD_DIR: public/uploads
     steps:
       - uses: actions/checkout@v4
 
@@ -65,10 +67,15 @@ jobs:
       AUTH_SECRET: ci-auth-secret
       AUTH_URL: http://127.0.0.1:3000
       BLOB_ACCESS_MODE: private
-      BLOB_READ_WRITE_TOKEN: ci-blob-token
+      BLOB_READ_WRITE_TOKEN: ""
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/pinly?schema=public
       DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:5432/pinly?schema=public
       NEXTAUTH_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_E2E_MAP_STYLE: blank
+      PINLY_E2E_MODE: "1"
+      PINLY_E2E_SECRET: ci-e2e-secret
+      STORAGE_DRIVER: local
+      UPLOAD_DIR: public/uploads
     steps:
       - uses: actions/checkout@v4
 

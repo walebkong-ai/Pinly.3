@@ -525,7 +525,7 @@ export function CreatePostForm() {
   }
 
   return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
+    <div data-testid="create-post-form" className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
       {showFirstMemoryGuide ? (
         <section className="glass-panel rounded-[2rem] p-5">
           <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">First memory</p>
@@ -552,6 +552,7 @@ export function CreatePostForm() {
 
       {!isOnline ? (
         <NoConnectionCard
+          testId="create-offline-card"
           title="You're offline"
           message="You can still pin coordinates, add your caption, and review this screen, but media upload, place search, and publishing need a connection."
         />
@@ -738,6 +739,7 @@ export function CreatePostForm() {
 
               {(locationFeedback || hasFiniteCoordinates(latitude, longitude)) && (
                 <div
+                  data-testid="create-selected-location"
                   className={`mt-4 rounded-[1.5rem] border px-4 py-3 ${
                     locationFeedback?.tone === "error"
                       ? "border-rose-200 bg-rose-50/80"

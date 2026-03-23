@@ -1,0 +1,4 @@
+project_id = "pinly"
+
+[functions.send-push-notification]
+verify_jwt = false

@@ -51,6 +51,58 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+.pinly-pressable {
+  transform: translateZ(0);
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease,
+    box-shadow 220ms ease,
+    background-color 220ms ease,
+    border-color 220ms ease,
+    color 220ms ease;
+}
+
+.pinly-pressable:active {
+  transform: scale(0.985);
+  opacity: 0.92;
+}
+
+.pinly-screen-transition {
+  will-change: transform, opacity;
+}
+
+.pinly-screen-transition--screen {
+  animation: pinly-screen-enter 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pinly-screen-transition--detail {
+  animation: pinly-screen-enter-detail 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pinly-dialog-overlay[data-state="open"] {
+  animation: pinly-fade-in 180ms ease-out;
+}
+
+.pinly-dialog-overlay[data-state="closed"] {
+  animation: pinly-fade-out 150ms ease-in;
+}
+
+.pinly-dialog-content[data-state="open"] {
+  animation: pinly-dialog-enter 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pinly-dialog-content[data-state="closed"] {
+  animation: pinly-dialog-exit 160ms ease-in;
+}
+
+.pinly-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, rgba(24, 85, 56, 0.08), rgba(255, 255, 255, 0.48), rgba(24, 85, 56, 0.08));
+  background-size: 200% 100%;
+  animation: pinly-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -303,14 +355,106 @@ a {
   }
 }
 
+@keyframes pinly-screen-enter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes pinly-screen-enter-detail {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.992);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes pinly-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pinly-fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes pinly-dialog-enter {
+  0% {
+    opacity: 0;
+    transform: translate3d(-50%, calc(-50% + 18px), 0) scale(0.98);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(-50%, -50%, 0) scale(1);
+  }
+}
+
+@keyframes pinly-dialog-exit {
+  0% {
+    opacity: 1;
+    transform: translate3d(-50%, -50%, 0) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(-50%, calc(-50% + 12px), 0) scale(0.985);
+  }
+}
+
+@keyframes pinly-skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
 
   .landing-hero-globe,
-  .pinly-user-location-marker::after {
+  .pinly-user-location-marker::after,
+  .pinly-screen-transition--screen,
+  .pinly-screen-transition--detail,
+  .pinly-dialog-overlay[data-state],
+  .pinly-dialog-content[data-state],
+  .pinly-skeleton {
     animation: none;
+  }
+
+  .pinly-pressable {
+    transition: none;
+  }
+
+  .pinly-pressable:active {
+    transform: none;
+    opacity: 1;
   }
 }
 
