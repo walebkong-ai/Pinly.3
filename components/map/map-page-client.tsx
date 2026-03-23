@@ -10,6 +10,7 @@ import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BottomSheet } from "@/components/map/bottom-sheet";
+import { MapErrorBoundary } from "@/components/map/map-error-boundary";
 import { CityContextPanel } from "@/components/map/city-context-panel";
 import { FilterSidebar } from "@/components/map/filter-sidebar";
 import { FriendActivityPanel } from "@/components/map/friend-activity-panel";
@@ -543,6 +544,7 @@ export function MapPageClient() {
 
   return (
     <section className="relative isolate min-h-[calc(100vh-7.5rem)] overflow-hidden rounded-[2.2rem] border bg-[var(--surface-soft)] shadow-2xl shadow-black/5">
+      <MapErrorBoundary>
       <DynamicMapCanvas
         markers={mapData.markers}
         mapMode={activeMapMode}
@@ -577,6 +579,7 @@ export function MapPageClient() {
         onMapError={handleMapError}
         onViewportChange={onViewportChange}
       />
+      </MapErrorBoundary>
 
       <div className="pointer-events-none absolute inset-0 z-[700]">
         {/* Always-visible Filters button — top-left, no zoom gate */}

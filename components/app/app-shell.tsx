@@ -252,7 +252,7 @@ export function AppShell({
         {children}
       </main>
 
-      <nav className="glass-panel fixed inset-x-2 bottom-2 z-[950] flex items-center justify-between rounded-full px-2 py-1.5 md:hidden">
+      <nav className="glass-panel fixed inset-x-2 bottom-2 z-[950] flex items-center justify-between rounded-full px-2 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] md:hidden">
         {[...primaryNavItems, ...secondaryNavItems.filter((item) => item.href !== "/cities" && item.href !== "/settings")].map(({ href, label, icon: Icon }) => {
           const resolvedHref = href === "/profile/me" ? `/profile/${user.username}` : href;
           return (

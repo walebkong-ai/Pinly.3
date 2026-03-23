@@ -88,6 +88,12 @@ export function SignInForm() {
   }
 
   const handleDemoSignIn = useCallback(async () => {
+    // Ensure demo data exists before attempting sign-in
+    try {
+      await fetch("/api/demo/seed", { method: "POST" });
+    } catch {
+      // Proceed with sign-in anyway — seed endpoint may not be available
+    }
     await signInWithEmail(DEFAULT_DEMO_USER_EMAIL, DEMO_PASSWORD, "demo");
   }, [signInWithEmail]);
 

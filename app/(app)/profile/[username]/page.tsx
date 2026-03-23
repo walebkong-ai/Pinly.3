@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
+import { AlertTriangle, RotateCcw } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getVisibleCollectionsForUser, getProfileData } from "@/lib/data";
@@ -46,28 +48,68 @@ export default async function ProfilePage({ params }: Props) {
     resolvedUsername = dbUser.username;
   }
 
-  const [profile, settings] = await Promise.all([
-    getProfileData(resolvedUsername, session.user.id),
-    getViewerProfileSettings(session.user.id)
-  ]);
+  try {
+    const [profile, settings] = await Promise.all([
+      getProfileData(resolvedUsername, session.user.id),
+      getViewerProfileSettings(session.user.id)
+    ]);
 
-  if (!profile) {
-    notFound();
+    if (!profile) {
+      notFound();
+    }
+
+    const isOwnProfile = profile.user.id === session.user.id;
+    const [collections, relationship] = await Promise.all([
+      getVisibleCollectionsForUser(session.user.id, profile.user.id, 6),
+      getRelationshipDetails(session.user.id, profile.user.id)
+    ]);
+
+    return (
+      <ProfileView
+        profile={profile}
+        isOwnProfile={isOwnProfile}
+        showLikeCounts={settings?.showLikeCounts ?? true}
+        collections={collections}
+        relationship={relationship}
+      />
+    );
+  } catch (error) {
+    if (isPrismaSchemaNotReadyError(error)) {
+      // Fall through to error card below
+    } else {
+      // Re-throw unexpected errors to Next.js error boundary unless it's a data-layer issue
+      const message = error instanceof Error ? error.message : "";
+      const isDataError =
+        message.includes("prisma") ||
+        message.includes("ECONNREFUSED") ||
+        message.includes("timeout") ||
+        message.includes("connect");
+
+      if (!isDataError) {
+        throw error;
+      }
+    }
+
+    return (
+      <div className="mx-auto max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
+        <div className="rounded-[1.75rem] border bg-[var(--surface-strong)] p-6 text-center space-y-4">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--surface-soft)]">
+            <AlertTriangle className="h-6 w-6 text-[var(--foreground)]/60" />
+          </div>
+          <h2 className="font-[var(--font-serif)] text-xl">Could not load profile</h2>
+          <p className="text-sm leading-6 text-[var(--foreground)]/60">
+            Something went wrong while loading this profile. Please try again.
+          </p>
+          <Link
+            href={`/profile/${resolvedUsername}`}
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Reload
+          </Link>
+        </div>
+      </div>
+    );
   }
-
-  const isOwnProfile = profile.user.id === session.user.id;
-  const [collections, relationship] = await Promise.all([
-    getVisibleCollectionsForUser(session.user.id, profile.user.id, 6),
-    getRelationshipDetails(session.user.id, profile.user.id)
-  ]);
-
-  return (
-    <ProfileView
-      profile={profile}
-      isOwnProfile={isOwnProfile}
-      showLikeCounts={settings?.showLikeCounts ?? true}
-      collections={collections}
-      relationship={relationship}
-    />
-  );
 }
+
