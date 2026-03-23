@@ -5,6 +5,9 @@ import Image from "next/image";
 import { Heart, ImageOff } from "lucide-react";
 import { cn, getMediaProxyUrl } from "@/lib/utils";
 
+const failedMediaUrls = new Set<string>();
+const failedThumbnailUrls = new Set<string>();
+
 export const MediaView = memo(function MediaView({
   mediaType,
   mediaUrl,
@@ -24,9 +27,10 @@ export const MediaView = memo(function MediaView({
 }) {
   const proxyUrl = getMediaProxyUrl(mediaUrl);
   const proxyThumb = getMediaProxyUrl(thumbnailUrl);
-  const previewUrl = proxyThumb && proxyThumb !== proxyUrl ? proxyThumb : "";
+  const previewUrl =
+    proxyThumb && proxyThumb !== proxyUrl && !failedThumbnailUrls.has(proxyThumb) ? proxyThumb : "";
   const [loaded, setLoaded] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState(() => (proxyUrl ? failedMediaUrls.has(proxyUrl) : false));
   const [showHeart, setShowHeart] = useState(false);
   const lastTapRef = useRef(0);
   const hideHeartTimeoutRef = useRef<number | null>(null);
@@ -34,7 +38,7 @@ export const MediaView = memo(function MediaView({
 
   useEffect(() => {
     setLoaded(false);
-    setFailed(false);
+    setFailed(proxyUrl ? failedMediaUrls.has(proxyUrl) : false);
     lastTapRef.current = 0;
     setShowHeart(false);
 
@@ -114,6 +118,7 @@ export const MediaView = memo(function MediaView({
           poster={proxyThumb || undefined}
           preload={videoPreload}
           onError={() => {
+            failedMediaUrls.add(proxyUrl);
             console.error("[media-view] Video failed to load", {
               postId: postId ?? null,
               mediaType,
@@ -171,7 +176,10 @@ export const MediaView = memo(function MediaView({
             "object-cover transition-[opacity,transform,filter] duration-500 ease-out",
             loaded ? "scale-[1.04] opacity-0 blur-md" : "scale-100 opacity-100 blur-0"
           )}
-          onError={() => setLoaded(true)}
+          onError={() => {
+            failedThumbnailUrls.add(previewUrl);
+            setLoaded(true);
+          }}
         />
       ) : null}
       <Image
@@ -184,6 +192,7 @@ export const MediaView = memo(function MediaView({
         fetchPriority={priority ? "high" : undefined}
         onLoad={() => setLoaded(true)}
         onError={() => {
+          failedMediaUrls.add(proxyUrl);
           console.error("[media-view] Image failed to load", {
             postId: postId ?? null,
             mediaType,

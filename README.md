@@ -114,6 +114,7 @@ The deployed demo no longer depends on running the destructive seed script in pr
 - `ALLOW_DESTRUCTIVE_SEED`: leave unset locally; only use `pinly-demo` for intentional demo/staging reseeds
 - `PINLY_DEMO_AVATAR_URL`, `PINLY_DEMO_IMAGE_URL`, `PINLY_DEMO_VIDEO_URL`, `PINLY_DEMO_VIDEO_THUMBNAIL_URL`: optional Supabase-hosted demo media used when seeding sample content; if blank, Pinly falls back to bundled `/demo-media/...` assets
 - `PINLY_FALLBACK_AVATAR_URL`, `PINLY_FALLBACK_IMAGE_URL`, `PINLY_FALLBACK_VIDEO_URL`, `PINLY_FALLBACK_VIDEO_THUMBNAIL_URL`: optional Supabase-hosted fallbacks used by `npm run media:repair` before Pinly falls back to bundled demo assets
+- `ALLOW_REMOTE_MEDIA_MIGRATION`: optional safety token required before `npm run media:migrate:legacy -- --apply` will update a non-local database
 
 ## Useful commands
 ```bash
@@ -122,6 +123,8 @@ npm run build
 npm run type-check
 npm run test
 npm run e2e
+npm run media:audit:legacy
+npm run media:migrate:legacy -- --limit=10
 npm run prisma:push
 npm run prisma:migrate:deploy
 npm run prisma:seed
@@ -134,6 +137,7 @@ python3 tools/check_env.py
 - Map queries are bounds-based and zoom-aware so the client only asks for relevant staged markers.
 - City discovery reuses the same protected visibility rules as the map.
 - Uploads use Supabase Storage in every environment; non-Supabase media is treated as legacy data and should be repaired with `npm run media:repair`.
+- Recoverable legacy Vercel Blob, Dicebear, Picsum, and MDN media can be audited with `npm run media:audit:legacy` and re-hosted into the current Supabase bucket with `npm run media:migrate:legacy -- --apply`.
 - Prisma migrations are checked into `prisma/migrations/` so `prisma migrate deploy` can safely bootstrap production PostgreSQL in deployment environments.
 - Rate limiting is database-backed by default so auth, upload, and write-heavy routes stay protected across serverless instances.
 - Lightweight groups are currently friend-backed filter options and are intentionally structured to support a future persistent group model without changing the map flow.

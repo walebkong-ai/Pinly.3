@@ -13,6 +13,8 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "media:repair": "tsx scripts/repair-media-storage.ts --apply",
+    "media:audit:legacy": "tsx scripts/migrate-legacy-media.ts",
+    "media:migrate:legacy": "tsx scripts/migrate-legacy-media.ts --apply",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",

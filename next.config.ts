@@ -11,10 +11,10 @@ const securityHeaders = [
       "object-src 'none'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://services.arcgisonline.com https://*.supabase.co",
-      "media-src 'self' data: blob: https://*.supabase.co",
+      "img-src 'self' data: blob: https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://services.arcgisonline.com https://*.supabase.co https://*.public.blob.vercel-storage.com https://api.dicebear.com https://picsum.photos https://fastly.picsum.photos",
+      "media-src 'self' data: blob: https://*.supabase.co https://*.public.blob.vercel-storage.com https://interactive-examples.mdn.mozilla.net",
       "font-src 'self' data:",
-      "connect-src 'self' capacitor: https://api.maptiler.com https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://nominatim.openstreetmap.org https://services.arcgisonline.com https://*.supabase.co",
+      "connect-src 'self' capacitor: https://api.maptiler.com https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://nominatim.openstreetmap.org https://services.arcgisonline.com https://*.supabase.co https://*.public.blob.vercel-storage.com https://api.dicebear.com https://picsum.photos https://fastly.picsum.photos https://interactive-examples.mdn.mozilla.net",
       "worker-src 'self' blob:",
       "frame-src 'none'",
       "upgrade-insecure-requests"
@@ -61,6 +61,22 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "*.supabase.co"
+      },
+      {
+        protocol: "https",
+        hostname: "*.public.blob.vercel-storage.com"
+      },
+      {
+        protocol: "https",
+        hostname: "api.dicebear.com"
+      },
+      {
+        protocol: "https",
+        hostname: "picsum.photos"
+      },
+      {
+        protocol: "https",
+        hostname: "fastly.picsum.photos"
       }
     ]
   }

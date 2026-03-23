@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { cn, getProfileImageUrl } from "@/lib/utils";
 
+const failedAvatarUrls = new Set<string>();
+
 export function Avatar({
   name,
   src,
@@ -14,10 +16,10 @@ export function Avatar({
   className?: string;
 }) {
   const normalizedUrl = getProfileImageUrl(src);
-  const [imageFailed, setImageFailed] = useState(false);
+  const [imageFailed, setImageFailed] = useState(() => (normalizedUrl ? failedAvatarUrls.has(normalizedUrl) : false));
 
   useEffect(() => {
-    setImageFailed(false);
+    setImageFailed(normalizedUrl ? failedAvatarUrls.has(normalizedUrl) : false);
   }, [normalizedUrl]);
 
   useEffect(() => {
@@ -43,6 +45,7 @@ export function Avatar({
           fill
           className="object-cover"
           onError={() => {
+            failedAvatarUrls.add(imageUrl);
             console.error("[avatar] Avatar failed to load", {
               name,
               resolvedAvatarUrl: imageUrl
