@@ -1,7 +1,10 @@
 import {
   buildSupabasePublicMediaUrl,
+  getSupabaseClientPublicBaseUrl,
+  getSupabasePublicAnonKey,
   createSupabaseUploadClient,
   getSupabasePublicBaseUrl,
+  getSupabaseRuntimeDiagnostics,
   getSupabaseUploadKey,
   getSupabaseStorageBucket
 } from "@/lib/supabase-storage";
@@ -32,6 +35,10 @@ export class StorageConfigError extends Error {
   }
 }
 
+function shouldLogStorageDiagnostics() {
+  return process.env.NODE_ENV !== "test";
+}
+
 function normalizeUploadExtension(file: File) {
   const extension = file.name.includes(".") ? file.name.split(".").pop() ?? "bin" : "bin";
   return extension.toLowerCase().replace(/[^a-z0-9]/g, "") || "bin";
@@ -60,6 +67,8 @@ export function getStorageDriver(): StorageDriver {
 
 export function assertStorageConfiguration() {
   try {
+    getSupabaseClientPublicBaseUrl();
+    getSupabasePublicAnonKey();
     getSupabasePublicBaseUrl();
     getSupabaseUploadKey();
     getSupabaseStorageBucket();
@@ -105,7 +114,26 @@ export async function saveFileToSupabase(file: File, options?: { ownerId?: strin
   const ownerSegment = options?.ownerId ? normalizeLocalPathSegment(options.ownerId) : "shared";
   const filename = `${ownerSegment}/${crypto.randomUUID()}.${extension}`;
   const bucket = getSupabaseStorageBucket();
+  const diagnostics = getSupabaseRuntimeDiagnostics();
+
+  if (shouldLogStorageDiagnostics()) {
+    console.info("[storage] Initializing Supabase upload client", {
+      NEXT_PUBLIC_SUPABASE_URL: diagnostics.nextPublicSupabaseUrl,
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: diagnostics.nextPublicSupabaseAnonKey,
+      hasSupabaseServiceRoleKey: diagnostics.hasSupabaseServiceRoleKey,
+      uploadKeySource: diagnostics.uploadKeySource,
+      bucket
+    });
+  }
+
   const supabase = createSupabaseUploadClient();
+
+  if (shouldLogStorageDiagnostics()) {
+    console.info("[storage] Supabase upload client initialized", {
+      bucket,
+      uploadKeySource: diagnostics.uploadKeySource
+    });
+  }
 
   const arrayBuffer = await file.arrayBuffer();
   const uint8Array = new Uint8Array(arrayBuffer);
@@ -116,6 +144,14 @@ export async function saveFileToSupabase(file: File, options?: { ownerId?: strin
   });
 
   if (error) {
+    if (shouldLogStorageDiagnostics()) {
+      console.error("[storage] Supabase upload failed", {
+        bucket,
+        filename,
+        message: error.message,
+        statusCode: "statusCode" in error ? error.statusCode : null
+      });
+    }
     throw new Error(`Supabase storage upload failed: ${error.message}`);
   }
 

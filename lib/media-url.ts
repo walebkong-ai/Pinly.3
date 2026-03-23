@@ -7,6 +7,32 @@ const EMBEDDED_MEDIA_DATA_URL_PATTERN =
   /^data:(image\/(?:avif|gif|jpeg|png|webp)|video\/(?:mp4|quicktime|webm));base64,[a-z0-9+/]+=*$/i;
 const EMBEDDED_IMAGE_DATA_URL_PATTERN =
   /^data:image\/(?:avif|gif|jpeg|png|webp);base64,[a-z0-9+/]+=*$/i;
+const warnedMediaResolutions = new Set<string>();
+
+function warnMediaResolution(kind: "post-media" | "avatar", rawValue: string | null | undefined, resolvedValue: string | null) {
+  if (process.env.NODE_ENV === "test") {
+    return;
+  }
+
+  const trimmed = rawValue?.trim();
+
+  if (!trimmed) {
+    return;
+  }
+
+  const warningKey = `${kind}:${trimmed}:${resolvedValue ?? "null"}`;
+
+  if (warnedMediaResolutions.has(warningKey)) {
+    return;
+  }
+
+  warnedMediaResolutions.add(warningKey);
+  console.warn("[media-url] Falling back from a legacy or invalid media value", {
+    kind,
+    rawValue: trimmed,
+    resolvedValue
+  });
+}
 
 function normalizeAppPath(value: string | null | undefined) {
   if (!value) {
@@ -68,13 +94,16 @@ export function normalizeRenderableStoredMediaUrl(value: string | null | undefin
   }
 
   if (appPath === LEGACY_MEDIA_PLACEHOLDER_URL) {
+    warnMediaResolution("post-media", value, LEGACY_MEDIA_PLACEHOLDER_URL);
     return LEGACY_MEDIA_PLACEHOLDER_URL;
   }
 
   if (appPath.startsWith("/uploads/") && LEGACY_IMAGE_UPLOAD_EXTENSION.test(appPath)) {
+    warnMediaResolution("post-media", value, LEGACY_MEDIA_PLACEHOLDER_URL);
     return LEGACY_MEDIA_PLACEHOLDER_URL;
   }
 
+  warnMediaResolution("post-media", value, null);
   return null;
 }
 
@@ -92,9 +121,11 @@ export function normalizeRenderableProfileImageUrl(value: string | null | undefi
   }
 
   if (appPath === LEGACY_AVATAR_PLACEHOLDER_URL) {
+    warnMediaResolution("avatar", value, LEGACY_AVATAR_PLACEHOLDER_URL);
     return LEGACY_AVATAR_PLACEHOLDER_URL;
   }
 
+  warnMediaResolution("avatar", value, null);
   return null;
 }
 

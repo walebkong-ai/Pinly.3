@@ -45,6 +45,21 @@ export const MediaView = memo(function MediaView({
   }, [mediaType, postId, proxyThumb, proxyUrl]);
 
   useEffect(() => {
+    if (process.env.NODE_ENV === "test") {
+      return;
+    }
+
+    console.info("[media-view] Resolved media URL", {
+      postId: postId ?? null,
+      mediaType,
+      rawMediaUrl: mediaUrl,
+      rawThumbnailUrl: thumbnailUrl ?? null,
+      resolvedMediaUrl: proxyUrl || null,
+      resolvedThumbnailUrl: proxyThumb || null
+    });
+  }, [mediaType, mediaUrl, postId, proxyThumb, proxyUrl, thumbnailUrl]);
+
+  useEffect(() => {
     return () => {
       if (hideHeartTimeoutRef.current !== null) {
         window.clearTimeout(hideHeartTimeoutRef.current);
@@ -98,7 +113,15 @@ export const MediaView = memo(function MediaView({
           playsInline
           poster={proxyThumb || undefined}
           preload={videoPreload}
-          onError={() => setFailed(true)}
+          onError={() => {
+            console.error("[media-view] Video failed to load", {
+              postId: postId ?? null,
+              mediaType,
+              resolvedMediaUrl: proxyUrl || null,
+              resolvedThumbnailUrl: proxyThumb || null
+            });
+            setFailed(true);
+          }}
         >
           <source src={proxyUrl} />
         </video>
@@ -161,6 +184,12 @@ export const MediaView = memo(function MediaView({
         fetchPriority={priority ? "high" : undefined}
         onLoad={() => setLoaded(true)}
         onError={() => {
+          console.error("[media-view] Image failed to load", {
+            postId: postId ?? null,
+            mediaType,
+            resolvedMediaUrl: proxyUrl || null,
+            resolvedThumbnailUrl: proxyThumb || null
+          });
           setFailed(true);
           setLoaded(true);
         }}

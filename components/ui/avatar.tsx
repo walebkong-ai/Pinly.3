@@ -20,6 +20,18 @@ export function Avatar({
     setImageFailed(false);
   }, [normalizedUrl]);
 
+  useEffect(() => {
+    if (process.env.NODE_ENV === "test") {
+      return;
+    }
+
+    console.info("[avatar] Resolved avatar URL", {
+      name,
+      rawAvatarUrl: src ?? null,
+      resolvedAvatarUrl: normalizedUrl || null
+    });
+  }, [name, normalizedUrl, src]);
+
   const imageUrl = imageFailed ? "" : normalizedUrl;
 
   if (imageUrl) {
@@ -30,7 +42,13 @@ export function Avatar({
           alt={name}
           fill
           className="object-cover"
-          onError={() => setImageFailed(true)}
+          onError={() => {
+            console.error("[avatar] Avatar failed to load", {
+              name,
+              resolvedAvatarUrl: imageUrl
+            });
+            setImageFailed(true);
+          }}
         />
       </div>
     );

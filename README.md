@@ -79,7 +79,7 @@ npm run prisma:seed
 ```bash
 npm run dev
 ```
-7. If you want to test uploads locally, add real `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_STORAGE_BUCKET` values. Pinly now uploads directly to Supabase Storage in every environment.
+7. If you want to test uploads locally, add real `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_STORAGE_BUCKET` values. Pinly now uploads directly to Supabase Storage in every environment, and the server upload path requires the service role key.
 
 ## Demo accounts
 After seeding, sign in with any of these and password `password123`:
@@ -102,7 +102,9 @@ The deployed demo no longer depends on running the destructive seed script in pr
 - `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED`: optional fallback to show Google button in UI (`true`/`false`)
 - `NEXT_PUBLIC_MAPTILER_API_KEY`: optional, switches the satellite basemap to MapTiler; when unset, the app falls back to Esri World Imagery
 - `NEXT_PUBLIC_SUPABASE_URL`: public Supabase project URL used for rendering media
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: public Supabase anon key compiled into the web/native runtime for diagnostics and future client-side integrations
 - `SUPABASE_URL`: optional server override for the same Supabase project URL
+- `SUPABASE_ANON_KEY`: optional server-side mirror of the anon key for diagnostics; do not use this for uploads
 - `SUPABASE_SERVICE_ROLE_KEY`: required for uploads and Supabase media cleanup
 - `SUPABASE_STORAGE_BUCKET`: public storage bucket name for Pinly media, defaults to `media`
 - `MAX_UPLOAD_SIZE_MB`: upload cap, keep this at `4` for Vercel server uploads

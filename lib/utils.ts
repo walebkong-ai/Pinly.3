@@ -5,6 +5,27 @@ import {
   normalizeRenderableStoredMediaUrl
 } from "@/lib/media-url";
 
+const loggedResolvedUrls = new Set<string>();
+
+function logResolvedUrl(kind: "media" | "avatar", rawValue: string | null | undefined, resolvedValue: string | null) {
+  if (typeof window === "undefined" || process.env.NODE_ENV === "test") {
+    return;
+  }
+
+  const logKey = `${kind}:${rawValue ?? "null"}:${resolvedValue ?? "null"}`;
+
+  if (loggedResolvedUrls.has(logKey)) {
+    return;
+  }
+
+  loggedResolvedUrls.add(logKey);
+  console.info("[media-utils] Resolved render URL", {
+    kind,
+    rawValue: rawValue ?? null,
+    resolvedValue
+  });
+}
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -32,9 +53,13 @@ export function parseCitySlug(slug: string) {
 }
 
 export function getMediaProxyUrl(url: string | null | undefined): string {
-  return normalizeRenderableStoredMediaUrl(url) ?? "";
+  const resolvedUrl = normalizeRenderableStoredMediaUrl(url) ?? "";
+  logResolvedUrl("media", url, resolvedUrl || null);
+  return resolvedUrl;
 }
 
 export function getProfileImageUrl(url: string | null | undefined): string {
-  return normalizeRenderableProfileImageUrl(url) ?? "";
+  const resolvedUrl = normalizeRenderableProfileImageUrl(url) ?? "";
+  logResolvedUrl("avatar", url, resolvedUrl || null);
+  return resolvedUrl;
 }

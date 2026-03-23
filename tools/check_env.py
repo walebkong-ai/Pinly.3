@@ -27,7 +27,7 @@ def check_required() -> Dict[str, str]:
 def check_database_socket() -> str:
     url = os.environ.get("DATABASE_URL")
     if not url:
-      return "DATABASE_URL missing"
+        return "DATABASE_URL missing"
 
     parsed = urlparse(url)
     host = parsed.hostname
@@ -50,9 +50,11 @@ def main() -> None:
         print(f"{key}: {status}")
 
     supabase_url_status = "set" if os.environ.get("SUPABASE_URL") or os.environ.get("NEXT_PUBLIC_SUPABASE_URL") else "missing"
+    supabase_anon_status = "set" if os.environ.get("SUPABASE_ANON_KEY") or os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY") else "missing"
     supabase_service_role_status = "set" if os.environ.get("SUPABASE_SERVICE_ROLE_KEY") else "missing"
     print("UPLOAD_BACKEND: supabase")
     print(f"SUPABASE_URL_OR_NEXT_PUBLIC_SUPABASE_URL: {supabase_url_status}")
+    print(f"SUPABASE_ANON_KEY_OR_NEXT_PUBLIC_SUPABASE_ANON_KEY: {supabase_anon_status}")
     print(f"SUPABASE_SERVICE_ROLE_KEY: {supabase_service_role_status}")
     print(f"SUPABASE_STORAGE_BUCKET: {os.environ.get('SUPABASE_STORAGE_BUCKET', 'media')}")
 

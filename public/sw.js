@@ -1,29 +1,71 @@
+const serviceWorkerUrl = new URL(self.location.href);
+const SERVICE_WORKER_VERSION = serviceWorkerUrl.searchParams.get("v") || "pinly-sw";
+const CACHE_PREFIX = "pinly-runtime";
+const CACHE_NAME = `${CACHE_PREFIX}-${SERVICE_WORKER_VERSION}`;
+
+async function clearOutdatedCaches() {
+  const cacheNames = await caches.keys();
+  await Promise.all(
+    cacheNames
+      .filter((cacheName) => cacheName !== CACHE_NAME)
+      .map((cacheName) => caches.delete(cacheName))
+  );
+}
+
 self.addEventListener("install", (event) => {
-  event.waitUntil(self.skipWaiting());
+  event.waitUntil(
+    (async () => {
+      await caches.open(CACHE_NAME);
+      await self.skipWaiting();
+    })()
+  );
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    (async () => {
+      await clearOutdatedCaches();
+      await self.clients.claim();
+    })()
+  );
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "PINLY_SKIP_WAITING") {
+    void self.skipWaiting();
+    return;
+  }
+
+  if (event.data?.type === "PINLY_CLEAR_CACHES") {
+    void clearOutdatedCaches();
+  }
 });
 
 self.addEventListener("fetch", (event) => {
-  const url = new URL(event.request.url);
+  const request = event.request;
+  const url = new URL(request.url);
 
-  // Fix 1: NEVER intercept or break image requests
-  if (event.request.destination === "image") {
-    // User requested logic
-    return event.respondWith(fetch(event.request));
+  if (request.method !== "GET") {
+    return;
   }
 
-  // Fix 2: NEVER interfere with Supabase Storage and uploads
-  if (url.hostname.endsWith("supabase.co") || event.request.method === "POST" || url.pathname.startsWith("/api/uploads")) {
-    return; // Pass through natively to bypass Safari SW bugs with FormData
+  if (url.origin !== self.location.origin) {
+    return;
   }
 
-  // Fallback for everything else
+  if (request.mode !== "navigate") {
+    return;
+  }
+
   event.respondWith(
-    fetch(event.request).catch(() => {
-      return new Response("You are offline.", { status: 503 });
+    fetch(request).catch(() => {
+      return new Response("You are offline.", {
+        status: 503,
+        headers: {
+          "Cache-Control": "no-store",
+          "Content-Type": "text/plain; charset=utf-8"
+        }
+      });
     })
   );
 });

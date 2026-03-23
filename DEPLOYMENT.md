@@ -13,8 +13,12 @@ Pinly is ready to deploy on Vercel with PostgreSQL and Prisma. This document cov
   - Production app URL, same value as `NEXTAUTH_URL`
 - `NEXT_PUBLIC_SUPABASE_URL`
   - Public Supabase project URL used for rendering media
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - Public Supabase anon key compiled into the web/native runtime
 - `SUPABASE_URL`
   - Server-side Supabase project URL used for uploads
+- `SUPABASE_ANON_KEY`
+  - Optional server-side mirror of the anon key for diagnostics only
 - `SUPABASE_SERVICE_ROLE_KEY`
   - Supabase service role key for uploads and media cleanup
 
@@ -66,7 +70,7 @@ This repo now includes a checked-in baseline migration under `prisma/migrations/
 2. Import the repo into Vercel.
 3. Add the required environment variables.
 4. Create or connect a public Supabase Storage bucket for Pinly media.
-5. Set `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_STORAGE_BUCKET`.
+5. Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_STORAGE_BUCKET`.
 6. Set the build command to the default project build or leave it blank so Vercel uses `npm run build`.
 7. Run `npm run prisma:migrate:deploy` against the production database before first launch.
 8. Deploy.
@@ -89,6 +93,7 @@ If enabling Google auth, configure OAuth redirect URIs in Google Cloud:
 - [ ] `AUTH_SECRET` set
 - [ ] `AUTH_URL` set to production domain
 - [ ] `NEXT_PUBLIC_SUPABASE_URL` set
+- [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY` set
 - [ ] `SUPABASE_URL` set
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` set
 - [ ] `SUPABASE_STORAGE_BUCKET` set

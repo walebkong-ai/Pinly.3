@@ -8,6 +8,7 @@ This runbook is for the first real Pinly deployment on Vercel with Neon Postgres
 - [ ] `AUTH_SECRET` is a strong random secret
 - [ ] `NEXTAUTH_URL` matches the production domain
 - [ ] `NEXT_PUBLIC_SUPABASE_URL` is set
+- [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY` is set
 - [ ] `SUPABASE_URL` is set
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` is set
 - [ ] `SUPABASE_STORAGE_BUCKET=media` (or your chosen public bucket)
@@ -58,7 +59,7 @@ This runbook is for the first real Pinly deployment on Vercel with Neon Postgres
 - Re-run `npm run prisma:migrate:deploy` after the corrected migration is committed.
 
 ### Upload failures
-- Check `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET`, and `MAX_UPLOAD_SIZE_MB`.
+- Check `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET`, and `MAX_UPLOAD_SIZE_MB`.
 - If uploads suddenly fail in production, verify that Supabase Storage is reachable, the bucket is public, and the service role key has not been rotated or removed.
 - If needed, roll back to the previous Vercel deployment while keeping the database unchanged.
 

@@ -369,6 +369,12 @@ export function CreatePostForm() {
           data?.code === "UPLOAD_STORAGE_MISCONFIGURED"
             ? "Uploads need Supabase storage configured for this environment."
             : data?.error ?? "Upload failed.";
+        console.error("[create-post] Upload failed", {
+          status: response.status,
+          code: data?.code ?? null,
+          error: data?.error ?? null,
+          details: data?.details ?? null
+        });
         setUploadError(message);
         if (data?.code !== "UPLOAD_STORAGE_MISCONFIGURED") {
           toast.error(message);
@@ -388,6 +394,14 @@ export function CreatePostForm() {
         toast.error("Upload returned an invalid media URL.");
         return;
       }
+
+      console.info("[create-post] Upload succeeded", {
+        mediaType: data.mediaType,
+        rawMediaUrl: data?.mediaUrl ?? null,
+        rawThumbnailUrl: data?.thumbnailUrl ?? null,
+        normalizedMediaUrl: mediaUrl,
+        normalizedThumbnailUrl: thumbnailUrl
+      });
 
       setUploadState({
         mediaUrl,

@@ -3,6 +3,7 @@ import { StorageConfigError, assertStorageConfiguration, getMaxUploadSizeBytes, 
 import { apiError } from "@/lib/api";
 import { normalizeStoredMediaUrl } from "@/lib/media-url";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { getSupabaseRuntimeDiagnostics } from "@/lib/supabase-storage";
 import type { NextRequest } from "next/server";
 
 export const runtime = "nodejs";
@@ -45,6 +46,19 @@ export async function POST(request: NextRequest) {
   }
 
   let maxSize = 0;
+  const supabaseDiagnostics = getSupabaseRuntimeDiagnostics();
+
+  console.info("[uploads] Validating Supabase runtime before upload", {
+    NEXT_PUBLIC_SUPABASE_URL: supabaseDiagnostics.nextPublicSupabaseUrl,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: supabaseDiagnostics.nextPublicSupabaseAnonKey,
+    hasNextPublicSupabaseUrl: supabaseDiagnostics.hasNextPublicSupabaseUrl,
+    hasNextPublicSupabaseAnonKey: supabaseDiagnostics.hasNextPublicSupabaseAnonKey,
+    hasServerSupabaseUrl: supabaseDiagnostics.hasServerSupabaseUrl,
+    hasServerSupabaseAnonKey: supabaseDiagnostics.hasServerSupabaseAnonKey,
+    hasSupabaseServiceRoleKey: supabaseDiagnostics.hasSupabaseServiceRoleKey,
+    storageBucket: supabaseDiagnostics.storageBucket,
+    uploadKeySource: supabaseDiagnostics.uploadKeySource
+  });
 
   try {
     assertStorageConfiguration();
@@ -73,6 +87,12 @@ export async function POST(request: NextRequest) {
     const mediaType = inferMediaType(file);
     const savedMediaUrl = await saveUploadedFile(file, { ownerId: token.id });
     const mediaUrl = normalizeStoredMediaUrl(savedMediaUrl);
+
+    console.info("[uploads] Supabase upload returned media URL", {
+      mediaType,
+      savedMediaUrl,
+      normalizedMediaUrl: mediaUrl
+    });
 
     if (!mediaUrl) {
       throw new Error("Upload storage returned a non-Supabase media URL.");
