@@ -59,9 +59,13 @@ export function getStorageDriver(): StorageDriver {
 }
 
 export function assertStorageConfiguration() {
-  getSupabasePublicBaseUrl();
-  getSupabaseUploadKey();
-  getSupabaseStorageBucket();
+  try {
+    getSupabasePublicBaseUrl();
+    getSupabaseUploadKey();
+    getSupabaseStorageBucket();
+  } catch (error: any) {
+    throw new StorageConfigError(error?.message || "Unknown storage configuration error");
+  }
 }
 
 export function isOwnedLocalUploadUrl(uploadUrl: string, ownerId: string) {

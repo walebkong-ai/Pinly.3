@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     assertStorageConfiguration();
     maxSize = getMaxUploadSizeBytes();
   } catch (error) {
-    if (error instanceof StorageConfigError) {
+    if (error instanceof Error && error.name === "StorageConfigError") {
       return apiError("Upload storage is misconfigured.", 500, {
         code: "UPLOAD_STORAGE_MISCONFIGURED",
         details: error.message
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (error instanceof StorageConfigError) {
+    if (error instanceof Error && error.name === "StorageConfigError") {
       return apiError("Upload storage is misconfigured.", 500, {
         code: "UPLOAD_STORAGE_MISCONFIGURED",
         details: error.message
