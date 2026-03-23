@@ -11,10 +11,10 @@ const securityHeaders = [
       "object-src 'none'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://api.dicebear.com https://interactive-examples.mdn.mozilla.net https://lh3.googleusercontent.com https://picsum.photos https://fastly.picsum.photos https://public.blob.vercel-storage.com https://*.blob.vercel-storage.com https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://services.arcgisonline.com",
-      "media-src 'self' blob: https://interactive-examples.mdn.mozilla.net https://public.blob.vercel-storage.com https://*.blob.vercel-storage.com",
+      "img-src 'self' data: blob: https://api.dicebear.com https://interactive-examples.mdn.mozilla.net https://lh3.googleusercontent.com https://picsum.photos https://fastly.picsum.photos https://public.blob.vercel-storage.com https://*.blob.vercel-storage.com https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://services.arcgisonline.com https://*.supabase.co",
+      "media-src 'self' blob: https://interactive-examples.mdn.mozilla.net https://public.blob.vercel-storage.com https://*.blob.vercel-storage.com https://*.supabase.co",
       "font-src 'self' data:",
-      "connect-src 'self' capacitor: https://api.maptiler.com https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://nominatim.openstreetmap.org https://services.arcgisonline.com",
+      "connect-src 'self' capacitor: https://api.maptiler.com https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://nominatim.openstreetmap.org https://services.arcgisonline.com https://*.supabase.co",
       "worker-src 'self' blob:",
       "frame-src 'none'",
       "upgrade-insecure-requests"
@@ -98,6 +98,10 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "**.blob.vercel-storage.com"
+      },
+      {
+        protocol: "https",
+        hostname: "*.supabase.co"
       }
     ]
   }

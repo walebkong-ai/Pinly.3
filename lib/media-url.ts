@@ -1,4 +1,5 @@
 const BLOB_HOST_SUFFIX = ".blob.vercel-storage.com";
+const SUPABASE_HOST_SUFFIX = ".supabase.co";
 const LOCAL_MEDIA_PATH_PREFIX = "/uploads/";
 
 const ALLOWED_EXTERNAL_AVATAR_HOSTNAMES = new Set([
@@ -37,6 +38,14 @@ export function isAllowedBlobHostname(hostname: string) {
   return hostname === "public.blob.vercel-storage.com" || hostname.endsWith(BLOB_HOST_SUFFIX);
 }
 
+export function isAllowedSupabaseHostname(hostname: string) {
+  return hostname.endsWith(SUPABASE_HOST_SUFFIX);
+}
+
+export function isAllowedMediaHostname(hostname: string) {
+  return isAllowedBlobHostname(hostname) || isAllowedSupabaseHostname(hostname);
+}
+
 export function isAllowedLocalMediaPath(value: string | null | undefined): value is string {
   return typeof value === "string" && normalizeRelativePath(value) !== null;
 }
@@ -52,7 +61,7 @@ export function normalizeStoredMediaUrl(value: string | null | undefined) {
 
   const parsed = normalizeHttpsUrl(value);
 
-  if (!parsed || !isAllowedBlobHostname(parsed.hostname)) {
+  if (!parsed || !isAllowedMediaHostname(parsed.hostname)) {
     return null;
   }
 
@@ -85,5 +94,16 @@ export function shouldProxyMediaUrl(value: string | null | undefined) {
   }
 
   const parsed = normalizeHttpsUrl(value);
-  return Boolean(parsed && isAllowedBlobHostname(parsed.hostname));
+
+  if (!parsed) {
+    return false;
+  }
+
+  // Supabase public CDN URLs are served directly — no proxy needed
+  if (isAllowedSupabaseHostname(parsed.hostname)) {
+    return false;
+  }
+
+  // Vercel Blob private URLs need proxying through /api/media for auth
+  return isAllowedBlobHostname(parsed.hostname);
 }

@@ -1,4 +1,5 @@
 import { put } from "@vercel/blob";
+import { createClient } from "@supabase/supabase-js";
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -33,7 +34,7 @@ const uploadMimeTypes = new Map<
   ["video/quicktime", { mediaType: "VIDEO", extensions: ["mov", "qt"] }]
 ]);
 
-export type StorageDriver = "local" | "vercel-blob";
+export type StorageDriver = "local" | "vercel-blob" | "supabase";
 
 export class StorageConfigError extends Error {
   constructor(message: string) {
@@ -63,14 +64,18 @@ export function getStorageDriver(): StorageDriver {
   const configuredValue = (process.env.STORAGE_DRIVER ?? "").trim().toLowerCase();
 
   if (!configuredValue) {
+    // Auto-detect: prefer supabase if env vars present, then vercel-blob, then local
+    if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return "supabase";
+    }
     return process.env.BLOB_READ_WRITE_TOKEN ? "vercel-blob" : "local";
   }
 
-  if (configuredValue === "local" || configuredValue === "vercel-blob") {
+  if (configuredValue === "local" || configuredValue === "vercel-blob" || configuredValue === "supabase") {
     return configuredValue;
   }
 
-  throw new StorageConfigError("STORAGE_DRIVER must be either 'local' or 'vercel-blob'.");
+  throw new StorageConfigError("STORAGE_DRIVER must be 'local', 'vercel-blob', or 'supabase'.");
 }
 
 export function getMaxUploadSizeBytes() {
@@ -85,13 +90,27 @@ export function getMaxUploadSizeBytes() {
 }
 
 export function assertStorageConfiguration() {
-  if (getStorageDriver() === "local") {
+  const driver = getStorageDriver();
+
+  if (driver === "local") {
     getLocalUploadDirectory();
     return;
   }
 
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    throw new StorageConfigError("STORAGE_DRIVER=vercel-blob requires BLOB_READ_WRITE_TOKEN.");
+  if (driver === "vercel-blob") {
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      throw new StorageConfigError("STORAGE_DRIVER=vercel-blob requires BLOB_READ_WRITE_TOKEN.");
+    }
+    return;
+  }
+
+  if (driver === "supabase") {
+    if (!process.env.SUPABASE_URL) {
+      throw new StorageConfigError("STORAGE_DRIVER=supabase requires SUPABASE_URL.");
+    }
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      throw new StorageConfigError("STORAGE_DRIVER=supabase requires SUPABASE_SERVICE_ROLE_KEY.");
+    }
   }
 }
 
@@ -218,10 +237,50 @@ export async function saveFileToLocalDisk(file: File, options?: { ownerId?: stri
   return pathSegments.join("/");
 }
 
+export async function saveFileToSupabase(file: File, options?: { ownerId?: string }) {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new StorageConfigError("STORAGE_DRIVER=supabase requires SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.");
+  }
+
+  inferMediaType(file);
+
+  const extension = normalizeUploadExtension(file);
+  const ownerSegment = options?.ownerId ? normalizeLocalPathSegment(options.ownerId) : "shared";
+  const filename = `${ownerSegment}/${crypto.randomUUID()}.${extension}`;
+  const bucket = process.env.SUPABASE_STORAGE_BUCKET ?? "media";
+
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false }
+  });
+
+  const arrayBuffer = await file.arrayBuffer();
+  const uint8Array = new Uint8Array(arrayBuffer);
+
+  const { error } = await supabase.storage.from(bucket).upload(filename, uint8Array, {
+    contentType: file.type || "application/octet-stream",
+    upsert: false
+  });
+
+  if (error) {
+    throw new Error(`Supabase storage upload failed: ${error.message}`);
+  }
+
+  // Return the public CDN URL — no auth proxy needed for public buckets
+  return `${supabaseUrl}/storage/v1/object/public/${bucket}/${filename}`;
+}
+
 export async function saveUploadedFile(file: File, options?: { ownerId?: string }) {
   assertStorageConfiguration();
+  const driver = getStorageDriver();
 
-  if (getStorageDriver() === "local") {
+  if (driver === "supabase") {
+    return saveFileToSupabase(file, options);
+  }
+
+  if (driver === "local") {
     return saveFileToLocalDisk(file, options);
   }
 
