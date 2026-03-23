@@ -215,10 +215,10 @@ async function enforceDatabaseRateLimit({
 
     return null;
   } catch (error) {
-    if (process.env.NODE_ENV !== "production" && isPrismaSchemaNotReadyError(error)) {
+    if (isPrismaSchemaNotReadyError(error)) {
       if (!hasLoggedDevelopmentFallback) {
         console.warn(
-          "Rate limit database table is not ready yet. Falling back to the in-memory limiter outside production until migrations are applied."
+          "Rate limit database table is not ready yet. Falling back to the in-memory limiter until migrations are applied."
         );
         hasLoggedDevelopmentFallback = true;
       }

@@ -28,6 +28,17 @@ enum NotificationType {
   FRIEND_REQUEST_ACCEPTED
 }
 
+enum ReportCategory {
+  SPAM
+  HARASSMENT
+  HATE_OR_ABUSE
+  NUDITY_OR_SEXUAL_CONTENT
+  VIOLENCE_OR_DANGEROUS
+  IMPERSONATION
+  PRIVACY_CONCERN
+  OTHER
+}
+
 enum CollectionVisibility {
   public
   friends
@@ -122,6 +133,7 @@ model Post {
   saves             SavedPost[]
   comments          Comment[]
   notifications     Notification[]
+  reports           Report[]
 
   @@index([userId, createdAt])
   @@index([userId, visitedAt])
@@ -359,11 +371,17 @@ model Report {
   id         String   @id @default(cuid())
   reporterId String
   reportedId String
+  postId     String?
+  category   ReportCategory @default(OTHER)
   reason     String?  @db.Text
+  dedupeKey  String?  @unique
   createdAt  DateTime @default(now())
   reporter   User     @relation("ReportsGiven", fields: [reporterId], references: [id], onDelete: Cascade)
   reported   User     @relation("ReportsReceived", fields: [reportedId], references: [id], onDelete: Cascade)
+  post       Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@index([reporterId])
   @@index([reportedId])
+  @@index([postId])
+  @@index([category])
 }

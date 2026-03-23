@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { apiError } from "@/lib/api";
+import { areUsersBlocked } from "@/lib/user-safety";
 
 export const runtime = "nodejs";
 
@@ -40,6 +41,14 @@ export async function GET(request: Request, props: { params: Promise<{ id: strin
   const isMember = group.members.some((m: { userId: string }) => m.userId === userId);
   if (!isMember) {
     return apiError("Forbidden", 403);
+  }
+
+  if (group.isDirect) {
+    const counterpartyId = group.members.find((member) => member.user.id !== userId)?.user.id;
+
+    if (counterpartyId && (await areUsersBlocked(userId, counterpartyId))) {
+      return apiError("Group not found", 404);
+    }
   }
 
   const directUser = group.isDirect

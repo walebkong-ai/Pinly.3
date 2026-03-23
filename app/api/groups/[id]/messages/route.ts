@@ -4,6 +4,7 @@ import { apiError } from "@/lib/api";
 import { z } from "zod";
 import { getGroupConversation } from "@/lib/data";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { areUsersBlocked } from "@/lib/user-safety";
 
 export const runtime = "nodejs";
 
@@ -70,6 +71,29 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
 
   if (!member) {
     return apiError("Forbidden", 403);
+  }
+
+  const group = await prisma.group.findUnique({
+    where: { id: groupId },
+    include: {
+      members: {
+        select: {
+          userId: true
+        }
+      }
+    }
+  });
+
+  if (!group) {
+    return apiError("Group not found", 404);
+  }
+
+  if (group.isDirect) {
+    const counterpartyId = group.members.find((groupMember) => groupMember.userId !== userId)?.userId;
+
+    if (counterpartyId && (await areUsersBlocked(userId, counterpartyId))) {
+      return apiError("Forbidden", 403);
+    }
   }
 
   try {

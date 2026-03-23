@@ -118,6 +118,7 @@ export type ProfileTravelSummary = {
 export type PostSummary = {
   id: string;
   userId: string;
+  ownedByViewer?: boolean;
   isArchived?: boolean;
   mediaType: "IMAGE" | "VIDEO";
   mediaUrl: string;

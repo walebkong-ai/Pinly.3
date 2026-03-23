@@ -10,7 +10,9 @@ export function LegalLinks({ className }: { className?: string }) {
       <Link href="/privacy" className="rounded-full px-2 py-1 transition hover:text-[var(--foreground)]">
         Privacy
       </Link>
+      <Link href="/delete-account" className="rounded-full px-2 py-1 transition hover:text-[var(--foreground)]">
+        Delete account
+      </Link>
     </div>
   );
 }
-

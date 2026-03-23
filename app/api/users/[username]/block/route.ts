@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { normalizeUsername } from "@/lib/validation";
+import { enforceRateLimit } from "@/lib/rate-limit";
+import { buildDirectPairKey } from "@/lib/friendships";
 
 export async function POST(
   request: Request,
@@ -11,6 +13,18 @@ export async function POST(
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const rateLimitResponse = await enforceRateLimit({
+      scope: "user-block",
+      request,
+      userId: session.user.id,
+      limit: 20,
+      windowMs: 60 * 60 * 1000
+    });
+
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
 
     const { username } = await params;
@@ -31,39 +45,50 @@ export async function POST(
       return NextResponse.json({ error: "Cannot block yourself" }, { status: 400 });
     }
 
-    // Atomically remove friendship/requests and create the block
-    await prisma.$transaction([
-      prisma.friendship.deleteMany({
-        where: {
-          OR: [
-            { userAId: currentUserId, userBId: targetUserId },
-            { userAId: targetUserId, userBId: currentUserId },
-          ],
-        },
-      }),
-      prisma.friendRequest.deleteMany({
-        where: {
-          OR: [
-            { fromUserId: currentUserId, toUserId: targetUserId },
-            { fromUserId: targetUserId, toUserId: currentUserId },
-          ],
-        },
-      }),
-      prisma.block.create({
-        data: {
-          blockerId: currentUserId,
-          blockedId: targetUserId,
-        },
-      }),
-    ]);
+    const directPairKey = buildDirectPairKey(currentUserId, targetUserId);
+
+    await prisma.$transaction(async (tx) => {
+      await Promise.all([
+        tx.friendship.deleteMany({
+          where: {
+            OR: [
+              { userAId: currentUserId, userBId: targetUserId },
+              { userAId: targetUserId, userBId: currentUserId }
+            ]
+          }
+        }),
+        tx.friendRequest.deleteMany({
+          where: {
+            OR: [
+              { fromUserId: currentUserId, toUserId: targetUserId },
+              { fromUserId: targetUserId, toUserId: currentUserId }
+            ]
+          }
+        }),
+        tx.group.deleteMany({
+          where: {
+            isDirect: true,
+            directPairKey
+          }
+        }),
+        tx.block.upsert({
+          where: {
+            blockerId_blockedId: {
+              blockerId: currentUserId,
+              blockedId: targetUserId
+            }
+          },
+          update: {},
+          create: {
+            blockerId: currentUserId,
+            blockedId: targetUserId
+          }
+        })
+      ]);
+    });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    // Unique constraint violation (P2002) means they are already blocked
-    if (error.code === 'P2002') {
-      return NextResponse.json({ success: true });
-    }
-    
+  } catch (error) {
     console.error("Error blocking user:", error);
     return NextResponse.json(
       { error: "Could not block user" },

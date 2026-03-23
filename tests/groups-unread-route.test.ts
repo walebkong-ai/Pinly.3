@@ -1,22 +1,14 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const authMock = vi.fn();
-const groupMemberFindManyMock = vi.fn();
-const groupMessageCountMock = vi.fn();
+const getUnreadGroupMessageCountMock = vi.fn();
 
 vi.mock("@/lib/auth", () => ({
   auth: authMock
 }));
 
-vi.mock("@/lib/prisma", () => ({
-  prisma: {
-    groupMember: {
-      findMany: groupMemberFindManyMock
-    },
-    groupMessage: {
-      count: groupMessageCountMock
-    }
-  }
+vi.mock("@/lib/data", () => ({
+  getUnreadGroupMessageCount: getUnreadGroupMessageCountMock
 }));
 
 describe("groups unread route", () => {
@@ -24,8 +16,7 @@ describe("groups unread route", () => {
 
   beforeEach(() => {
     authMock.mockReset();
-    groupMemberFindManyMock.mockReset();
-    groupMessageCountMock.mockReset();
+    getUnreadGroupMessageCountMock.mockReset();
 
     authMock.mockResolvedValue({
       user: {
@@ -35,19 +26,7 @@ describe("groups unread route", () => {
   });
 
   test("counts only unread messages from other people", async () => {
-    groupMemberFindManyMock.mockResolvedValue([
-      {
-        groupId: "group_1",
-        lastReadAt: new Date("2026-03-15T10:00:00.000Z")
-      },
-      {
-        groupId: "group_2",
-        lastReadAt: new Date("2026-03-15T11:00:00.000Z")
-      }
-    ]);
-    groupMessageCountMock
-      .mockResolvedValueOnce(2)
-      .mockResolvedValueOnce(1);
+    getUnreadGroupMessageCountMock.mockResolvedValue(3);
 
     const { GET } = await import("@/app/api/groups/unread/route");
     const response = await GET();
@@ -55,16 +34,6 @@ describe("groups unread route", () => {
 
     expect(response.status).toBe(200);
     expect(data).toEqual({ unreadCount: 3 });
-    expect(groupMessageCountMock).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({
-        where: expect.objectContaining({
-          groupId: "group_1",
-          userId: {
-            not: viewerId
-          }
-        })
-      })
-    );
+    expect(getUnreadGroupMessageCountMock).toHaveBeenCalledWith(viewerId);
   });
 });

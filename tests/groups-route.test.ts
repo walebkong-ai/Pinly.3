@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const authMock = vi.fn();
 const getFriendIdsMock = vi.fn();
+const getMessageGroupsMock = vi.fn();
 const groupCreateMock = vi.fn();
 
 vi.mock("@/lib/auth", () => ({
@@ -9,7 +10,8 @@ vi.mock("@/lib/auth", () => ({
 }));
 
 vi.mock("@/lib/data", () => ({
-  getFriendIds: getFriendIdsMock
+  getFriendIds: getFriendIdsMock,
+  getMessageGroups: getMessageGroupsMock
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -27,6 +29,7 @@ describe("groups route", () => {
   beforeEach(() => {
     authMock.mockReset();
     getFriendIdsMock.mockReset();
+    getMessageGroupsMock.mockReset();
     groupCreateMock.mockReset();
 
     authMock.mockResolvedValue({
@@ -84,5 +87,34 @@ describe("groups route", () => {
 
     expect(response.status).toBe(403);
     expect(groupCreateMock).not.toHaveBeenCalled();
+  });
+
+  test("GET returns only visible message groups", async () => {
+    getMessageGroupsMock.mockResolvedValue([
+      {
+        id: "group_visible_1",
+        name: "Trip crew",
+        isDirect: false,
+        updatedAt: new Date("2026-03-22T12:00:00.000Z"),
+        members: [],
+        _count: {
+          members: 2,
+          messages: 5
+        }
+      }
+    ]);
+
+    const { GET } = await import("@/app/api/groups/route");
+    const response = await GET();
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      groups: [
+        expect.objectContaining({
+          id: "group_visible_1"
+        })
+      ]
+    });
+    expect(getMessageGroupsMock).toHaveBeenCalledWith(viewerId);
   });
 });

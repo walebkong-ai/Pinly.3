@@ -15,6 +15,7 @@ import { SaveButton } from "@/components/post/save-button";
 import { VisitedWithList } from "@/components/post/visited-with-list";
 import { ProfileLink } from "@/components/profile/profile-link";
 import { LocationCountryText } from "@/components/ui/country-flag";
+import { PostSafetyActions } from "@/components/post/post-safety-actions";
 import { buildPostLocationMapHref } from "@/lib/map-post-navigation";
 import {
   MOBILE_TAP_MAX_MOVEMENT_PX,
@@ -312,6 +313,11 @@ export function PostCard({
               <p className="truncate text-[11px] text-[var(--foreground)]/50">@{post.user.username}</p>
             </div>
           </ProfileLink>
+          <PostSafetyActions
+            postId={post.id}
+            username={post.user.username}
+            isOwnPost={post.ownedByViewer ?? false}
+          />
         </div>
         <div className="space-y-2.5">
           <p

@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { apiError } from "@/lib/api";
 import { z } from "zod";
-import { getFriendIds } from "@/lib/data";
+import { getFriendIds, getMessageGroups } from "@/lib/data";
 import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -19,78 +19,8 @@ export async function GET() {
     return apiError("Unauthorized", 401);
   }
 
-  const userId = session.user.id;
-
-  const groups = await prisma.group.findMany({
-    where: {
-      members: {
-        some: {
-          userId: userId,
-        },
-      },
-    },
-    include: {
-      members: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              username: true,
-              avatarUrl: true,
-            },
-          },
-        },
-      },
-      _count: {
-        select: { members: true, messages: true }
-      },
-      messages: {
-        orderBy: { createdAt: "desc" },
-        take: 1,
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true
-            }
-          }
-        }
-      }
-    },
-    orderBy: { updatedAt: "desc" },
-  });
-
   return Response.json({
-    groups: groups.map((group) => {
-      const directUser = group.isDirect
-        ? group.members.find((member) => member.user.id !== userId)?.user ?? null
-        : null;
-      const viewerMembership = group.members.find((member) => member.user.id === userId) ?? null;
-      const latestMessage = group.messages[0] ?? null;
-
-      return {
-        ...group,
-        directUser,
-        hasUnread:
-          Boolean(
-            latestMessage &&
-            viewerMembership &&
-            new Date(latestMessage.createdAt).getTime() > new Date(viewerMembership.lastReadAt).getTime() &&
-            latestMessage.user.id !== userId
-          ),
-        lastMessage: latestMessage
-          ? {
-              id: latestMessage.id,
-              createdAt: latestMessage.createdAt,
-              senderName: latestMessage.user.id === userId ? "You" : latestMessage.user.name,
-              content: latestMessage.content.startsWith("[SHARED_POST]:")
-                ? "Shared a post"
-                : latestMessage.content
-            }
-          : null
-      };
-    })
+    groups: await getMessageGroups(session.user.id)
   });
 }
 

@@ -26,6 +26,44 @@ if (googleConfigured) {
   );
 }
 
+async function syncTokenWithCurrentUser(token: Record<string, unknown>) {
+  const tokenUserId =
+    typeof token.id === "string" ? token.id : typeof token.sub === "string" ? token.sub : null;
+
+  if (!tokenUserId) {
+    return null;
+  }
+
+  try {
+    const currentUser = await prisma.user.findUnique({
+      where: { id: tokenUserId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        username: true,
+        avatarUrl: true
+      }
+    });
+
+    if (!currentUser) {
+      return null;
+    }
+
+    token.sub = currentUser.id;
+    token.id = currentUser.id;
+    token.email = currentUser.email;
+    token.name = currentUser.name;
+    token.username = currentUser.username;
+    token.avatarUrl = currentUser.avatarUrl;
+
+    return token;
+  } catch (error) {
+    console.error("Failed to verify auth session against the database:", error);
+    return token;
+  }
+}
+
 export const authConfig = {
   secret: process.env.AUTH_SECRET,
   trustHost: true,
@@ -75,6 +113,8 @@ export const authConfig = {
         token.id = user.id ?? token.id ?? token.sub;
         token.username = user.username ?? token.username ?? "traveler";
         token.avatarUrl = user.avatarUrl ?? user.image ?? token.avatarUrl ?? null;
+        token.email = user.email ?? token.email ?? null;
+        token.name = user.name ?? token.name ?? null;
       }
 
       if (trigger === "update" && session?.user) {
@@ -87,9 +127,13 @@ export const authConfig = {
         }
       }
 
-      return token;
+      return syncTokenWithCurrentUser(token);
     },
     session: async ({ session, token }: any) => {
+      if (typeof token?.id !== "string" && typeof token?.sub !== "string") {
+        return null;
+      }
+
       if (session.user) {
         session.user.id =
           typeof token.id === "string" ? token.id : typeof token.sub === "string" ? token.sub : "";

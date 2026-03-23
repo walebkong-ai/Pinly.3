@@ -12,6 +12,7 @@ import {
   getVisibleUserIdsForViewer
 } from "@/lib/relationships";
 import { getSearchTerms, rankBySearch } from "@/lib/search";
+import { areUsersBlocked, getBlockedUserIdsForViewer } from "@/lib/user-safety";
 import { buildWantToGoPlaceKey, type WantToGoLocation } from "@/lib/want-to-go";
 import { notificationInclude } from "@/lib/notifications";
 import type {
@@ -402,11 +403,16 @@ async function getViewerPostState(viewerId: string, postIds: string[]): Promise<
 
 function normalizeIncludedPost(
   post: IncludedPost,
-  viewerState?: ViewerPostState
+  viewerId?: string,
+  viewerState?: ViewerPostState,
+  blockedUserIds?: Set<string>
 ) {
   return {
     ...post,
-    visitedWith: post.visitedWith.map((tag) => tag.user),
+    ownedByViewer: viewerId ? post.userId === viewerId : undefined,
+    visitedWith: post.visitedWith
+      .map((tag) => tag.user)
+      .filter((user) => !blockedUserIds?.has(user.id)),
     savedByViewer: viewerState ? viewerState.savedPostIds.has(post.id) : undefined,
     likedByViewer: viewerState ? viewerState.likedPostIds.has(post.id) : undefined,
     likeCount: viewerState ? viewerState.likeCountByPostId.get(post.id) ?? 0 : undefined,
@@ -415,12 +421,15 @@ function normalizeIncludedPost(
 }
 
 async function attachViewerPostState(viewerId: string, posts: IncludedPost[]) {
-  const viewerState = await getViewerPostState(
-    viewerId,
-    posts.map((post) => post.id)
-  );
+  const [viewerState, blockedUserIds] = await Promise.all([
+    getViewerPostState(
+      viewerId,
+      posts.map((post) => post.id)
+    ),
+    getBlockedUserIdsForViewer(viewerId)
+  ]);
 
-  return posts.map((post) => normalizeIncludedPost(post, viewerState));
+  return posts.map((post) => normalizeIncludedPost(post, viewerId, viewerState, blockedUserIds));
 }
 
 function normalizePostSummaries(posts: IncludedPost[]) {
@@ -1322,10 +1331,18 @@ export async function getWantToGoPlaces(userId: string, limit = 64): Promise<Wan
 
 export async function getUnreadNotificationCount(userId: string) {
   try {
+    const blockedUserIds = Array.from(await getBlockedUserIdsForViewer(userId));
     return await prisma.notification.count({
       where: {
         userId,
-        readAt: null
+        readAt: null,
+        ...(blockedUserIds.length > 0
+          ? {
+              actorId: {
+                notIn: blockedUserIds
+              }
+            }
+          : {})
       }
     });
   } catch (error) {
@@ -1339,17 +1356,44 @@ export async function getUnreadNotificationCount(userId: string) {
 
 export async function getUnreadGroupMessageCount(userId: string) {
   try {
+    const blockedUserIds = await getBlockedUserIdsForViewer(userId);
     const memberships = await prisma.groupMember.findMany({
       where: { userId },
-      select: { groupId: true, lastReadAt: true }
+      select: {
+        groupId: true,
+        lastReadAt: true,
+        group: {
+          select: {
+            isDirect: true,
+            members: {
+              select: {
+                userId: true
+              }
+            }
+          }
+        }
+      }
     });
 
     if (memberships.length === 0) {
       return 0;
     }
 
+    const visibleMemberships = memberships.filter((member) => {
+      if (!member.group.isDirect) {
+        return true;
+      }
+
+      const counterpartyId = member.group.members.find((groupMember) => groupMember.userId !== userId)?.userId;
+      return !counterpartyId || !blockedUserIds.has(counterpartyId);
+    });
+
+    if (visibleMemberships.length === 0) {
+      return 0;
+    }
+
     const unreadCounts = await Promise.all(
-      memberships.map((member) =>
+      visibleMemberships.map((member) =>
         prisma.groupMessage.count({
           where: {
             groupId: member.groupId,
@@ -1375,6 +1419,7 @@ export async function getUnreadGroupMessageCount(userId: string) {
 }
 
 export async function getMessageGroups(userId: string): Promise<MessageGroupSummary[]> {
+  const blockedUserIds = await getBlockedUserIdsForViewer(userId);
   const groups = await prisma.group.findMany({
     where: {
       members: {
@@ -1387,7 +1432,16 @@ export async function getMessageGroups(userId: string): Promise<MessageGroupSumm
     orderBy: { updatedAt: "desc" }
   });
 
-  return groups.map((group) => normalizeMessageGroupSummary(group, userId));
+  return groups
+    .filter((group) => {
+      if (!group.isDirect) {
+        return true;
+      }
+
+      const counterpartyId = group.members.find((member) => member.user.id !== userId)?.user.id;
+      return !counterpartyId || !blockedUserIds.has(counterpartyId);
+    })
+    .map((group) => normalizeMessageGroupSummary(group, userId));
 }
 
 export async function getGroupConversation(
@@ -1408,6 +1462,14 @@ export async function getGroupConversation(
 
   if (!viewerMembership) {
     return { status: "forbidden" };
+  }
+
+  if (group.isDirect) {
+    const counterpartyId = group.members.find((member) => member.userId !== userId)?.userId;
+
+    if (counterpartyId && (await areUsersBlocked(userId, counterpartyId))) {
+      return { status: "forbidden" };
+    }
   }
 
   const shouldMarkRead = options?.markRead !== false;
@@ -1444,10 +1506,18 @@ export async function getNotifications(
   }
 ): Promise<NotificationSummary[]> {
   try {
+    const blockedUserIds = Array.from(await getBlockedUserIdsForViewer(userId));
     const notifications = await prisma.notification.findMany({
       where: {
         userId,
-        ...(options?.includeRead ? {} : { readAt: null })
+        ...(options?.includeRead ? {} : { readAt: null }),
+        ...(blockedUserIds.length > 0
+          ? {
+              actorId: {
+                notIn: blockedUserIds
+              }
+            }
+          : {})
       },
       include: notificationInclude,
       orderBy: { createdAt: "desc" },
@@ -1510,13 +1580,16 @@ export async function getSavedPosts(viewerId: string, limit = 48) {
       take: limit
     });
 
-    const viewerState = await getViewerPostState(
-      viewerId,
-      savedPosts.map((savedPost) => savedPost.post.id)
-    );
+    const [viewerState, blockedUserIds] = await Promise.all([
+      getViewerPostState(
+        viewerId,
+        savedPosts.map((savedPost) => savedPost.post.id)
+      ),
+      getBlockedUserIdsForViewer(viewerId)
+    ]);
 
     return savedPosts.map((savedPost) => ({
-      ...normalizeIncludedPost(savedPost.post, viewerState),
+      ...normalizeIncludedPost(savedPost.post, viewerId, viewerState, blockedUserIds),
       savedByViewer: true
     }));
   } catch {

@@ -5,6 +5,8 @@ import { LEGAL_LAST_UPDATED_LABEL } from "@/lib/legal";
 import { prisma } from "@/lib/prisma";
 import { BackButton } from "@/components/post/back-button";
 import { SettingsForm } from "@/components/settings-form";
+import { DeleteAccountCard } from "@/components/account/delete-account-card";
+import { isReservedDemoEmail } from "@/lib/demo-config";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -19,7 +21,8 @@ export default async function SettingsPage() {
       select: {
         name: true,
         username: true,
-        avatarUrl: true
+        avatarUrl: true,
+        email: true
       }
     }),
     prisma.userSettings.findUnique({
@@ -54,6 +57,10 @@ export default async function SettingsPage() {
             commentsEnabled: settings?.commentsEnabled ?? true
           }}
         />
+      </section>
+
+      <section className="glass-panel rounded-[1.75rem] p-4">
+        <DeleteAccountCard username={user.username} isDemoAccount={isReservedDemoEmail(user.email)} />
       </section>
 
       <section className="glass-panel rounded-[1.75rem] p-4">

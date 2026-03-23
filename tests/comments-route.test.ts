@@ -6,6 +6,7 @@ const findManyMock = vi.fn();
 const findFirstMock = vi.fn();
 const createMock = vi.fn();
 const createNotificationSafelyMock = vi.fn();
+const getBlockedUserIdsForViewerMock = vi.fn();
 
 vi.mock("@/lib/auth", () => ({
   auth: authMock
@@ -29,6 +30,10 @@ vi.mock("@/lib/notifications", () => ({
   createNotificationSafely: createNotificationSafelyMock
 }));
 
+vi.mock("@/lib/user-safety", () => ({
+  getBlockedUserIdsForViewer: getBlockedUserIdsForViewerMock
+}));
+
 describe("post comments route", () => {
   beforeEach(() => {
     authMock.mockReset();
@@ -37,8 +42,10 @@ describe("post comments route", () => {
     findFirstMock.mockReset();
     createMock.mockReset();
     createNotificationSafelyMock.mockReset();
+    getBlockedUserIdsForViewerMock.mockReset();
 
     authMock.mockResolvedValue({ user: { id: "viewer_1" } });
+    getBlockedUserIdsForViewerMock.mockResolvedValue(new Set());
   });
 
   test("GET rejects access when the author disabled comments", async () => {
@@ -101,6 +108,45 @@ describe("post comments route", () => {
       currentUserId: "viewer_1",
       postOwnerId: "owner_1"
     });
+  });
+
+  test("GET filters comments and replies from blocked users", async () => {
+    getVisiblePostByIdMock.mockResolvedValue({
+      id: "post_1",
+      userId: "owner_1",
+      user: {
+        settings: {
+          commentsEnabled: true
+        }
+      }
+    });
+    getBlockedUserIdsForViewerMock.mockResolvedValue(new Set(["blocked_1"]));
+    findManyMock.mockResolvedValue([]);
+
+    const { GET } = await import("@/app/api/posts/[postId]/comments/route");
+    const response = await GET(new Request("http://localhost/api/posts/post_1/comments"), {
+      params: Promise.resolve({ postId: "post_1" })
+    });
+
+    expect(response.status).toBe(200);
+    expect(findManyMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          userId: {
+            notIn: ["blocked_1"]
+          }
+        }),
+        include: expect.objectContaining({
+          replies: expect.objectContaining({
+            where: {
+              userId: {
+                notIn: ["blocked_1"]
+              }
+            }
+          })
+        })
+      })
+    );
   });
 
   test("POST creates a comment when comments are enabled", async () => {
@@ -236,5 +282,38 @@ describe("post comments route", () => {
         postId: "post_3"
       })
     );
+  });
+
+  test("POST rejects replies to blocked users' comments", async () => {
+    getVisiblePostByIdMock.mockResolvedValue({
+      id: "post_4",
+      userId: "owner_1",
+      user: {
+        settings: {
+          commentsEnabled: true
+        }
+      }
+    });
+    getBlockedUserIdsForViewerMock.mockResolvedValue(new Set(["blocked_1"]));
+    findFirstMock.mockResolvedValue({
+      id: "comment_parent",
+      parentId: null,
+      userId: "blocked_1"
+    });
+
+    const { POST } = await import("@/app/api/posts/[postId]/comments/route");
+    const response = await POST(
+      new Request("http://localhost/api/posts/post_4/comments", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ content: "Same here", parentId: "comment_parent" })
+      }),
+      {
+        params: Promise.resolve({ postId: "post_4" })
+      }
+    );
+
+    expect(response.status).toBe(404);
+    expect(createMock).not.toHaveBeenCalled();
   });
 });

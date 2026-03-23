@@ -3,6 +3,11 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { normalizeUsername } from "@/lib/validation";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import {
+  buildUserReportDedupeKey,
+  isUniqueConstraintError,
+  reportPayloadSchema
+} from "@/lib/reporting";
 
 export async function POST(
   request: Request,
@@ -28,14 +33,17 @@ export async function POST(
 
     const { username } = await params;
     const currentUserId = session.user.id;
-    
-    // Parse reason if provided
-    let reason = null;
+
+    let body: unknown;
     try {
-      const body = await request.json();
-      reason = body.reason;
-    } catch (e) {
-      // Ignored - body is optional
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid report payload" }, { status: 400 });
+    }
+
+    const parsed = reportPayloadSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid report payload" }, { status: 400 });
     }
 
     const targetUser = await prisma.user.findUnique({
@@ -53,13 +61,23 @@ export async function POST(
       return NextResponse.json({ error: "Cannot report yourself" }, { status: 400 });
     }
 
-    await prisma.report.create({
-      data: {
-        reporterId: currentUserId,
-        reportedId: targetUserId,
-        reason: reason || null,
-      },
-    });
+    try {
+      await prisma.report.create({
+        data: {
+          reporterId: currentUserId,
+          reportedId: targetUserId,
+          category: parsed.data.category,
+          reason: parsed.data.details ?? null,
+          dedupeKey: buildUserReportDedupeKey(currentUserId, targetUserId, parsed.data.category)
+        }
+      });
+    } catch (error) {
+      if (isUniqueConstraintError(error)) {
+        return NextResponse.json({ success: true, duplicate: true });
+      }
+
+      throw error;
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

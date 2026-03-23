@@ -21,6 +21,7 @@ import { WantToGoButton } from "@/components/places/want-to-go-button";
 import { ProfileLink } from "@/components/profile/profile-link";
 import { LocationCountryText } from "@/components/ui/country-flag";
 import { PostMiniMap } from "@/components/post/post-mini-map";
+import { PostSafetyActions } from "@/components/post/post-safety-actions";
 
 type Props = {
   params: Promise<{ postId: string }>;
@@ -108,6 +109,14 @@ export default async function PostDetailPage({ params }: Props) {
                   <DeletePostButton postId={post.id} redirectToMap />
                 </div>
               )}
+              {!isOwnPost ? (
+                <PostSafetyActions
+                  postId={post.id}
+                  username={post.user.username}
+                  isOwnPost={false}
+                  className="h-10 w-10 shrink-0 rounded-full p-0 hover:bg-[var(--surface-soft)]"
+                />
+              ) : null}
             </div>
 
             <div className="space-y-2">

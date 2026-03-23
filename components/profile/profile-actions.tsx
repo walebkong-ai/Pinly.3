@@ -31,7 +31,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+import { ReportDialog } from "@/components/safety/report-dialog";
 
 type ProfileActionsProps = {
   username: string;
@@ -42,11 +42,9 @@ export function ProfileActions({ username, relationship }: ProfileActionsProps) 
   const router = useRouter();
   const [isActionPending, setIsActionPending] = useState(false);
   const [isBlocking, setIsBlocking] = useState(false);
-  const [isReporting, setIsReporting] = useState(false);
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [showBlockDialog, setShowBlockDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
-  const [reportReason, setReportReason] = useState("");
 
   const isFriend = relationship.status === "friends";
   const isPendingSent = relationship.status === "pending_sent";
@@ -153,33 +151,6 @@ export function ProfileActions({ username, relationship }: ProfileActionsProps) 
       toast.error(error instanceof Error ? error.message : "Could not block this user.");
     } finally {
       setIsBlocking(false);
-    }
-  }
-
-  async function handleReportUser() {
-    setIsReporting(true);
-
-    try {
-      const res = await fetch(`/api/users/${username}/report`, {
-        method: "POST",
-        body: JSON.stringify({ reason: reportReason.trim() }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        throw new Error(data?.error || "Could not submit this report.");
-      }
-
-      toast.success("Report submitted.");
-      setShowReportDialog(false);
-      setReportReason("");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not submit this report.");
-    } finally {
-      setIsReporting(false);
     }
   }
 
@@ -322,37 +293,14 @@ export function ProfileActions({ username, relationship }: ProfileActionsProps) 
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
-        <DialogContent className="sm:max-w-md rounded-[2rem] border-none bg-[var(--surface-soft)] p-6">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-semibold">Report @{username}</DialogTitle>
-            <DialogDescription className="text-sm text-[var(--foreground)]/60">
-              Share a short note so we can review the account.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="my-4">
-            <Textarea
-              placeholder="Spam, harassment, impersonation, or another issue"
-              value={reportReason}
-              onChange={(event) => setReportReason(event.target.value)}
-              className="min-h-[100px] resize-none rounded-2xl border-[var(--surface-strong)] bg-[var(--surface-strong)]/50 focus-visible:ring-1 focus-visible:ring-[var(--foreground)]/20"
-            />
-          </div>
-          <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button variant="ghost" className="rounded-full" onClick={() => setShowReportDialog(false)}>
-              Cancel
-            </Button>
-            <Button
-              className="rounded-full bg-[var(--foreground)] text-[var(--background)] hover:bg-[var(--foreground)]/90"
-              onClick={() => void handleReportUser()}
-              disabled={isReporting || reportReason.trim().length === 0}
-            >
-              {isReporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Submit report
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ReportDialog
+        open={showReportDialog}
+        onOpenChange={setShowReportDialog}
+        endpoint={`/api/users/${username}/report`}
+        title={`Report @${username}`}
+        description="Choose the issue that fits best, then add details if they would help a review."
+        successMessage="User report submitted."
+      />
     </>
   );
 }

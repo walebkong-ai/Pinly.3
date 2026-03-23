@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { apiError } from "@/lib/api";
 import { z } from "zod";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { getBlockedUserIdsForViewer } from "@/lib/user-safety";
 
 export const runtime = "nodejs";
 
@@ -31,16 +32,33 @@ export async function GET(request: Request, { params }: { params: Promise<{ post
     });
   }
 
+  const blockedUserIds = Array.from(await getBlockedUserIdsForViewer(session.user.id));
+
   const comments = await prisma.comment.findMany({
     where: {
       postId,
-      parentId: null
+      parentId: null,
+      ...(blockedUserIds.length > 0
+        ? {
+            userId: {
+              notIn: blockedUserIds
+            }
+          }
+        : {})
     },
     include: {
       user: {
         select: { id: true, name: true, username: true, avatarUrl: true }
       },
       replies: {
+        where:
+          blockedUserIds.length > 0
+            ? {
+                userId: {
+                  notIn: blockedUserIds
+                }
+              }
+            : undefined,
         include: {
           user: {
             select: { id: true, name: true, username: true, avatarUrl: true }
@@ -104,6 +122,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pos
 
   let parentId: string | null = null;
   let parentCommentUserId: string | null = null;
+  const blockedUserIds = await getBlockedUserIdsForViewer(session.user.id);
 
   if (parsed.data.parentId) {
     const parentComment = await prisma.comment.findFirst({
@@ -119,6 +138,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ pos
     });
 
     if (!parentComment) {
+      return apiError("Parent comment not found", 404);
+    }
+
+    if (blockedUserIds.has(parentComment.userId)) {
       return apiError("Parent comment not found", 404);
     }
 
