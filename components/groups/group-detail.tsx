@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
@@ -13,7 +14,7 @@ import { ProfileLink } from "@/components/profile/profile-link";
 import type { MessageConversationDetails, MessageConversationMessage } from "@/lib/data";
 import { buildPostLocationMapHref } from "@/lib/map-post-navigation";
 import { MESSAGES_UPDATED_EVENT } from "@/lib/notification-events";
-import { cn } from "@/lib/utils";
+import { cn, getMediaProxyUrl } from "@/lib/utils";
 
 export function GroupDetail({
   groupId,
@@ -307,10 +308,13 @@ export function GroupDetail({
                           <Link href={`/posts/${msg.sharedPost.id}`} className="relative block">
                             <div className="relative aspect-[4/3] w-full bg-black/5">
                               {msg.sharedPost.thumbnailUrl ? (
-                                <img
-                                  src={msg.sharedPost.thumbnailUrl}
+                                <Image
+                                  src={getMediaProxyUrl(msg.sharedPost.thumbnailUrl)}
                                   alt={msg.sharedPost.caption?.trim() || msg.sharedPost.placeName || "Shared post"}
-                                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                  fill
+                                  sizes="(max-width: 768px) 240px, 280px"
+                                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                  unoptimized={getMediaProxyUrl(msg.sharedPost.thumbnailUrl).startsWith("/api/media")}
                                 />
                               ) : (
                                 <div className="flex h-full w-full items-center justify-center">

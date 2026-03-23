@@ -79,6 +79,7 @@ export default async function PostDetailPage({ params }: Props) {
               mediaUrl={post.mediaUrl}
               thumbnailUrl={post.thumbnailUrl}
               postId={post.id}
+              priority
             />
           </div>
 

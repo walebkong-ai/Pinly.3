@@ -111,4 +111,26 @@ describe("media route", () => {
     expect(response.status).toBe(404);
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  test("adds a private cache policy when the upstream media does not provide one", async () => {
+    fetchMock.mockResolvedValue(
+      new Response("image-bytes", {
+        status: 200,
+        headers: {
+          "content-type": "image/jpeg"
+        }
+      })
+    );
+    resolveAuthorizedMediaTargetMock.mockResolvedValue({
+      kind: "remote",
+      url: "https://public.blob.vercel-storage.com/file.jpg"
+    });
+
+    const { GET } = await import("@/app/api/media/route");
+    const response = await GET(new Request("http://localhost/api/media?url=https://public.blob.vercel-storage.com/file.jpg"));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("private, max-age=300, stale-while-revalidate=86400");
+    expect(response.headers.get("vary")).toBe("Cookie, Range");
+  });
 });

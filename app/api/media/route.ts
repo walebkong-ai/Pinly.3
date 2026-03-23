@@ -4,6 +4,7 @@ import { resolveAuthorizedMediaTarget } from "@/lib/media-authorization";
 import { assertStorageConfiguration, getBlobAccessMode, getStorageDriver } from "@/lib/storage";
 
 export const runtime = "nodejs";
+const DEFAULT_MEDIA_CACHE_CONTROL = "private, max-age=300, stale-while-revalidate=86400";
 
 const passthroughHeaders = [
   "accept-ranges",
@@ -79,6 +80,9 @@ export async function GET(request: Request) {
         responseHeaders.set(headerName, headerValue);
       }
     }
+
+    responseHeaders.set("cache-control", response.headers.get("cache-control") ?? DEFAULT_MEDIA_CACHE_CONTROL);
+    responseHeaders.set("vary", "Cookie, Range");
 
     return new Response(response.body, {
       status: response.status,

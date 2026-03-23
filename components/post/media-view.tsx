@@ -11,7 +11,8 @@ export const MediaView = memo(function MediaView({
   thumbnailUrl,
   className,
   postId,
-  showVideoControls = true
+  showVideoControls = true,
+  priority = false
 }: {
   mediaType: "IMAGE" | "VIDEO";
   mediaUrl: string;
@@ -19,13 +20,16 @@ export const MediaView = memo(function MediaView({
   className?: string;
   postId?: string;
   showVideoControls?: boolean;
+  priority?: boolean;
 }) {
   const proxyUrl = getMediaProxyUrl(mediaUrl);
   const proxyThumb = getMediaProxyUrl(thumbnailUrl);
+  const previewUrl = proxyThumb && proxyThumb !== proxyUrl ? proxyThumb : "";
   const [loaded, setLoaded] = useState(false);
   const [showHeart, setShowHeart] = useState(false);
   const lastTapRef = useRef(0);
   const hideHeartTimeoutRef = useRef<number | null>(null);
+  const imageSizes = "(max-width: 768px) 100vw, 50vw";
 
   useEffect(() => {
     setLoaded(false);
@@ -95,18 +99,39 @@ export const MediaView = memo(function MediaView({
 
   return (
     <div className={cn("relative h-full w-full overflow-hidden rounded-[1.5rem] bg-black/5", className)} {...interactiveProps}>
+      {previewUrl ? (
+        <Image
+          key={previewUrl}
+          src={previewUrl}
+          alt=""
+          fill
+          sizes={imageSizes}
+          className={cn(
+            "object-cover transition-[opacity,transform,filter] duration-500 ease-out",
+            loaded ? "scale-[1.04] opacity-0 blur-md" : "scale-100 opacity-100 blur-0"
+          )}
+          unoptimized={previewUrl.startsWith("/api/media")}
+        />
+      ) : null}
       <Image
         key={proxyUrl}
         src={proxyUrl}
         alt=""
         fill
-        sizes="(max-width: 768px) 100vw, 50vw"
+        sizes={imageSizes}
+        priority={priority}
+        fetchPriority={priority ? "high" : undefined}
         onLoad={() => setLoaded(true)}
         onError={() => setLoaded(true)}
-        className={cn("object-cover transition-opacity duration-500", loaded ? "opacity-100" : "opacity-0")}
+        className={cn(
+          "object-cover transition-[opacity,transform,filter] duration-500 ease-out will-change-[opacity,transform,filter]",
+          loaded ? "scale-100 opacity-100 blur-0" : previewUrl ? "scale-[1.01] opacity-0 blur-sm" : "scale-[1.02] opacity-0 blur-md"
+        )}
         unoptimized={proxyUrl.startsWith("/api/media")}
       />
-      {!loaded ? <div className="absolute inset-0 animate-pulse bg-black/5" /> : null}
+      {!loaded && !previewUrl ? (
+        <div className="absolute inset-0 animate-pulse bg-[linear-gradient(135deg,rgba(15,116,108,0.08),rgba(252,236,218,0.55),rgba(15,116,108,0.12))]" />
+      ) : null}
       {showHeart && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/10">
           <Heart className="h-24 w-24 animate-in zoom-in-50 fade-in duration-300 fill-white text-white drop-shadow-2xl" />

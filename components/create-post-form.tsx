@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Camera, Crosshair, Images, LoaderCircle, MapPin, Search, Upload, X } from "lucide-react";
@@ -20,7 +21,9 @@ import {
   parseCoordinateInput,
   serializeVisitedDateInput
 } from "@/lib/create-post-location";
+import { optimizeImageForUpload } from "@/lib/client-image-upload";
 import { isNativePlatform } from "@/lib/native-platform";
+import { getMediaProxyUrl } from "@/lib/utils";
 import type { PlaceSearchResult } from "@/types/app";
 
 type UploadState = {
@@ -76,6 +79,8 @@ export function CreatePostForm() {
     !visitedAt &&
     taggedUserIds.length === 0 &&
     collectionIds.length === 0;
+  const uploadPreviewUrl = getMediaProxyUrl(uploadState?.mediaUrl);
+  const uploadPreviewThumbnailUrl = getMediaProxyUrl(uploadState?.thumbnailUrl);
 
   useEffect(() => {
     return () => {
@@ -343,9 +348,10 @@ export function CreatePostForm() {
       return;
     }
 
+    const fileToUpload = file.type.startsWith("image/") ? await optimizeImageForUpload(file) : file;
     const formData = new FormData();
-    formData.set("file", file);
     setUploading(true);
+    formData.set("file", fileToUpload);
 
     try {
       const response = await fetch("/api/uploads", {
@@ -599,18 +605,23 @@ export function CreatePostForm() {
             <div className="relative mt-6 overflow-hidden rounded-[2rem]">
               {uploadState.mediaType === "VIDEO" ? (
                 <video
-                  src={uploadState.mediaUrl}
-                  poster={uploadState.thumbnailUrl ?? undefined}
+                  src={uploadPreviewUrl}
+                  poster={uploadPreviewThumbnailUrl || undefined}
                   controls
                   playsInline
                   className="max-h-72 w-full rounded-[2rem] object-cover"
                 />
               ) : (
-                <img
-                  src={uploadState.mediaUrl}
-                  alt="Upload preview"
-                  className="max-h-72 w-full rounded-[2rem] object-cover"
-                />
+                <div className="relative h-72 w-full rounded-[2rem] bg-[var(--surface-soft)]">
+                  <Image
+                    src={uploadPreviewUrl}
+                    alt="Upload preview"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="rounded-[2rem] object-cover"
+                    unoptimized={uploadPreviewUrl.startsWith("/api/media")}
+                  />
+                </div>
               )}
               {/* Remove button — clears preview and returns to upload picker */}
               <button
