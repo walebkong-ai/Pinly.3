@@ -139,7 +139,7 @@ This file is the constitutional source for project rules, schemas, and architect
 - Layer 3: `tools/` contains atomic deterministic Python scripts
 - Secrets belong in `.env`
 - Intermediate artifacts belong in `.tmp/`
-- Production deploy target is Vercel + Neon + Prisma + Vercel Blob
+- Production deploy target is Vercel + Neon + Prisma + Supabase Storage
 - Prisma schema changes must ship with checked-in migrations for `prisma migrate deploy`
 - Destructive demo seeding must never run in production and must require explicit confirmation for non-local databases
 - Lightweight groups remain friend-backed selections until a persistent group model is intentionally introduced

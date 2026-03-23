@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { TEST_AVATAR_URL } from "@/tests/fixtures/media";
 
 const authMock = vi.fn();
 const unstableUpdateMock = vi.fn();
@@ -53,7 +54,7 @@ describe("profile route", () => {
     updateMock.mockResolvedValue({
       id: "user_1",
       username: "new_name",
-      avatarUrl: "https://api.dicebear.com/9.x/thumbs/svg?seed=new_name"
+      avatarUrl: TEST_AVATAR_URL
     });
 
     const { PATCH } = await import("@/app/api/profile/route");
@@ -63,7 +64,7 @@ describe("profile route", () => {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           username: "  New_Name  ",
-          avatarUrl: "https://api.dicebear.com/9.x/thumbs/svg?seed=new_name"
+          avatarUrl: TEST_AVATAR_URL
         })
       })
     );
@@ -73,7 +74,7 @@ describe("profile route", () => {
       success: true,
       user: {
         username: "new_name",
-        avatarUrl: "https://api.dicebear.com/9.x/thumbs/svg?seed=new_name"
+        avatarUrl: TEST_AVATAR_URL
       }
     });
     expect(findFirstMock).toHaveBeenCalledWith({
@@ -87,7 +88,7 @@ describe("profile route", () => {
       where: { id: "user_1" },
       data: {
         username: "new_name",
-        avatarUrl: "https://api.dicebear.com/9.x/thumbs/svg?seed=new_name"
+        avatarUrl: TEST_AVATAR_URL
       },
       select: {
         id: true,
@@ -98,7 +99,7 @@ describe("profile route", () => {
     expect(unstableUpdateMock).toHaveBeenCalledWith({
       user: {
         username: "new_name",
-        avatarUrl: "https://api.dicebear.com/9.x/thumbs/svg?seed=new_name"
+        avatarUrl: TEST_AVATAR_URL
       }
     });
   });
@@ -202,7 +203,7 @@ describe("profile route", () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toMatchObject({
-      error: "Avatar URLs must use a trusted Pinly or supported profile image host."
+      error: "Avatar URLs must use a trusted Pinly Supabase media URL."
     });
     expect(updateMock).not.toHaveBeenCalled();
   });

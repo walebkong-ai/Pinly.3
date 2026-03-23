@@ -1,22 +1,27 @@
 import { afterEach, describe, expect, test } from "vitest";
 import { getDemoAvatarUrl } from "@/lib/demo-config";
+import { TEST_AVATAR_URL } from "@/tests/fixtures/media";
 
 const originalE2EMode = process.env.PINLY_E2E_MODE;
+const originalDemoAvatarUrl = process.env.PINLY_DEMO_AVATAR_URL;
 
 describe("demo config", () => {
   afterEach(() => {
     process.env.PINLY_E2E_MODE = originalE2EMode;
+    process.env.PINLY_DEMO_AVATAR_URL = originalDemoAvatarUrl;
   });
 
-  test("uses a local avatar asset during e2e runs", () => {
+  test("returns null when no Supabase demo avatar is configured", () => {
     process.env.PINLY_E2E_MODE = "1";
+    process.env.PINLY_DEMO_AVATAR_URL = "";
 
-    expect(getDemoAvatarUrl("avery")).toBe("/pinly-globe-icon.svg");
+    expect(getDemoAvatarUrl("avery")).toBeNull();
   });
 
-  test("uses the hosted avatar outside e2e mode", () => {
+  test("uses a Supabase-hosted avatar when configured", () => {
     process.env.PINLY_E2E_MODE = "";
+    process.env.PINLY_DEMO_AVATAR_URL = TEST_AVATAR_URL;
 
-    expect(getDemoAvatarUrl("avery")).toBe("https://api.dicebear.com/9.x/thumbs/svg?seed=avery");
+    expect(getDemoAvatarUrl("avery")).toBe(TEST_AVATAR_URL);
   });
 });

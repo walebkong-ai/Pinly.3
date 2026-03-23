@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { mapQuerySchema, postSchema, signUpSchema, wantToGoPlaceSchema } from "@/lib/validation";
+import { TEST_IMAGE_URL } from "@/tests/fixtures/media";
 
 describe("schema validation", () => {
   test("sign up requires lowercase username pattern", () => {
@@ -18,7 +19,7 @@ describe("schema validation", () => {
     expect(
       postSchema.safeParse({
         mediaType: "IMAGE",
-        mediaUrl: "/uploads/example.jpg",
+        mediaUrl: TEST_IMAGE_URL,
         thumbnailUrl: null,
         caption: "A full day in the city.",
         placeName: "Old Port",
@@ -36,7 +37,7 @@ describe("schema validation", () => {
   test("posts default visited-with tags and collections to empty arrays", () => {
     const result = postSchema.safeParse({
       mediaType: "IMAGE",
-      mediaUrl: "/uploads/example.jpg",
+      mediaUrl: TEST_IMAGE_URL,
       thumbnailUrl: null,
       caption: "Golden hour by the water.",
       placeName: "Harbourfront",

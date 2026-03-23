@@ -7,6 +7,7 @@ import {
   getMarkerVisualSize,
   sortMarkersForRender
 } from "@/lib/map-marker-rendering";
+import { TEST_AVATAR_URL, TEST_IMAGE_URL } from "@/tests/fixtures/media";
 import type { MapMarker, PostSummary } from "@/types/app";
 
 function makePost(overrides: Partial<PostSummary> = {}): PostSummary {
@@ -16,7 +17,7 @@ function makePost(overrides: Partial<PostSummary> = {}): PostSummary {
     id: overrides.id ?? "post-1",
     userId,
     mediaType: "IMAGE",
-    mediaUrl: "/uploads/example.jpg",
+    mediaUrl: TEST_IMAGE_URL,
     thumbnailUrl: null,
     caption: "A travel memory worth keeping.",
     placeName: "Cafe Example",
@@ -30,7 +31,7 @@ function makePost(overrides: Partial<PostSummary> = {}): PostSummary {
       id: userId,
       name: userId === "viewer" ? "Avery Chen" : "Maya Singh",
       username: userId === "viewer" ? "avery" : "maya",
-      avatarUrl: "/avatars/maya.jpg"
+      avatarUrl: TEST_AVATAR_URL
     },
     ...overrides
   };
@@ -94,7 +95,7 @@ function makePlaceClusterMarker(postCount = 7): MapMarker {
       id: "post-1",
       caption: "A travel memory worth keeping.",
       mediaType: "IMAGE",
-      mediaUrl: "/uploads/example.jpg",
+      mediaUrl: TEST_IMAGE_URL,
       thumbnailUrl: null,
       placeName: "Cafe Example",
       city: "Paris",

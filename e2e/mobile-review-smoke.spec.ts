@@ -3,6 +3,8 @@ import { expect, test, type Page } from "@playwright/test";
 import { resetDemoAppState } from "./helpers/test-state";
 
 const appOrigin = "http://127.0.0.1:3000";
+const mockUploadedMediaUrl =
+  "https://vlsjxnserriszfrfxitv.supabase.co/storage/v1/object/public/media/e2e/mock-upload.png";
 
 test.use({
   geolocation: { latitude: 43.6532, longitude: -79.3832 },
@@ -44,6 +46,25 @@ test("mobile shell navigation stays in-app and create flow shows offline fallbac
     if (response.status() === 404 && response.url().startsWith(appOrigin)) {
       notFoundUrls.push(response.url());
     }
+  });
+
+  await page.route("**/api/uploads", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        mediaUrl: mockUploadedMediaUrl,
+        mediaType: "IMAGE",
+        thumbnailUrl: null
+      })
+    });
+  });
+  await page.route(mockUploadedMediaUrl, async (route) => {
+    await route.fulfill({
+      status: 200,
+      path: uploadPath,
+      contentType: "image/png"
+    });
   });
 
   await signInAsDemo(page);

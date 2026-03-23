@@ -2,10 +2,11 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import {
   AccountDeletionNotFoundError,
   DemoAccountDeletionNotAllowedError,
-  collectAccountDeletionBlobUrls,
+  collectAccountDeletionMediaUrls,
   deleteAccount,
   planAccountGroupCleanup
 } from "@/lib/account-deletion";
+import { TEST_AVATAR_URL, TEST_IMAGE_URL, TEST_THUMBNAIL_URL } from "@/tests/fixtures/media";
 
 describe("account deletion helpers", () => {
   test("plans direct chat deletion, empty group removal, and owner transfer", () => {
@@ -57,13 +58,13 @@ describe("account deletion helpers", () => {
     ]);
   });
 
-  test("collects only blob-backed avatar and post urls", () => {
-    const urls = collectAccountDeletionBlobUrls({
-      avatarUrl: "https://demo-public.blob.vercel-storage.com/avatar.jpg",
+  test("collects only trusted media urls from the account snapshot", () => {
+    const urls = collectAccountDeletionMediaUrls({
+      avatarUrl: TEST_AVATAR_URL,
       posts: [
         {
-          mediaUrl: "https://demo-public.blob.vercel-storage.com/post.jpg",
-          thumbnailUrl: "https://demo-public.blob.vercel-storage.com/post-thumb.jpg"
+          mediaUrl: TEST_IMAGE_URL,
+          thumbnailUrl: TEST_THUMBNAIL_URL
         },
         {
           mediaUrl: "https://picsum.photos/seed/pinly/1200/900",
@@ -73,9 +74,9 @@ describe("account deletion helpers", () => {
     });
 
     expect(urls).toEqual([
-      "https://demo-public.blob.vercel-storage.com/avatar.jpg",
-      "https://demo-public.blob.vercel-storage.com/post.jpg",
-      "https://demo-public.blob.vercel-storage.com/post-thumb.jpg"
+      TEST_AVATAR_URL,
+      TEST_IMAGE_URL,
+      TEST_THUMBNAIL_URL
     ]);
   });
 });
@@ -88,7 +89,7 @@ describe("deleteAccount", () => {
   const userDeleteMock = vi.fn();
   const findUniqueMock = vi.fn();
   const transactionMock = vi.fn();
-  const deleteBlobUrlsMock = vi.fn();
+  const deleteMediaObjectsMock = vi.fn();
 
   beforeEach(() => {
     countMock.mockReset();
@@ -98,7 +99,7 @@ describe("deleteAccount", () => {
     userDeleteMock.mockReset();
     findUniqueMock.mockReset();
     transactionMock.mockReset();
-    deleteBlobUrlsMock.mockReset();
+    deleteMediaObjectsMock.mockReset();
   });
 
   test("deletes the account and cleans related records", async () => {
@@ -125,11 +126,11 @@ describe("deleteAccount", () => {
       id: "user_1",
       email: "avery@example.com",
       username: "avery",
-      avatarUrl: "https://demo-public.blob.vercel-storage.com/avatar.jpg",
+      avatarUrl: TEST_AVATAR_URL,
       posts: [
         {
-          mediaUrl: "https://demo-public.blob.vercel-storage.com/post.jpg",
-          thumbnailUrl: "https://demo-public.blob.vercel-storage.com/post-thumb.jpg"
+          mediaUrl: TEST_IMAGE_URL,
+          thumbnailUrl: TEST_THUMBNAIL_URL
         }
       ],
       groupMembers: [
@@ -190,7 +191,7 @@ describe("deleteAccount", () => {
       db: {
         $transaction: transactionMock
       } as never,
-      deleteBlobUrls: deleteBlobUrlsMock
+      deleteMediaObjects: deleteMediaObjectsMock
     });
 
     expect(groupDeleteManyMock).toHaveBeenNthCalledWith(
@@ -218,19 +219,15 @@ describe("deleteAccount", () => {
     expect(userDeleteMock).toHaveBeenCalledWith({
       where: { id: "user_1" }
     });
-    expect(deleteBlobUrlsMock).toHaveBeenCalledWith([
-      "https://demo-public.blob.vercel-storage.com/avatar.jpg",
-      "https://demo-public.blob.vercel-storage.com/post.jpg",
-      "https://demo-public.blob.vercel-storage.com/post-thumb.jpg"
-    ]);
+    expect(deleteMediaObjectsMock).toHaveBeenCalledWith([TEST_AVATAR_URL, TEST_IMAGE_URL, TEST_THUMBNAIL_URL]);
     expect(summary).toMatchObject({
       username: "avery",
       postsDeleted: 1,
       directConversationsDeleted: 1,
       groupOwnershipTransfers: 1,
       passwordResetTokensDeleted: 2,
-      deletedBlobCount: 3,
-      blobDeletionFailed: false
+      deletedMediaObjectCount: 3,
+      mediaDeletionFailed: false
     });
   });
 
@@ -249,7 +246,7 @@ describe("deleteAccount", () => {
         db: {
           $transaction: transactionMock
         } as never,
-        deleteBlobUrls: deleteBlobUrlsMock
+        deleteMediaObjects: deleteMediaObjectsMock
       })
     ).rejects.toBeInstanceOf(AccountDeletionNotFoundError);
   });
@@ -297,7 +294,7 @@ describe("deleteAccount", () => {
         db: {
           $transaction: transactionMock
         } as never,
-        deleteBlobUrls: deleteBlobUrlsMock
+        deleteMediaObjects: deleteMediaObjectsMock
       })
     ).rejects.toBeInstanceOf(DemoAccountDeletionNotAllowedError);
   });

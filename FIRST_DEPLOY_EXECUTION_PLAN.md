@@ -1,11 +1,11 @@
 # FIRST DEPLOY EXECUTION PLAN
 
-Target stack: Vercel + Neon Postgres + Prisma + Vercel Blob.
+Target stack: Vercel + Neon Postgres + Prisma + Supabase Storage.
 
 ## 1. Setup Order (Do This First)
 1. Create Neon production project/database.
 2. Create Vercel project from this repo.
-3. Create or attach a Vercel Blob store.
+3. Create or attach a Supabase Storage bucket.
 4. Set Vercel environment variables before first deploy (see list below).
 5. Run Prisma migration deploy against production database.
 6. Deploy app to Vercel.
@@ -35,11 +35,12 @@ Required:
 - `AUTH_SECRET` = strong random string
 - `NEXTAUTH_URL` = `https://<your-production-domain>`
 - `AUTH_URL` = `https://<your-production-domain>`
-- `BLOB_READ_WRITE_TOKEN` = Vercel Blob RW token
+- `NEXT_PUBLIC_SUPABASE_URL` = Supabase project URL
+- `SUPABASE_URL` = Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY` = Supabase service role key
+- `SUPABASE_STORAGE_BUCKET` = `media`
 
 Recommended:
-- `BLOB_ACCESS_MODE` = `private`
-- `BLOB_UPLOAD_PREFIX` = `posts`
 - `MAX_UPLOAD_SIZE_MB` = `4`
 - `RATE_LIMIT_DRIVER` = unset
 - `ALLOW_DESTRUCTIVE_SEED` = unset in production
@@ -86,8 +87,8 @@ Local development:
 - Fix: set `AUTH_SECRET`, set both `NEXTAUTH_URL` and `AUTH_URL` to production domain, redeploy.
 
 4. Upload endpoint returns storage misconfigured errors.
-- Likely cause: missing `BLOB_READ_WRITE_TOKEN`.
-- Fix: set token, confirm Blob store attached to project, redeploy.
+- Likely cause: missing `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, or `SUPABASE_STORAGE_BUCKET`.
+- Fix: set the Supabase media env vars, confirm the bucket exists and is public, redeploy.
 
 5. Uploads fail for larger files.
 - Likely cause: serverless request body limit.

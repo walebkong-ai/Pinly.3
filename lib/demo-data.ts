@@ -4,6 +4,7 @@ import { addDays, subDays } from "date-fns";
 import { DEMO_PASSWORD, DEMO_USERS, type DemoUserKey, getDemoAvatarUrl } from "@/lib/demo-config";
 import { normalizeFriendPair } from "@/lib/friendships";
 import { createLegalAcceptanceRecord } from "@/lib/legal";
+import { normalizeStoredMediaUrl } from "@/lib/media-url";
 import { createUniqueUsername } from "@/lib/usernames";
 
 const DEMO_FRIENDSHIPS = [
@@ -95,24 +96,31 @@ type DemoResetPrisma = DemoProvisionPrisma & {
   };
 };
 
-function resolveDemoPostMedia(index: number, mediaType: "IMAGE" | "VIDEO") {
-  if (process.env.PINLY_E2E_MODE === "1") {
+function resolveDemoPostMedia(_index: number, mediaType: "IMAGE" | "VIDEO") {
+  const imageUrl = normalizeStoredMediaUrl(process.env.PINLY_DEMO_IMAGE_URL ?? null);
+  const videoUrl = normalizeStoredMediaUrl(process.env.PINLY_DEMO_VIDEO_URL ?? null);
+  const videoThumbnailUrl = normalizeStoredMediaUrl(process.env.PINLY_DEMO_VIDEO_THUMBNAIL_URL ?? null);
+
+  if (mediaType === "VIDEO") {
+    if (!videoUrl) {
+      return null;
+    }
+
     return {
-      mediaType: MediaType.IMAGE,
-      mediaUrl: "/logo.png",
-      thumbnailUrl: null
+      mediaType: MediaType.VIDEO,
+      mediaUrl: videoUrl,
+      thumbnailUrl: videoThumbnailUrl
     };
   }
 
-  const seedIndex = index + 1;
+  if (!imageUrl) {
+    return null;
+  }
 
   return {
-    mediaType: mediaType === "VIDEO" ? MediaType.VIDEO : MediaType.IMAGE,
-    mediaUrl:
-      mediaType === "IMAGE"
-        ? `https://picsum.photos/seed/pinly-${seedIndex}/1200/900`
-        : "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-    thumbnailUrl: mediaType === "VIDEO" ? `https://picsum.photos/seed/pinly-video-${seedIndex}/1200/900` : null
+    mediaType: MediaType.IMAGE,
+    mediaUrl: imageUrl,
+    thumbnailUrl: null
   };
 }
 
@@ -233,6 +241,11 @@ export async function ensureDemoDataset(prisma: DemoProvisionPrisma) {
 
     const seedIndex = index + 1;
     const resolvedMedia = resolveDemoPostMedia(index, mediaType);
+
+    if (!resolvedMedia) {
+      continue;
+    }
+
     await prisma.post.create({
       data: {
         userId: user.id,

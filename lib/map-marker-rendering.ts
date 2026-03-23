@@ -1,3 +1,4 @@
+import { normalizeProfileImageUrl } from "@/lib/media-url";
 import type { MapMarker, MapVisualMode } from "@/types/app";
 
 const PIN_PATH =
@@ -44,11 +45,8 @@ function escapeHtml(value: string) {
 }
 
 function sanitizeImageUrl(value?: string | null) {
-  if (!value) return null;
-  if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/")) {
-    return escapeHtml(value);
-  }
-  return null;
+  const normalizedUrl = normalizeProfileImageUrl(value);
+  return normalizedUrl ? escapeHtml(normalizedUrl) : null;
 }
 
 function scalePinWidth(height: number) {

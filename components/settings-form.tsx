@@ -8,6 +8,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { AvatarPhotoEditor } from "@/components/profile/avatar-photo-editor";
+import { normalizeProfileImageUrl } from "@/lib/media-url";
 import { isNativePlatform } from "@/lib/native-platform";
 import { PINLY_PUSH_OPEN_PROMPT_EVENT } from "@/lib/push-notifications";
 
@@ -109,10 +110,16 @@ export function SettingsForm({ initialProfile, initialSettings }: SettingsFormPr
       }
 
       const uploadData = await uploadResponse.json();
+      const normalizedAvatarUrl = normalizeProfileImageUrl(uploadData?.mediaUrl);
+
+      if (!normalizedAvatarUrl) {
+        throw new Error("Upload returned an invalid profile image URL.");
+      }
+
       const profileResponse = await fetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ avatarUrl: uploadData.mediaUrl })
+        body: JSON.stringify({ avatarUrl: normalizedAvatarUrl })
       });
 
       if (!profileResponse.ok) {
@@ -120,7 +127,7 @@ export function SettingsForm({ initialProfile, initialSettings }: SettingsFormPr
         throw new Error(errorData?.error ?? "Could not update profile photo.");
       }
 
-      setAvatarUrl(uploadData.mediaUrl);
+      setAvatarUrl(normalizedAvatarUrl);
       router.refresh();
       toast.success("Profile photo updated");
       setPendingAvatarFile(null);

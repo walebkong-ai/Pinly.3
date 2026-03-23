@@ -22,6 +22,7 @@ import {
   serializeVisitedDateInput
 } from "@/lib/create-post-location";
 import { optimizeImageForUpload } from "@/lib/client-image-upload";
+import { normalizeStoredMediaUrl } from "@/lib/media-url";
 import { isNativePlatform } from "@/lib/native-platform";
 import { getMediaProxyUrl } from "@/lib/utils";
 import type { PlaceSearchResult } from "@/types/app";
@@ -366,7 +367,22 @@ export function CreatePostForm() {
       }
 
       const data = await response.json();
-      setUploadState(data);
+      const mediaUrl = normalizeStoredMediaUrl(data?.mediaUrl);
+      const thumbnailUrl =
+        data?.thumbnailUrl === null || data?.thumbnailUrl === undefined
+          ? null
+          : normalizeStoredMediaUrl(data.thumbnailUrl);
+
+      if (!mediaUrl || (data?.thumbnailUrl && !thumbnailUrl)) {
+        toast.error("Upload returned an invalid media URL.");
+        return;
+      }
+
+      setUploadState({
+        mediaUrl,
+        mediaType: data.mediaType,
+        thumbnailUrl
+      });
       toast.success("Media uploaded.");
     } catch {
       toast.error("Upload failed. Check your connection and try again.");
@@ -619,7 +635,6 @@ export function CreatePostForm() {
                     fill
                     sizes="(max-width: 768px) 100vw, 50vw"
                     className="rounded-[2rem] object-cover"
-                    unoptimized={uploadPreviewUrl.startsWith("/api/media")}
                   />
                 </div>
               )}

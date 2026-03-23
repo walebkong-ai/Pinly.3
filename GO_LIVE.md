@@ -1,14 +1,16 @@
 # Pinly Go-Live Readiness
 
-This runbook is for the first real Pinly deployment on Vercel with Neon Postgres, Prisma, and Vercel Blob.
+This runbook is for the first real Pinly deployment on Vercel with Neon Postgres, Prisma, and Supabase Storage.
 
 ## Pre-Deploy Checklist
 - [ ] `DATABASE_URL` points to the Neon pooled runtime URL
 - [ ] `DIRECT_URL` points to the Neon direct connection URL
 - [ ] `AUTH_SECRET` is a strong random secret
 - [ ] `NEXTAUTH_URL` matches the production domain
-- [ ] `BLOB_READ_WRITE_TOKEN` is set
-- [ ] `BLOB_ACCESS_MODE=private`
+- [ ] `NEXT_PUBLIC_SUPABASE_URL` is set
+- [ ] `SUPABASE_URL` is set
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` is set
+- [ ] `SUPABASE_STORAGE_BUCKET=media` (or your chosen public bucket)
 - [ ] `RATE_LIMIT_DRIVER` is unset in production
 - [ ] `MAX_UPLOAD_SIZE_MB=4`
 - [ ] `npm run type-check` passes locally
@@ -23,7 +25,7 @@ This runbook is for the first real Pinly deployment on Vercel with Neon Postgres
 1. Create the Neon production database and copy both connection strings.
 2. Import the repo into Vercel.
 3. Add all required Vercel environment variables before the first deploy.
-4. Connect or create the Vercel Blob store and verify the token.
+4. Connect or create the Supabase Storage bucket and verify the media env vars.
 5. Run `npm run prisma:migrate:deploy` against production.
 6. Trigger the first Vercel deployment.
 7. Open the deployed app and complete the post-deploy verification list below before sharing it.
@@ -56,8 +58,8 @@ This runbook is for the first real Pinly deployment on Vercel with Neon Postgres
 - Re-run `npm run prisma:migrate:deploy` after the corrected migration is committed.
 
 ### Upload failures
-- Check `BLOB_READ_WRITE_TOKEN`, `BLOB_ACCESS_MODE`, and `MAX_UPLOAD_SIZE_MB`.
-- If uploads suddenly fail in production, verify that Vercel Blob is still attached to the project and the token has not been rotated or removed.
+- Check `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET`, and `MAX_UPLOAD_SIZE_MB`.
+- If uploads suddenly fail in production, verify that Supabase Storage is reachable, the bucket is public, and the service role key has not been rotated or removed.
 - If needed, roll back to the previous Vercel deployment while keeping the database unchanged.
 
 ### Auth/session failures

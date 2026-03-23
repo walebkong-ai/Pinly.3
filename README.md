@@ -8,7 +8,7 @@ Pinly is a private, friends-only social travel MVP built with Next.js, Prisma, P
 - Auth.js credentials auth with JWT sessions
 - PostgreSQL (Supabase-compatible) + Prisma ORM
 - MapLibre + react-map-gl with staged server-side map aggregation
-- Vercel Blob uploads with private media proxying through the app
+- Supabase Storage uploads with public media URLs
 
 ## Why this stack
 - Fastest path to a coherent demo in a single deployable app
@@ -79,7 +79,7 @@ npm run prisma:seed
 ```bash
 npm run dev
 ```
-7. If you want to test uploads locally, add a real `BLOB_READ_WRITE_TOKEN`. Pinly now uses the Vercel Blob upload path in both local development and production.
+7. If you want to test uploads locally, add real `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_STORAGE_BUCKET` values. Pinly now uploads directly to Supabase Storage in every environment.
 
 ## Demo accounts
 After seeding, sign in with any of these and password `password123`:
@@ -101,13 +101,16 @@ The deployed demo no longer depends on running the destructive seed script in pr
 - `GOOGLE_CLIENT_SECRET`: required if enabling Google auth
 - `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED`: optional fallback to show Google button in UI (`true`/`false`)
 - `NEXT_PUBLIC_MAPTILER_API_KEY`: optional, switches the satellite basemap to MapTiler; when unset, the app falls back to Esri World Imagery
-- `BLOB_READ_WRITE_TOKEN`: required for uploads and for private media fetches through `/api/media`
-- `BLOB_UPLOAD_PREFIX`: optional blob folder prefix
-- `BLOB_ACCESS_MODE`: set to `private` for friend-gated media delivery through `/api/media`
+- `NEXT_PUBLIC_SUPABASE_URL`: public Supabase project URL used for rendering media
+- `SUPABASE_URL`: optional server override for the same Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY`: required for uploads and Supabase media cleanup
+- `SUPABASE_STORAGE_BUCKET`: public storage bucket name for Pinly media, defaults to `media`
 - `MAX_UPLOAD_SIZE_MB`: upload cap, keep this at `4` for Vercel server uploads
 - `RATE_LIMIT_DRIVER`: optional local override. Leave unset to use the database-backed limiter; use `memory` only for short-lived local debugging.
 - `AUTH_DEBUG_RESET_LINKS`: optional local-only preview for password reset links; keep `false` outside development
 - `ALLOW_DESTRUCTIVE_SEED`: leave unset locally; only use `pinly-demo` for intentional demo/staging reseeds
+- `PINLY_DEMO_AVATAR_URL`, `PINLY_DEMO_IMAGE_URL`, `PINLY_DEMO_VIDEO_URL`, `PINLY_DEMO_VIDEO_THUMBNAIL_URL`: optional Supabase-hosted demo media used when seeding sample content
+- `PINLY_FALLBACK_AVATAR_URL`, `PINLY_FALLBACK_IMAGE_URL`, `PINLY_FALLBACK_VIDEO_URL`, `PINLY_FALLBACK_VIDEO_THUMBNAIL_URL`: optional Supabase-hosted fallbacks used by `npm run media:repair`
 
 ## Useful commands
 ```bash
@@ -127,7 +130,7 @@ python3 tools/check_env.py
 - Visibility is derived from accepted friendships plus the current user.
 - Map queries are bounds-based and zoom-aware so the client only asks for relevant staged markers.
 - City discovery reuses the same protected visibility rules as the map.
-- Uploads use Vercel Blob in every environment; the app still authorizes legacy relative media URLs so older local/demo content remains readable.
+- Uploads use Supabase Storage in every environment; non-Supabase media is treated as legacy data and should be repaired with `npm run media:repair`.
 - Prisma migrations are checked into `prisma/migrations/` so `prisma migrate deploy` can safely bootstrap production PostgreSQL in deployment environments.
 - Rate limiting is database-backed by default so auth, upload, and write-heavy routes stay protected across serverless instances.
 - Lightweight groups are currently friend-backed filter options and are intentionally structured to support a future persistent group model without changing the map flow.
@@ -141,7 +144,7 @@ python3 tools/check_env.py
 - Server-side uploads on Vercel should stay small. Larger media needs a future client-upload path.
 
 ## Deployment
-- Production target: Vercel + PostgreSQL + Prisma + Vercel Blob
+- Production target: Vercel + PostgreSQL + Prisma + Supabase Storage
 - Exact deployment steps and the launch checklist live in [DEPLOYMENT.md](./DEPLOYMENT.md)
 - Final go-live runbook and manual QA flows live in [GO_LIVE.md](./GO_LIVE.md)
 - First live deployment command order and failure-mode playbook live in [FIRST_DEPLOY_EXECUTION_PLAN.md](./FIRST_DEPLOY_EXECUTION_PLAN.md)

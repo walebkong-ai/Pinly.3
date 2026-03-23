@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { derivePostCategories, filterPostsByCategories } from "@/lib/map-filters";
+import { TEST_IMAGE_URL } from "@/tests/fixtures/media";
 import type { PostSummary } from "@/types/app";
 
 function makePost(overrides: Partial<PostSummary>): PostSummary {
@@ -7,7 +8,7 @@ function makePost(overrides: Partial<PostSummary>): PostSummary {
     id: overrides.id ?? "post-1",
     userId: overrides.userId ?? "user-1",
     mediaType: overrides.mediaType ?? "IMAGE",
-    mediaUrl: overrides.mediaUrl ?? "/uploads/example.jpg",
+    mediaUrl: overrides.mediaUrl ?? TEST_IMAGE_URL,
     thumbnailUrl: overrides.thumbnailUrl ?? null,
     caption: overrides.caption ?? "Morning coffee before the museum.",
     placeName: overrides.placeName ?? "Cafe de Paris",

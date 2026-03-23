@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { buildLayerUserIds, buildMapPayload, getMapStage } from "@/lib/map-data";
+import { TEST_IMAGE_URL } from "@/tests/fixtures/media";
 import type { PostSummary } from "@/types/app";
 
 function makePost(overrides: Partial<PostSummary>): PostSummary {
@@ -11,7 +12,7 @@ function makePost(overrides: Partial<PostSummary>): PostSummary {
     id,
     userId,
     mediaType: "IMAGE",
-    mediaUrl: "/uploads/example.jpg",
+    mediaUrl: TEST_IMAGE_URL,
     thumbnailUrl: null,
     caption: "A travel memory worth keeping.",
     placeName: "Cafe Example",

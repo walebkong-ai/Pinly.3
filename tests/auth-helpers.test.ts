@@ -211,7 +211,7 @@ describe("auth helpers", () => {
     expect(prisma.user.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          avatarUrl: "https://lh3.googleusercontent.com/a/test-avatar",
+          avatarUrl: null,
           termsAcceptedAt: acceptedAt,
           privacyAcceptedAt: acceptedAt,
           termsVersion: legalAcceptance.termsVersion,

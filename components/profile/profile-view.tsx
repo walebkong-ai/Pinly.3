@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Archive, Bookmark, Folders, MapPinned, Settings2 } from "lucide-react";
+import { Archive, Bookmark, Folders, ImageOff, MapPinned, Settings2 } from "lucide-react";
 import type { CollectionSummary, PostSummary, ProfileTravelSummary } from "@/types/app";
 import type { RelationshipDetails } from "@/lib/relationships";
 import { getMediaProxyUrl } from "@/lib/utils";
@@ -241,14 +241,19 @@ export function ProfileView({
                   className="group flex items-center gap-3 rounded-[1.25rem] border bg-[var(--surface-strong)] p-3 transition hover:bg-[var(--card-strong)]"
                 >
                   <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-[var(--surface-soft)]">
-                    <Image
-                      src={getMediaProxyUrl(memory.thumbnailUrl ?? memory.mediaUrl)}
-                      alt={memory.placeName}
-                      fill
-                      sizes="56px"
-                      className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                      unoptimized={getMediaProxyUrl(memory.thumbnailUrl ?? memory.mediaUrl).startsWith("/api/media")}
-                    />
+                    {getMediaProxyUrl(memory.thumbnailUrl ?? memory.mediaUrl) ? (
+                      <Image
+                        src={getMediaProxyUrl(memory.thumbnailUrl ?? memory.mediaUrl)}
+                        alt={memory.placeName}
+                        fill
+                        sizes="56px"
+                        className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-[var(--foreground)]/45">
+                        <ImageOff className="h-5 w-5" />
+                      </div>
+                    )}
                   </div>
                   <div className="min-w-0">
                     <p className="truncate font-[var(--font-serif)] text-[0.98rem] leading-snug text-[var(--foreground)]">

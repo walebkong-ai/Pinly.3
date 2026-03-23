@@ -1,7 +1,8 @@
 import type { GroupRole, Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { isReservedDemoEmail } from "@/lib/demo-config";
-import { shouldProxyMediaUrl } from "@/lib/media-url";
+import { normalizeProfileImageUrl, normalizeStoredMediaUrl } from "@/lib/media-url";
+import { deleteSupabaseStorageObjects } from "@/lib/supabase-storage";
 
 type AccountDeletionRunner = Pick<PrismaClient, "$transaction">;
 
@@ -56,8 +57,8 @@ type AccountDeletionSnapshot = {
 
 export type AccountDeletionSummary = {
   username: string;
-  deletedBlobCount: number;
-  blobDeletionFailed: boolean;
+  deletedMediaObjectCount: number;
+  mediaDeletionFailed: boolean;
   postsDeleted: number;
   collectionsDeleted: number;
   wantToGoPlacesDeleted: number;
@@ -158,22 +159,27 @@ export function planAccountGroupCleanup(userId: string, memberships: GroupMember
   };
 }
 
-export function collectAccountDeletionBlobUrls(snapshot: Pick<AccountDeletionSnapshot, "avatarUrl" | "posts">) {
+export function collectAccountDeletionMediaUrls(snapshot: Pick<AccountDeletionSnapshot, "avatarUrl" | "posts">) {
   return Array.from(
     new Set(
       [snapshot.avatarUrl, ...snapshot.posts.flatMap((post) => [post.mediaUrl, post.thumbnailUrl])]
-        .filter((url): url is string => typeof url === "string" && shouldProxyMediaUrl(url))
+        .filter((url): url is string => {
+          if (typeof url !== "string") {
+            return false;
+          }
+
+          return normalizeStoredMediaUrl(url) !== null || normalizeProfileImageUrl(url) !== null;
+        })
     )
   );
 }
 
-async function deleteBlobUrls(urls: string[]) {
+async function deleteMediaObjects(urls: string[]) {
   if (urls.length === 0) {
     return;
   }
 
-  const { del } = await import("@vercel/blob");
-  await del(urls);
+  await deleteSupabaseStorageObjects(urls);
 }
 
 async function readDeletionSnapshot(tx: Prisma.TransactionClient, userId: string) {
@@ -241,11 +247,11 @@ export async function deleteAccount(
   userId: string,
   options?: {
     db?: AccountDeletionRunner;
-    deleteBlobUrls?: (urls: string[]) => Promise<void>;
+    deleteMediaObjects?: (urls: string[]) => Promise<void>;
   }
 ): Promise<AccountDeletionSummary> {
   const db = options?.db ?? prisma;
-  const deleteBlobUrlsFn = options?.deleteBlobUrls ?? deleteBlobUrls;
+  const deleteMediaObjectsFn = options?.deleteMediaObjects ?? deleteMediaObjects;
 
   const deletionResult = await db.$transaction(async (tx) => {
     const snapshot = await readDeletionSnapshot(tx, userId);
@@ -259,7 +265,7 @@ export async function deleteAccount(
     }
 
     const plan = planAccountGroupCleanup(snapshot.id, snapshot.groupMembers);
-    const blobUrls = collectAccountDeletionBlobUrls(snapshot);
+    const mediaUrls = collectAccountDeletionMediaUrls(snapshot);
     const passwordResetTokensDeleted = await tx.passwordResetToken.count({
       where: { email: snapshot.email }
     });
@@ -305,24 +311,24 @@ export async function deleteAccount(
     return {
       snapshot,
       plan,
-      blobUrls,
+      mediaUrls,
       passwordResetTokensDeleted
     };
   });
 
-  let blobDeletionFailed = false;
+  let mediaDeletionFailed = false;
 
   try {
-    await deleteBlobUrlsFn(deletionResult.blobUrls);
+    await deleteMediaObjectsFn(deletionResult.mediaUrls);
   } catch (error) {
-    blobDeletionFailed = true;
-    console.error("Blob cleanup failed after account deletion:", error);
+    mediaDeletionFailed = true;
+    console.error("Supabase media cleanup failed after account deletion:", error);
   }
 
   return {
     username: deletionResult.snapshot.username,
-    deletedBlobCount: deletionResult.blobUrls.length,
-    blobDeletionFailed,
+    deletedMediaObjectCount: deletionResult.mediaUrls.length,
+    mediaDeletionFailed,
     postsDeleted: deletionResult.snapshot._count.posts,
     collectionsDeleted: deletionResult.snapshot._count.postCollections,
     wantToGoPlacesDeleted: deletionResult.snapshot._count.wantToGoPlaces,

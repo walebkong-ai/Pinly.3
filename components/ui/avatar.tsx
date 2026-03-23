@@ -1,5 +1,8 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Image from "next/image";
-import { cn, getMediaProxyUrl } from "@/lib/utils";
+import { cn, getProfileImageUrl } from "@/lib/utils";
 
 export function Avatar({
   name,
@@ -10,17 +13,24 @@ export function Avatar({
   src?: string | null;
   className?: string;
 }) {
-  const proxyUrl = getMediaProxyUrl(src);
+  const normalizedUrl = getProfileImageUrl(src);
+  const [imageFailed, setImageFailed] = useState(false);
 
-  if (proxyUrl) {
+  useEffect(() => {
+    setImageFailed(false);
+  }, [normalizedUrl]);
+
+  const imageUrl = imageFailed ? "" : normalizedUrl;
+
+  if (imageUrl) {
     return (
       <div className={cn("relative h-10 w-10 overflow-hidden rounded-full border bg-[var(--surface-strong)]", className)}>
-        <Image 
-          src={proxyUrl} 
-          alt={name} 
-          fill 
-          className="object-cover" 
-          unoptimized={proxyUrl.startsWith("/api/media")}
+        <Image
+          src={imageUrl}
+          alt={name}
+          fill
+          className="object-cover"
+          onError={() => setImageFailed(true)}
         />
       </div>
     );

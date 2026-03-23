@@ -8,6 +8,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AvatarPhotoEditor } from "@/components/profile/avatar-photo-editor";
+import { normalizeProfileImageUrl } from "@/lib/media-url";
 import { normalizeUsername, usernameRegex, usernameValidationMessage } from "@/lib/validation";
 
 export function EditProfile({
@@ -57,7 +58,14 @@ export function EditProfile({
       }
 
       const data = await response.json();
-      setAvatarUrl(data.mediaUrl);
+      const normalizedAvatarUrl = normalizeProfileImageUrl(data?.mediaUrl);
+
+      if (!normalizedAvatarUrl) {
+        toast.error("Avatar upload returned an invalid media URL.");
+        return;
+      }
+
+      setAvatarUrl(normalizedAvatarUrl);
       setPendingAvatarFile(null);
       toast.success("Avatar uploaded! Save profile to apply.");
     } catch {

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { TEST_THUMBNAIL_URL } from "@/tests/fixtures/media";
 
 const authMock = vi.fn();
 const getGroupConversationMock = vi.fn();
@@ -83,7 +84,7 @@ describe("group messages route", () => {
             placeName: "Miradouro",
             city: "Lisbon",
             country: "Portugal",
-            thumbnailUrl: "/uploads/post_1.jpg"
+            thumbnailUrl: TEST_THUMBNAIL_URL
           }
         }
       ]

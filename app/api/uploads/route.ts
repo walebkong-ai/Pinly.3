@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { StorageConfigError, assertStorageConfiguration, getMaxUploadSizeBytes, inferMediaType, saveUploadedFile } from "@/lib/storage";
 import { apiError } from "@/lib/api";
+import { normalizeStoredMediaUrl } from "@/lib/media-url";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import type { NextRequest } from "next/server";
 
@@ -70,7 +71,12 @@ export async function POST(request: NextRequest) {
 
   try {
     const mediaType = inferMediaType(file);
-    const mediaUrl = await saveUploadedFile(file, { ownerId: token.id });
+    const savedMediaUrl = await saveUploadedFile(file, { ownerId: token.id });
+    const mediaUrl = normalizeStoredMediaUrl(savedMediaUrl);
+
+    if (!mediaUrl) {
+      throw new Error("Upload storage returned a non-Supabase media URL.");
+    }
 
     return Response.json({
       mediaUrl,

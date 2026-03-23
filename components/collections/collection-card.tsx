@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { FolderOpen, MapPin } from "lucide-react";
+import { FolderOpen, ImageOff, MapPin } from "lucide-react";
 import type { CollectionSummary } from "@/types/app";
 import { formatVisitDate, getMediaProxyUrl } from "@/lib/utils";
 
@@ -13,6 +13,7 @@ export function CollectionCard({
 }) {
   const previewPost = collection.previewPost;
   const color = collection.color;
+  const previewUrl = previewPost ? getMediaProxyUrl(previewPost.thumbnailUrl ?? previewPost.mediaUrl) : "";
 
   return (
     <Link
@@ -22,13 +23,18 @@ export function CollectionCard({
       <div className={compact ? "aspect-[1.3/1]" : "aspect-[4/3]"}>
         {previewPost ? (
           <div className="relative h-full w-full overflow-hidden">
-            <Image
-              src={getMediaProxyUrl(previewPost.thumbnailUrl ?? previewPost.mediaUrl)}
-              alt=""
-              fill
-              className="object-cover transition duration-500 group-hover:scale-[1.02]"
-              unoptimized={getMediaProxyUrl(previewPost.thumbnailUrl ?? previewPost.mediaUrl).startsWith("/api/media")}
-            />
+            {previewUrl ? (
+              <Image
+                src={previewUrl}
+                alt=""
+                fill
+                className="object-cover transition duration-500 group-hover:scale-[1.02]"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-[var(--surface-soft)] text-[var(--foreground)]/45">
+                <ImageOff className="h-7 w-7" />
+              </div>
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-4 text-white">
               <p className="line-clamp-1 text-lg font-semibold">{collection.name}</p>

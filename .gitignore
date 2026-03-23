@@ -9,7 +9,6 @@ out/*
 !out/index.html
 playwright-report
 test-results
-public/uploads
 prisma/dev.db
 dump.sql
 tsconfig.tsbuildinfo

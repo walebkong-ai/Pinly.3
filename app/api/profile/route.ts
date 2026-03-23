@@ -87,7 +87,7 @@ export async function PATCH(request: Request) {
       const normalizedAvatarUrl = normalizeProfileImageUrl(avatarUrl);
 
       if (!normalizedAvatarUrl) {
-        return apiError("Avatar URLs must use a trusted Pinly or supported profile image host.", 400, {
+        return apiError("Avatar URLs must use a trusted Pinly Supabase media URL.", 400, {
           code: "PROFILE_AVATAR_URL_INVALID"
         });
       }

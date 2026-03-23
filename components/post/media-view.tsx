@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Heart } from "lucide-react";
+import { Heart, ImageOff } from "lucide-react";
 import { cn, getMediaProxyUrl } from "@/lib/utils";
 
 export const MediaView = memo(function MediaView({
@@ -26,6 +26,7 @@ export const MediaView = memo(function MediaView({
   const proxyThumb = getMediaProxyUrl(thumbnailUrl);
   const previewUrl = proxyThumb && proxyThumb !== proxyUrl ? proxyThumb : "";
   const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [showHeart, setShowHeart] = useState(false);
   const lastTapRef = useRef(0);
   const hideHeartTimeoutRef = useRef<number | null>(null);
@@ -33,6 +34,7 @@ export const MediaView = memo(function MediaView({
 
   useEffect(() => {
     setLoaded(false);
+    setFailed(false);
     lastTapRef.current = 0;
     setShowHeart(false);
 
@@ -77,6 +79,17 @@ export const MediaView = memo(function MediaView({
   const videoPreload = showVideoControls ? "metadata" : "none";
 
   if (mediaType === "VIDEO") {
+    if (!proxyUrl) {
+      return (
+        <div className={cn("relative flex h-full w-full items-center justify-center rounded-[1.5rem] bg-[var(--surface-soft)]", className)}>
+          <div className="flex flex-col items-center gap-2 text-center text-[var(--foreground)]/56">
+            <ImageOff className="h-8 w-8" />
+            <span className="text-sm font-medium">Video unavailable</span>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className={cn("relative h-full w-full overflow-hidden rounded-[1.5rem] bg-black/5", className)} {...interactiveProps}>
         <video
@@ -85,9 +98,34 @@ export const MediaView = memo(function MediaView({
           playsInline
           poster={proxyThumb || undefined}
           preload={videoPreload}
+          onError={() => setFailed(true)}
         >
           <source src={proxyUrl} />
         </video>
+        {failed ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-[var(--surface-soft)]">
+            <div className="flex flex-col items-center gap-2 text-center text-[var(--foreground)]/56">
+              <ImageOff className="h-8 w-8" />
+              <span className="text-sm font-medium">Video unavailable</span>
+            </div>
+          </div>
+        ) : null}
+        {showHeart && (
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/10">
+            <Heart className="h-24 w-24 animate-in zoom-in-50 fade-in duration-300 fill-white text-white drop-shadow-2xl" />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (!proxyUrl || failed) {
+    return (
+      <div className={cn("relative flex h-full w-full items-center justify-center rounded-[1.5rem] bg-[var(--surface-soft)]", className)} {...interactiveProps}>
+        <div className="flex flex-col items-center gap-2 text-center text-[var(--foreground)]/56">
+          <ImageOff className="h-8 w-8" />
+          <span className="text-sm font-medium">Image unavailable</span>
+        </div>
         {showHeart && (
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/10">
             <Heart className="h-24 w-24 animate-in zoom-in-50 fade-in duration-300 fill-white text-white drop-shadow-2xl" />
@@ -110,7 +148,7 @@ export const MediaView = memo(function MediaView({
             "object-cover transition-[opacity,transform,filter] duration-500 ease-out",
             loaded ? "scale-[1.04] opacity-0 blur-md" : "scale-100 opacity-100 blur-0"
           )}
-          unoptimized={previewUrl.startsWith("/api/media")}
+          onError={() => setLoaded(true)}
         />
       ) : null}
       <Image
@@ -122,12 +160,14 @@ export const MediaView = memo(function MediaView({
         priority={priority}
         fetchPriority={priority ? "high" : undefined}
         onLoad={() => setLoaded(true)}
-        onError={() => setLoaded(true)}
+        onError={() => {
+          setFailed(true);
+          setLoaded(true);
+        }}
         className={cn(
           "object-cover transition-[opacity,transform,filter] duration-500 ease-out will-change-[opacity,transform,filter]",
           loaded ? "scale-100 opacity-100 blur-0" : previewUrl ? "scale-[1.01] opacity-0 blur-sm" : "scale-[1.02] opacity-0 blur-md"
         )}
-        unoptimized={proxyUrl.startsWith("/api/media")}
       />
       {!loaded && !previewUrl ? (
         <div className="absolute inset-0 animate-pulse bg-[linear-gradient(135deg,rgba(15,116,108,0.08),rgba(252,236,218,0.55),rgba(15,116,108,0.12))]" />

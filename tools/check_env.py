@@ -49,10 +49,12 @@ def main() -> None:
     for key, status in check_required().items():
         print(f"{key}: {status}")
 
-    blob_status = "set" if os.environ.get("BLOB_READ_WRITE_TOKEN") else "missing"
-    print("UPLOAD_BACKEND: vercel-blob")
-    print(f"BLOB_READ_WRITE_TOKEN: {blob_status}")
-    print(f"BLOB_ACCESS_MODE: {os.environ.get('BLOB_ACCESS_MODE', 'private')}")
+    supabase_url_status = "set" if os.environ.get("SUPABASE_URL") or os.environ.get("NEXT_PUBLIC_SUPABASE_URL") else "missing"
+    supabase_service_role_status = "set" if os.environ.get("SUPABASE_SERVICE_ROLE_KEY") else "missing"
+    print("UPLOAD_BACKEND: supabase")
+    print(f"SUPABASE_URL_OR_NEXT_PUBLIC_SUPABASE_URL: {supabase_url_status}")
+    print(f"SUPABASE_SERVICE_ROLE_KEY: {supabase_service_role_status}")
+    print(f"SUPABASE_STORAGE_BUCKET: {os.environ.get('SUPABASE_STORAGE_BUCKET', 'media')}")
 
     max_upload_size = os.environ.get("MAX_UPLOAD_SIZE_MB", "(default)")
     print(f"MAX_UPLOAD_SIZE_MB: {max_upload_size}")

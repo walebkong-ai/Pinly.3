@@ -59,8 +59,8 @@ describe("account delete route", () => {
   test("deletes the authenticated account only", async () => {
     deleteAccountMock.mockResolvedValue({
       username: "avery",
-      deletedBlobCount: 3,
-      blobDeletionFailed: false
+      deletedMediaObjectCount: 3,
+      mediaDeletionFailed: false
     });
 
     const { POST } = await import("@/app/api/account/delete/route");

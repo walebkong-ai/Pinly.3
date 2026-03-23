@@ -307,14 +307,13 @@ export function GroupDetail({
                         <div className="group">
                           <Link href={`/posts/${msg.sharedPost.id}`} className="relative block">
                             <div className="relative aspect-[4/3] w-full bg-black/5">
-                              {msg.sharedPost.thumbnailUrl ? (
+                              {getMediaProxyUrl(msg.sharedPost.thumbnailUrl) ? (
                                 <Image
                                   src={getMediaProxyUrl(msg.sharedPost.thumbnailUrl)}
                                   alt={msg.sharedPost.caption?.trim() || msg.sharedPost.placeName || "Shared post"}
                                   fill
                                   sizes="(max-width: 768px) 240px, 280px"
                                   className="object-cover transition-transform duration-300 group-hover:scale-105"
-                                  unoptimized={getMediaProxyUrl(msg.sharedPost.thumbnailUrl).startsWith("/api/media")}
                                 />
                               ) : (
                                 <div className="flex h-full w-full items-center justify-center">

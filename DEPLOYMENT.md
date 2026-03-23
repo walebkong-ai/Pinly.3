@@ -11,10 +11,12 @@ Pinly is ready to deploy on Vercel with PostgreSQL and Prisma. This document cov
   - Random 32+ byte secret for Auth.js session signing
 - `AUTH_URL`
   - Production app URL, same value as `NEXTAUTH_URL`
-- `BLOB_READ_WRITE_TOKEN`
-  - Vercel Blob token for media uploads
-- `BLOB_ACCESS_MODE`
-  - Keep this at `private` so media stays behind app authorization
+- `NEXT_PUBLIC_SUPABASE_URL`
+  - Public Supabase project URL used for rendering media
+- `SUPABASE_URL`
+  - Server-side Supabase project URL used for uploads
+- `SUPABASE_SERVICE_ROLE_KEY`
+  - Supabase service role key for uploads and media cleanup
 
 ## Recommended Vercel Environment Variables
 - `NEXTAUTH_URL`
@@ -27,8 +29,8 @@ Pinly is ready to deploy on Vercel with PostgreSQL and Prisma. This document cov
   - Optional fallback flag for UI visibility when provider discovery fails
 - `MAX_UPLOAD_SIZE_MB`
   - Keep this at `4` for server uploads on Vercel
-- `BLOB_UPLOAD_PREFIX`
-  - Optional folder prefix, default is `posts`
+- `SUPABASE_STORAGE_BUCKET`
+  - Public Supabase bucket name, default is `media`
 - `AUTH_DEBUG_RESET_LINKS`
   - Optional local-only password reset preview. Leave unset or `false` outside development.
 - `RATE_LIMIT_DRIVER`
@@ -63,8 +65,8 @@ This repo now includes a checked-in baseline migration under `prisma/migrations/
 1. Push the repository to GitHub.
 2. Import the repo into Vercel.
 3. Add the required environment variables.
-4. Create or connect a Vercel Blob store and copy `BLOB_READ_WRITE_TOKEN`.
-5. Set `BLOB_ACCESS_MODE=private`.
+4. Create or connect a public Supabase Storage bucket for Pinly media.
+5. Set `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_STORAGE_BUCKET`.
 6. Set the build command to the default project build or leave it blank so Vercel uses `npm run build`.
 7. Run `npm run prisma:migrate:deploy` against the production database before first launch.
 8. Deploy.
@@ -77,7 +79,7 @@ If enabling Google auth, configure OAuth redirect URIs in Google Cloud:
 - Vercel server uploads are small-request friendly. Keep uploads short and keep `MAX_UPLOAD_SIZE_MB` at `4` unless you move to client-side uploads.
 - Nominatim place search is good for prototype scale, but it is not the final production-grade places provider if usage grows.
 - Do not run the destructive seed script against production data. The public demo login now bootstraps the reserved demo dataset non-destructively on first use, so production demo access does not rely on `npm run prisma:seed`.
-- Uploads are Blob-backed in every environment, so production only needs the Blob token and access mode.
+- Uploads are Supabase-backed in every environment, so production needs the Supabase project URL, service role key, and media bucket.
 - Public images are now allowlisted in `next.config.ts`; new remote media hosts must be added there before use.
 
 ## Launch Checklist
@@ -86,8 +88,10 @@ If enabling Google auth, configure OAuth redirect URIs in Google Cloud:
 - [ ] `DIRECT_URL` set to the direct migration connection string
 - [ ] `AUTH_SECRET` set
 - [ ] `AUTH_URL` set to production domain
-- [ ] `BLOB_READ_WRITE_TOKEN` set
-- [ ] `BLOB_ACCESS_MODE=private`
+- [ ] `NEXT_PUBLIC_SUPABASE_URL` set
+- [ ] `SUPABASE_URL` set
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` set
+- [ ] `SUPABASE_STORAGE_BUCKET` set
 - [ ] `NEXTAUTH_URL` set to production domain
 - [ ] `RATE_LIMIT_DRIVER` left unset
 - [ ] `npm run prisma:migrate:deploy` executed successfully

@@ -20,7 +20,7 @@
 
 ## Posts
 - `POST /api/uploads`
-  - Upload media using the configured storage driver
+  - Upload media into the configured Supabase Storage bucket
   - Fails loudly when storage is misconfigured or the request exceeds the deployment-safe size limit
 - `POST /api/posts`
   - Create a new place-based post

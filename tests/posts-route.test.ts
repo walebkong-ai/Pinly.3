@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { TEST_IMAGE_URL } from "@/tests/fixtures/media";
 
 const authMock = vi.fn();
 const getFriendIdsMock = vi.fn();
@@ -71,7 +72,7 @@ describe("posts route", () => {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           mediaType: "IMAGE",
-          mediaUrl: "/uploads/example.jpg",
+          mediaUrl: TEST_IMAGE_URL,
           thumbnailUrl: null,
           caption: "A full day in the city.",
           placeName: "Old Port",
@@ -109,7 +110,7 @@ describe("posts route", () => {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           mediaType: "IMAGE",
-          mediaUrl: "/uploads/example.jpg",
+          mediaUrl: TEST_IMAGE_URL,
           thumbnailUrl: null,
           caption: "A full day in the city.",
           placeName: "Old Port",
@@ -142,7 +143,7 @@ describe("posts route", () => {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           mediaType: "IMAGE",
-          mediaUrl: "/uploads/example.jpg",
+          mediaUrl: TEST_IMAGE_URL,
           thumbnailUrl: null,
           caption: "Harbor morning.",
           placeName: "North Shore",
@@ -183,7 +184,7 @@ describe("posts route", () => {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           mediaType: "IMAGE",
-          mediaUrl: "/uploads/example.jpg",
+          mediaUrl: TEST_IMAGE_URL,
           thumbnailUrl: null,
           caption: "A full day in the city.",
           placeName: "Old Port",
@@ -230,7 +231,7 @@ describe("posts route", () => {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           mediaType: "IMAGE",
-          mediaUrl: "/uploads/example.jpg",
+          mediaUrl: TEST_IMAGE_URL,
           thumbnailUrl: null,
           caption: "A full day in the city.",
           placeName: "Old Port",

@@ -4,7 +4,7 @@ import { apiError, apiValidationError } from "@/lib/api";
 import { normalizeCountryForStorage } from "@/lib/country-flags";
 import { editPostSchema } from "@/lib/validation";
 import { prisma } from "@/lib/prisma";
-import { shouldProxyMediaUrl } from "@/lib/media-url";
+import { deleteSupabaseStorageObjects } from "@/lib/supabase-storage";
 
 type Context = {
   params: Promise<{ postId: string }>;
@@ -166,12 +166,7 @@ export async function DELETE(request: Request, context: Context) {
     where: { id: postId }
   });
 
-  const blobUrlsToDelete = [post.mediaUrl, post.thumbnailUrl].filter((url): url is string => shouldProxyMediaUrl(url));
-
-  if (blobUrlsToDelete.length > 0) {
-    const { del } = await import("@vercel/blob");
-    await del(blobUrlsToDelete).catch(console.error);
-  }
+  await deleteSupabaseStorageObjects([post.mediaUrl, post.thumbnailUrl]).catch(console.error);
 
   return Response.json({ success: true });
 }

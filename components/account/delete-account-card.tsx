@@ -25,7 +25,7 @@ type DeleteAccountCardProps = {
 const deletionConsequences = [
   "Your Pinly profile, memories, collections, comments, likes, saves, want-to-go places, blocks, reports, and friend relationships are permanently removed.",
   "Direct conversations that involve this account are deleted. Messages you sent in group chats are removed, and any remaining group is kept usable by transferring ownership when needed.",
-  "Reset tokens and invite links created by this account are deleted. Uploaded post and avatar files stored by Pinly are removed from blob storage when available."
+  "Reset tokens and invite links created by this account are deleted. Uploaded post and avatar files stored by Pinly are removed from Supabase storage when available."
 ];
 
 export function DeleteAccountCard({
@@ -82,7 +82,7 @@ export function DeleteAccountCard({
         throw new Error(payload?.error ?? "Could not delete account.");
       }
 
-      if (payload?.summary?.blobDeletionFailed) {
+      if (payload?.summary?.mediaDeletionFailed) {
         toast.success("Account deleted. Media cleanup is still finishing in storage.");
       } else {
         toast.success("Account deleted.");
