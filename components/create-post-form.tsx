@@ -370,7 +370,9 @@ export function CreatePostForm() {
             ? "Uploads need Supabase storage configured for this environment."
             : data?.error ?? "Upload failed.";
         setUploadError(message);
-        toast.error(message);
+        if (data?.code !== "UPLOAD_STORAGE_MISCONFIGURED") {
+          toast.error(message);
+        }
         return;
       }
 

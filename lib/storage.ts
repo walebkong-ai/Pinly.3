@@ -34,6 +34,25 @@ export class StorageConfigError extends Error {
   }
 }
 
+function getSupabaseUploadConfigurationError() {
+  try {
+    getSupabasePublicBaseUrl();
+    getSupabaseUploadKey();
+    getSupabaseStorageBucket();
+    return null;
+  } catch (error) {
+    if (error instanceof Error) {
+      return error;
+    }
+
+    return new Error("Supabase media storage is misconfigured.");
+  }
+}
+
+function shouldUseEmbeddedDevelopmentUploads() {
+  return process.env.NODE_ENV !== "production" && getSupabaseUploadConfigurationError() !== null;
+}
+
 function normalizeUploadExtension(file: File) {
   const extension = file.name.includes(".") ? file.name.split(".").pop() ?? "bin" : "bin";
   return extension.toLowerCase().replace(/[^a-z0-9]/g, "") || "bin";
@@ -72,11 +91,19 @@ export function getMaxUploadSizeBytes() {
 }
 
 export function assertStorageConfiguration() {
+  getStorageDriver();
+  const configurationError = getSupabaseUploadConfigurationError();
+
+  if (!configurationError) {
+    return;
+  }
+
+  if (shouldUseEmbeddedDevelopmentUploads()) {
+    return;
+  }
+
   try {
-    getStorageDriver();
-    getSupabasePublicBaseUrl();
-    getSupabaseUploadKey();
-    getSupabaseStorageBucket();
+    throw configurationError;
   } catch (error) {
     if (error instanceof Error) {
       throw new StorageConfigError(error.message);
@@ -126,6 +153,18 @@ export async function saveFileToSupabase(file: File, options?: { ownerId?: strin
   return buildSupabasePublicMediaUrl(objectPath, bucket);
 }
 
+async function saveEmbeddedDevelopmentUpload(file: File) {
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  return `data:${file.type || "application/octet-stream"};base64,${buffer.toString("base64")}`;
+}
+
 export async function saveUploadedFile(file: File, options?: { ownerId?: string }) {
+  if (shouldUseEmbeddedDevelopmentUploads()) {
+    inferMediaType(file);
+    return saveEmbeddedDevelopmentUpload(file);
+  }
+
   return saveFileToSupabase(file, options);
 }

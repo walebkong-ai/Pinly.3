@@ -3,6 +3,10 @@ import { parseSupabasePublicMediaUrl } from "@/lib/supabase-storage";
 const LEGACY_MEDIA_PLACEHOLDER_URL = "/logo.png";
 const LEGACY_AVATAR_PLACEHOLDER_URL = "/pinly-globe-icon.svg";
 const LEGACY_IMAGE_UPLOAD_EXTENSION = /\.(avif|gif|jpe?g|png|webp)$/i;
+const EMBEDDED_MEDIA_DATA_URL_PATTERN =
+  /^data:(image\/(?:avif|gif|jpeg|png|webp)|video\/(?:mp4|quicktime|webm));base64,[a-z0-9+/]+=*$/i;
+const EMBEDDED_IMAGE_DATA_URL_PATTERN =
+  /^data:image\/(?:avif|gif|jpeg|png|webp);base64,[a-z0-9+/]+=*$/i;
 
 function normalizeAppPath(value: string | null | undefined) {
   if (!value) {
@@ -19,11 +23,35 @@ function normalizeAppPath(value: string | null | undefined) {
 }
 
 export function normalizeStoredMediaUrl(value: string | null | undefined) {
-  return parseSupabasePublicMediaUrl(value)?.url ?? null;
+  const normalizedSupabaseUrl = parseSupabasePublicMediaUrl(value)?.url ?? null;
+
+  if (normalizedSupabaseUrl) {
+    return normalizedSupabaseUrl;
+  }
+
+  const trimmed = value?.trim() ?? "";
+
+  if (EMBEDDED_MEDIA_DATA_URL_PATTERN.test(trimmed)) {
+    return trimmed;
+  }
+
+  return null;
 }
 
 export function normalizeProfileImageUrl(value: string | null | undefined) {
-  return normalizeStoredMediaUrl(value);
+  const normalizedSupabaseUrl = parseSupabasePublicMediaUrl(value)?.url ?? null;
+
+  if (normalizedSupabaseUrl) {
+    return normalizedSupabaseUrl;
+  }
+
+  const trimmed = value?.trim() ?? "";
+
+  if (EMBEDDED_IMAGE_DATA_URL_PATTERN.test(trimmed)) {
+    return trimmed;
+  }
+
+  return null;
 }
 
 export function normalizeRenderableStoredMediaUrl(value: string | null | undefined) {

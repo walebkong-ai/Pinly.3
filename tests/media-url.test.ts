@@ -30,4 +30,15 @@ describe("media url hardening", () => {
     expect(normalizeRenderableProfileImageUrl("/pinly-globe-icon.svg")).toBe("/pinly-globe-icon.svg");
     expect(normalizeRenderableProfileImageUrl("https://evil.example.com/avatar.jpg")).toBeNull();
   });
+
+  test("accepts safe embedded media data urls for local development uploads", () => {
+    const imageDataUrl = "data:image/png;base64,QUJDRA==";
+    const videoDataUrl = "data:video/mp4;base64,QUJDRA==";
+
+    expect(normalizeStoredMediaUrl(imageDataUrl)).toBe(imageDataUrl);
+    expect(normalizeStoredMediaUrl(videoDataUrl)).toBe(videoDataUrl);
+    expect(normalizeProfileImageUrl(imageDataUrl)).toBe(imageDataUrl);
+    expect(normalizeProfileImageUrl(videoDataUrl)).toBeNull();
+    expect(normalizeStoredMediaUrl("data:text/html;base64,PHNjcmlwdD4=")).toBeNull();
+  });
 });

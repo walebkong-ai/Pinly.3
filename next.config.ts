@@ -12,7 +12,7 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://services.arcgisonline.com https://*.supabase.co",
-      "media-src 'self' blob: https://*.supabase.co",
+      "media-src 'self' data: blob: https://*.supabase.co",
       "font-src 'self' data:",
       "connect-src 'self' capacitor: https://api.maptiler.com https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://nominatim.openstreetmap.org https://services.arcgisonline.com https://*.supabase.co",
       "worker-src 'self' blob:",
