@@ -29,6 +29,8 @@ test("mobile shell navigation stays in-app and create flow shows offline fallbac
   const offlineBanner = page.getByTestId("offline-banner").first();
   const createPostForm = page.getByRole("main").getByTestId("create-post-form").first();
   const libraryUploadInput = page.getByRole("main").getByTestId("library-upload-input").first();
+  const photoEditor = createPostForm.getByTestId("post-photo-editor").first();
+  const photoEditorSaveButton = createPostForm.getByTestId("post-photo-editor-save").first();
   const replaceButton = createPostForm.getByRole("button", { name: /Replace/i }).first();
   const publishButton = createPostForm.getByRole("button", { name: /Publish memory/i }).first();
   const captionField = createPostForm.getByPlaceholder("What made this place feel special?");
@@ -105,12 +107,14 @@ test("mobile shell navigation stays in-app and create flow shows offline fallbac
     .poll(() => page.evaluate(() => (window as Window & { __pinlyNavMarker?: string }).__pinlyNavMarker))
     .toBe("native-shell-marker");
 
+  await libraryUploadInput.setInputFiles(uploadPath);
+  await expect(photoEditor).toBeVisible({ timeout: 15_000 });
   const [uploadResponse] = await Promise.all([
     page.waitForResponse(
       (response) => new URL(response.url()).pathname === "/api/uploads" && response.request().method() === "POST",
       { timeout: 15_000 }
     ),
-    libraryUploadInput.setInputFiles(uploadPath)
+    photoEditorSaveButton.click()
   ]);
   expect(uploadResponse.status()).toBe(200);
   await expect(replaceButton).toBeVisible({ timeout: 15_000 });
@@ -127,12 +131,14 @@ test("mobile shell navigation stays in-app and create flow shows offline fallbac
   });
   await expect(createPostForm).toBeVisible({ timeout: 15_000 });
 
+  await libraryUploadInput.setInputFiles(uploadPath);
+  await expect(photoEditor).toBeVisible({ timeout: 15_000 });
   const [secondUploadResponse] = await Promise.all([
     page.waitForResponse(
       (response) => new URL(response.url()).pathname === "/api/uploads" && response.request().method() === "POST",
       { timeout: 15_000 }
     ),
-    libraryUploadInput.setInputFiles(uploadPath)
+    photoEditorSaveButton.click()
   ]);
   expect(secondUploadResponse.status()).toBe(200);
   await expect(replaceButton).toBeVisible({ timeout: 15_000 });

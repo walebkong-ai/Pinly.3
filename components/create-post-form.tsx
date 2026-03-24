@@ -4,8 +4,9 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Crosshair, Images, LoaderCircle, MapPin, Search, Upload, X } from "lucide-react";
+import { Camera, Crop, Crosshair, Images, LoaderCircle, MapPin, Search, Upload, X } from "lucide-react";
 import { toast } from "sonner";
+import { PostPhotoEditor } from "@/components/create/post-photo-editor";
 import { NoConnectionCard } from "@/components/network/no-connection-card";
 import { useNetworkStatus } from "@/components/network/network-status-provider";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,8 @@ export function CreatePostForm() {
   const cameraFileRef = useRef<HTMLInputElement | null>(null);
   const libraryFileRef = useRef<HTMLInputElement | null>(null);
   const [uploadState, setUploadState] = useState<UploadState>(null);
+  const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
+  const [editableImageFile, setEditableImageFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -75,6 +78,7 @@ export function CreatePostForm() {
   const locationRequestIdRef = useRef(0);
   const ignoreNextSearchRef = useRef(false);
   const showFirstMemoryGuide =
+    !pendingImageFile &&
     !uploadState &&
     !caption.trim() &&
     !placeName.trim() &&
@@ -348,7 +352,7 @@ export function CreatePostForm() {
     if (!isOnline) {
       setUploadError(null);
       toast.error("Reconnect to upload a photo or video.");
-      return;
+      return null;
     }
 
     const fileToUpload = file.type.startsWith("image/") ? await optimizeImageForUpload(file) : file;
@@ -379,7 +383,7 @@ export function CreatePostForm() {
         if (data?.code !== "UPLOAD_STORAGE_MISCONFIGURED") {
           toast.error(message);
         }
-        return;
+        return null;
       }
 
       const data = await response.json();
@@ -392,7 +396,7 @@ export function CreatePostForm() {
       if (!mediaUrl || (data?.thumbnailUrl && !thumbnailUrl)) {
         setUploadError("Upload returned an invalid media URL.");
         toast.error("Upload returned an invalid media URL.");
-        return;
+        return null;
       }
 
       console.info("[create-post] Upload succeeded", {
@@ -403,19 +407,33 @@ export function CreatePostForm() {
         normalizedThumbnailUrl: thumbnailUrl
       });
 
-      setUploadState({
+      const nextUploadState = {
         mediaUrl,
         mediaType: data.mediaType,
         thumbnailUrl
-      });
+      } satisfies NonNullable<UploadState>;
+      setUploadState(nextUploadState);
       setUploadError(null);
       toast.success("Media uploaded.");
+      return nextUploadState;
     } catch {
       setUploadError("Upload failed. Check your connection and try again.");
       toast.error("Upload failed. Check your connection and try again.");
+      return null;
     } finally {
       setUploading(false);
     }
+  }
+
+  async function handleSaveEditedPhoto(file: File) {
+    const uploaded = await uploadFile(file);
+
+    if (!uploaded) {
+      return;
+    }
+
+    setEditableImageFile(file);
+    setPendingImageFile(null);
   }
 
   function applyPlaceResult(place: PlaceSearchResult) {
@@ -428,6 +446,14 @@ export function CreatePostForm() {
       return;
     }
 
+    if (file.type.startsWith("image/")) {
+      setUploadError(null);
+      setPendingImageFile(file);
+      return;
+    }
+
+    setPendingImageFile(null);
+    setEditableImageFile(null);
     void uploadFile(file);
   }
 
@@ -518,6 +544,11 @@ export function CreatePostForm() {
 
     if (!uploadState) {
       toast.error("Upload a photo or video first.");
+      return;
+    }
+
+    if (pendingImageFile) {
+      toast.error("Finish cropping the selected photo before publishing.");
       return;
     }
 
@@ -647,8 +678,16 @@ export function CreatePostForm() {
           {uploading ? (
             <div className="mt-6 flex h-64 w-full flex-col items-center justify-center rounded-[2rem] border border-dashed bg-[var(--surface-soft)]">
               <LoaderCircle className="h-8 w-8 animate-spin text-[var(--accent)]" />
-              <p className="mt-3 text-sm text-[var(--foreground)]/55">Uploading…</p>
+              <p className="mt-3 text-sm text-[var(--foreground)]/55">
+                {pendingImageFile || editableImageFile ? "Uploading cropped photo..." : "Uploading…"}
+              </p>
             </div>
+          ) : pendingImageFile ? (
+            <PostPhotoEditor
+              file={pendingImageFile}
+              onCancel={() => setPendingImageFile(null)}
+              onSave={handleSaveEditedPhoto}
+            />
           ) : uploadState ? (
             <div className="relative mt-6 overflow-hidden rounded-[2rem]">
               {uploadState.mediaType === "VIDEO" ? (
@@ -670,11 +709,24 @@ export function CreatePostForm() {
                   />
                 </div>
               )}
+              {uploadState.mediaType === "IMAGE" && editableImageFile ? (
+                <button
+                  type="button"
+                  data-testid="edit-upload-button"
+                  onClick={() => setPendingImageFile(editableImageFile)}
+                  className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm transition hover:bg-black/80"
+                >
+                  <Crop className="h-3.5 w-3.5" />
+                  Adjust
+                </button>
+              ) : null}
               {/* Remove button — clears preview and returns to upload picker */}
               <button
                 type="button"
                 onClick={() => {
                   setUploadState(null);
+                  setEditableImageFile(null);
+                  setPendingImageFile(null);
                   setUploadError(null);
                 }}
                 className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition hover:bg-black/80"
@@ -930,7 +982,7 @@ export function CreatePostForm() {
             type="button"
             onClick={onSubmit}
             className="h-11 w-full"
-            disabled={submitting || uploading || gettingLocation || resolvingLocation || !isOnline}
+            disabled={submitting || uploading || gettingLocation || resolvingLocation || !isOnline || !!pendingImageFile}
           >
             {submitting ? "Saving pin..." : "Publish memory"}
           </Button>
