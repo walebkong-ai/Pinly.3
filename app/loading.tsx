@@ -3,7 +3,7 @@ import { Brand } from "@/components/brand";
 
 export default function RootLoading() {
   return (
-    <div className="flex min-h-screen items-center justify-center px-6 py-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+    <div className="pinly-centered-page flex items-center justify-center px-6 py-6">
       <div className="glass-panel w-full max-w-md rounded-[2rem] p-6 text-center shadow-[0_24px_60px_rgba(24,85,56,0.12)]">
         <div className="mx-auto w-fit">
           <Brand compact />

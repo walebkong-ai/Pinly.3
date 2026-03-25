@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type KeyboardEvent } from "react";
+import { useState, type CSSProperties, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { MapPin, ChevronDown } from "lucide-react";
 import type { CityContext } from "@/types/app";
@@ -11,6 +11,10 @@ import { formatVisitDate } from "@/lib/utils";
 export function CityContextPanel({ cityContext }: { cityContext: CityContext | null }) {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(true);
+  const mobileScrollStyle = {
+    "--pinly-panel-max-height": "20rem",
+    "--pinly-panel-reserve": "20rem"
+  } as CSSProperties;
 
   function openPost(postId: string) {
     router.push(`/posts/${postId}`);
@@ -55,7 +59,10 @@ export function CityContextPanel({ cityContext }: { cityContext: CityContext | n
       {/* Animated expand/collapse on mobile, always visible on desktop */}
       <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${collapsed ? "grid-rows-[0fr] md:grid-rows-[1fr]" : "grid-rows-[1fr]"}`}>
         <div className="overflow-hidden">
-          <div className={`max-h-[35vh] md:max-h-none overflow-y-auto md:overflow-visible space-y-5 md:space-y-0 pr-1 md:pr-0 ${collapsed ? "" : "mt-4 md:mt-5"}`}>
+          <div
+            className={`pinly-map-panel-scroll md:max-h-none md:overflow-visible space-y-5 md:space-y-0 pr-1 md:pr-0 ${collapsed ? "" : "mt-4 md:mt-5"}`}
+            style={mobileScrollStyle}
+          >
             <div>
               <p className="text-sm font-semibold">Who visited</p>
               <div className="mt-3 flex flex-wrap gap-2">

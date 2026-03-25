@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, FolderPlus, Folders, LoaderCircle, Search } from "lucide-react";
@@ -212,6 +212,11 @@ export function CollectionPicker({
   const [newCollectionName, setNewCollectionName] = useState("");
   const [newCollectionVisibility, setNewCollectionVisibility] = useState<CollectionVisibility>("private");
   const [creating, startCreateTransition] = useTransition();
+  const drawerStyle = {
+    "--pinly-sheet-height": "80vh",
+    "--pinly-sheet-height-md": "70vh",
+    "--pinly-sheet-top-gap": "6rem"
+  } as CSSProperties;
 
   useEffect(() => {
     if (!open || collections.length > 0) {
@@ -299,7 +304,10 @@ export function CollectionPicker({
           </Drawer.Trigger>
           <Drawer.Portal>
             <Drawer.Overlay className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm transition-opacity" />
-            <Drawer.Content className="fixed inset-x-0 bottom-0 z-[200] mt-24 flex h-[80vh] flex-col rounded-t-[2.5rem] bg-[var(--surface-strong)] pb-safe after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)] md:h-[70vh]">
+            <Drawer.Content
+              className="pinly-mobile-drawer pinly-mobile-drawer--full fixed inset-x-0 z-[200] mt-24 flex flex-col rounded-t-[2.5rem] bg-[var(--surface-strong)] after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]"
+              style={drawerStyle}
+            >
               <div className="mx-auto mt-4 h-1.5 w-12 shrink-0 rounded-full bg-[var(--foreground)]/15" />
               <CollectionSelectionPanel
                 collections={collections}
@@ -370,6 +378,11 @@ export function ManagePostCollectionsCard({
   const [newCollectionVisibility, setNewCollectionVisibility] = useState<CollectionVisibility>("private");
   const [creating, startCreateTransition] = useTransition();
   const [saving, startSaveTransition] = useTransition();
+  const drawerStyle = {
+    "--pinly-sheet-height": "80vh",
+    "--pinly-sheet-height-md": "70vh",
+    "--pinly-sheet-top-gap": "6rem"
+  } as CSSProperties;
 
   useEffect(() => {
     setSelectedCollectionIds(initialCollections.map((collection) => collection.id));
@@ -497,7 +510,10 @@ export function ManagePostCollectionsCard({
           </Drawer.Trigger>
           <Drawer.Portal>
             <Drawer.Overlay className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm transition-opacity" />
-            <Drawer.Content className="fixed inset-x-0 bottom-0 z-[200] mt-24 flex h-[80vh] flex-col rounded-t-[2.5rem] bg-[var(--surface-strong)] pb-safe after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)] md:h-[70vh]">
+            <Drawer.Content
+              className="pinly-mobile-drawer pinly-mobile-drawer--full fixed inset-x-0 z-[200] mt-24 flex flex-col rounded-t-[2.5rem] bg-[var(--surface-strong)] after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]"
+              style={drawerStyle}
+            >
               <div className="mx-auto mt-4 h-1.5 w-12 shrink-0 rounded-full bg-[var(--foreground)]/15" />
               <CollectionSelectionPanel
                 collections={collections}

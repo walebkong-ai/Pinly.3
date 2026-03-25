@@ -16,14 +16,16 @@ export default async function MessageDetailPage({ params }: { params: Promise<{ 
   const conversation = await getGroupConversation(viewerId, id);
 
   return (
-    <div className="space-y-4">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       <BackButton fallbackHref="/messages" label="Messages" />
-      <GroupDetail
-        groupId={id}
-        viewerId={viewerId}
-        initialGroup={conversation.status === "ok" ? conversation.group : null}
-        initialMessages={conversation.status === "ok" ? conversation.messages : []}
-      />
+      <div className="min-h-0 flex-1">
+        <GroupDetail
+          groupId={id}
+          viewerId={viewerId}
+          initialGroup={conversation.status === "ok" ? conversation.group : null}
+          initialMessages={conversation.status === "ok" ? conversation.messages : []}
+        />
+      </div>
     </div>
   );
 }

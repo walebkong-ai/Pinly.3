@@ -63,7 +63,7 @@ export function FilterSidebar({
       />
       <aside
         className={cn(
-          "glass-panel absolute inset-y-0 right-0 z-[790] flex w-full max-w-sm flex-col overflow-y-auto rounded-l-[2rem] border-l p-5 transition-transform duration-300",
+          "glass-panel absolute inset-y-0 right-0 z-[790] flex w-full max-w-sm flex-col overflow-y-auto overscroll-contain rounded-l-[2rem] border-l p-5 pb-[calc(1.25rem+var(--safe-area-bottom))] pt-[max(1.25rem,var(--safe-area-top))] transition-transform duration-300",
           open ? "pointer-events-auto translate-x-0" : "pointer-events-none translate-x-full"
         )}
       >

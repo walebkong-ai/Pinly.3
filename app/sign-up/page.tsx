@@ -14,7 +14,7 @@ export default async function SignUpPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-5xl items-center px-6 py-12">
+    <main className="pinly-centered-page mx-auto flex max-w-5xl items-center px-6 py-12">
       <div className="grid w-full gap-6 rounded-[2rem] border bg-[var(--surface-strong)] p-6 shadow-xl shadow-black/5 md:grid-cols-[0.9fr_1.1fr] md:p-10">
         <div className="flex items-center">
           <div className="w-full">

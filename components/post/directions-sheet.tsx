@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import { Drawer } from "vaul";
 import { ChevronRight, Map, Route } from "lucide-react";
 import {
@@ -76,6 +76,9 @@ export function DirectionsSheet({
         .filter((provider): provider is NonNullable<typeof provider> => provider !== null),
     [post, providerOrder]
   );
+  const drawerStyle = {
+    "--pinly-sheet-top-gap": "6rem"
+  } as CSSProperties;
 
   return (
     <Drawer.Root open={open} onOpenChange={setOpen}>
@@ -106,7 +109,10 @@ export function DirectionsSheet({
       </Drawer.Trigger>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-[210] bg-black/35 backdrop-blur-sm transition-opacity" />
-        <Drawer.Content className="fixed inset-x-0 bottom-0 z-[210] mt-24 rounded-t-[2.25rem] bg-[var(--surface-strong)] pb-safe after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]">
+        <Drawer.Content
+          className="pinly-mobile-drawer fixed inset-x-0 z-[210] mt-24 rounded-t-[2.25rem] bg-[var(--surface-strong)] after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]"
+          style={drawerStyle}
+        >
           <div className="mx-auto mt-4 h-1.5 w-12 rounded-full bg-[var(--foreground)]/15" />
           <div className="px-5 pb-8 pt-5 sm:px-6">
             <div className="flex items-start gap-3">

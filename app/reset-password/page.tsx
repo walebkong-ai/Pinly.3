@@ -113,7 +113,7 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-[var(--background)] p-6">
+    <div className="pinly-centered-page flex flex-col items-center justify-center bg-[var(--background)] p-6">
       <div className="w-full max-w-sm space-y-6 rounded-[2rem] border bg-[var(--surface-strong)] p-8 shadow-sm">
         
         <div className="space-y-2 text-center">
@@ -128,7 +128,6 @@ export default function ResetPasswordPage() {
         <Suspense fallback={<div className="text-center text-sm text-[var(--foreground)]/50">Loading...</div>}>
           <ResetPasswordForm />
         </Suspense>
-
       </div>
     </div>
   );

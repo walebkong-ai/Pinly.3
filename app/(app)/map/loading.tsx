@@ -4,7 +4,7 @@ export default function MapLoading() {
   return (
     <div className="space-y-4">
       <section className="glass-panel rounded-[2rem] p-3">
-        <Skeleton className="h-[68vh] w-full rounded-[1.75rem]" />
+        <Skeleton className="pinly-map-fallback-stage w-full rounded-[1.75rem]" />
       </section>
 
       <section className="glass-panel rounded-[2rem] p-4">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type KeyboardEvent } from "react";
+import { useState, type CSSProperties, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import type { FriendActivityItem, LayerMode } from "@/types/app";
@@ -17,6 +17,10 @@ export function FriendActivityPanel({
 }) {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(true);
+  const mobileScrollStyle = {
+    "--pinly-panel-max-height": "18rem",
+    "--pinly-panel-reserve": "21rem"
+  } as CSSProperties;
 
   function openPost(postId: string) {
     router.push(`/posts/${postId}`);
@@ -51,7 +55,10 @@ export function FriendActivityPanel({
         </div>
       </button>
 
-      <div className={`mt-2 md:mt-4 max-h-[35vh] md:max-h-none overflow-y-auto md:overflow-visible space-y-2 md:space-y-3 pr-1 md:pr-0 ${collapsed ? "hidden md:block" : "block"}`}>
+      <div
+        className={`pinly-map-panel-scroll mt-2 md:mt-4 md:max-h-none md:overflow-visible space-y-2 md:space-y-3 pr-1 md:pr-0 ${collapsed ? "hidden md:block" : "block"}`}
+        style={mobileScrollStyle}
+      >
         {layer === "you" && (
           <div className="rounded-2xl border bg-[var(--surface-soft)] p-3 text-xs text-[var(--foreground)]/62 md:rounded-3xl md:p-4 md:text-sm">
             Switch the layer to <span className="font-medium text-[var(--foreground)]">Friends</span> or{" "}

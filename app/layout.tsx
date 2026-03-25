@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Toaster } from "sonner";
 import "@/app/globals.css";
+import { KeyboardViewportProvider } from "@/components/app/keyboard-viewport-provider";
 import { NativeAppBridge } from "@/components/app/native-app-bridge";
 import { NetworkStatusProvider } from "@/components/network/network-status-provider";
 import { OfflineBanner } from "@/components/network/offline-banner";
@@ -34,13 +35,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-[var(--background)] font-[var(--font-sans)] text-[var(--foreground)] antialiased">
-        <NetworkStatusProvider>
-          <NativeAppBridge />
-          <PwaBoot />
-          <OfflineBanner />
-          {children}
-          <Toaster richColors position="top-center" />
-        </NetworkStatusProvider>
+        <KeyboardViewportProvider>
+          <NetworkStatusProvider>
+            <NativeAppBridge />
+            <PwaBoot />
+            <OfflineBanner />
+            {children}
+            <Toaster richColors position="top-center" />
+          </NetworkStatusProvider>
+        </KeyboardViewportProvider>
       </body>
     </html>
   );

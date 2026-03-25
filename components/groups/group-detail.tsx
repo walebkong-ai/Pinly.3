@@ -2,13 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, type CSSProperties } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Send, Users, X, UserPlus, CheckCircle2, LoaderCircle, MapPin, Share2, Image as ImageIcon } from "lucide-react";
+import { Send, Users, UserPlus, CheckCircle2, LoaderCircle, MapPin, Share2, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { LocationCountryText } from "@/components/ui/country-flag";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ProfileLink } from "@/components/profile/profile-link";
 import type { MessageConversationDetails, MessageConversationMessage } from "@/lib/data";
@@ -38,6 +39,10 @@ export function GroupDetail({
   const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
   const [addingMembers, setAddingMembers] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const addMembersListStyle = {
+    "--pinly-panel-max-height": "18rem",
+    "--pinly-panel-reserve": "18rem"
+  } as CSSProperties;
 
   function emitMessagesUpdated() {
     if (typeof window !== "undefined") {
@@ -56,10 +61,7 @@ export function GroupDetail({
 
     async function fetchAll() {
       try {
-        const [groupRes, msgRes] = await Promise.all([
-          fetch(`/api/groups/${groupId}`),
-          fetch(`/api/groups/${groupId}/messages`),
-        ]);
+        const [groupRes, msgRes] = await Promise.all([fetch(`/api/groups/${groupId}`), fetch(`/api/groups/${groupId}/messages`)]);
 
         if (groupRes.ok && msgRes.ok) {
           const groupData = await groupRes.json();
@@ -94,16 +96,16 @@ export function GroupDetail({
 
     setShowAddModal(true);
     setSelectedFriendIds(new Set());
-    
+
     try {
       const response = await fetch("/api/friends/list");
       if (response.ok) {
         const data = await response.json();
-        const existingMemberIds = new Set(group?.members.map(m => m.user.id));
+        const existingMemberIds = new Set(group?.members.map((member) => member.user.id));
         const availableFriends = data.friends.filter((f: any) => !existingMemberIds.has(f.id));
         setFriends(availableFriends);
       }
-    } catch (e) {
+    } catch {
       toast.error("Failed to load friends.");
     }
   };
@@ -111,26 +113,26 @@ export function GroupDetail({
   const submitAddMembers = async () => {
     if (selectedFriendIds.size === 0) return;
     setAddingMembers(true);
-    
+
     try {
       const response = await fetch(`/api/groups/${groupId}/members`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userIds: Array.from(selectedFriendIds) })
       });
-      
+
       if (!response.ok) throw new Error("Failed to add members");
-      
+
       toast.success("Members added successfully!");
       setShowAddModal(false);
-      
+
       // Opt-in naive refresh
       const groupRes = await fetch(`/api/groups/${groupId}`);
       if (groupRes.ok) {
         const groupData = await groupRes.json();
         setGroup(groupData.group);
       }
-    } catch (e) {
+    } catch {
       toast.error("An error occurred adding members.");
     } finally {
       setAddingMembers(false);
@@ -179,7 +181,7 @@ export function GroupDetail({
     : "Group chat for shared plans, memories, and updates";
 
   return (
-    <div className="grid h-[calc(100vh-8rem)] gap-4 xl:grid-cols-[0.8fr_1.2fr]">
+    <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[0.8fr_1.2fr]">
       {/* Conversation Info Sidebar */}
       <section className="glass-panel hidden flex-col rounded-[2rem] p-5 xl:flex">
         {group.isDirect && group.directUser ? (
@@ -241,34 +243,50 @@ export function GroupDetail({
       </section>
 
       {/* Messaging Area */}
-      <section className="glass-panel relative flex flex-col rounded-[2rem] overflow-hidden">
+      <section className="glass-panel relative flex min-h-0 flex-col overflow-hidden rounded-[2rem]">
         {/* Mobile Header */}
-        <div className="flex items-center gap-3 border-b border-black/5 bg-white/40 p-4 xl:hidden">
-          {group.isDirect && group.directUser ? (
-            <ProfileLink username={group.directUser.username} className="shrink-0 rounded-full">
-              <Avatar name={group.directUser.name} src={group.directUser.avatarUrl} className="h-10 w-10 shrink-0" />
-            </ProfileLink>
-          ) : (
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent)]/10 text-[var(--accent)]">
-              <Users className="h-5 w-5" />
-            </div>
-          )}
-          <div>
+        <div className="flex items-center justify-between gap-3 border-b border-black/5 bg-white/40 p-4 xl:hidden">
+          <div className="flex min-w-0 items-center gap-3">
             {group.isDirect && group.directUser ? (
-              <ProfileLink username={group.directUser.username} className="rounded-md px-0.5 -ml-0.5 font-semibold transition hover:text-[var(--foreground)]">
-                {conversationName}
+              <ProfileLink username={group.directUser.username} className="shrink-0 rounded-full">
+                <Avatar name={group.directUser.name} src={group.directUser.avatarUrl} className="h-10 w-10 shrink-0" />
               </ProfileLink>
             ) : (
-              <h2 className="font-semibold">{conversationName}</h2>
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent)]/10 text-[var(--accent)]">
+                <Users className="h-5 w-5" />
+              </div>
             )}
-            <p className="text-xs text-[var(--foreground)]/50">
-              {group.isDirect ? conversationSubtitle : `${group.members.length} members`}
-            </p>
+            <div className="min-w-0">
+              {group.isDirect && group.directUser ? (
+                <ProfileLink username={group.directUser.username} className="rounded-md px-0.5 -ml-0.5 font-semibold transition hover:text-[var(--foreground)]">
+                  {conversationName}
+                </ProfileLink>
+              ) : (
+                <h2 className="truncate font-semibold">{conversationName}</h2>
+              )}
+              <p className="text-xs text-[var(--foreground)]/50">
+                {group.isDirect ? conversationSubtitle : `${group.members.length} members`}
+              </p>
+            </div>
           </div>
+          {!group.isDirect ? (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={openAddModal}
+              className="h-11 shrink-0 gap-1 rounded-full px-3 text-xs text-[var(--accent)] hover:bg-[var(--accent)]/10"
+            >
+              <UserPlus className="h-3.5 w-3.5" />
+              Add
+            </Button>
+          ) : null}
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div
+          className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4"
+          style={{ scrollPaddingBottom: "calc(6rem + var(--keyboard-safe-area-bottom))" }}
+        >
           {messages.length === 0 ? (
             <div className="flex h-full items-center justify-center text-sm text-[var(--foreground)]/50">
               {group.isDirect ? "No messages yet. Start the conversation." : "No messages here yet. Say hi!"}
@@ -384,7 +402,10 @@ export function GroupDetail({
         </div>
 
         {/* Input area */}
-        <form onSubmit={handleSend} className="border-t border-black/5 bg-white/40 p-4">
+        <form
+          onSubmit={handleSend}
+          className="border-t border-black/5 bg-white/40 p-4 pb-[calc(1rem+var(--keyboard-safe-area-bottom))]"
+        >
           <div className="relative flex items-center">
             <Input
               value={content}
@@ -395,6 +416,7 @@ export function GroupDetail({
             <Button
               type="submit"
               disabled={!content.trim() || sending}
+              aria-label="Send message"
               className="absolute right-1 flex h-10 w-10 items-center justify-center rounded-full p-0"
             >
               <Send className="h-4 w-4" />
@@ -403,63 +425,84 @@ export function GroupDetail({
         </form>
       </section>
 
-      {/* Add Member Modal */}
-      {showAddModal && !group.isDirect ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-[2rem] bg-white p-6 shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-xl">Add to Group</h3>
-              <Button variant="ghost" onClick={() => setShowAddModal(false)} className="h-8 w-8 rounded-full p-0 flex items-center justify-center">
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            <div className="max-h-[60vh] overflow-y-auto space-y-2 mb-6">
-              {friends.length === 0 ? (
-                <p className="text-sm text-[var(--foreground)]/60 py-4 text-center">No friends available to add.</p>
-              ) : (
-                friends.map((friend) => {
-                  const isSelected = selectedFriendIds.has(friend.id);
-                  return (
-                    <div 
-                      key={friend.id} 
-                      onClick={() => {
-                        const next = new Set(selectedFriendIds);
-                        if (isSelected) next.delete(friend.id);
-                        else next.add(friend.id);
-                        setSelectedFriendIds(next);
-                      }}
-                      className={`flex cursor-pointer items-center gap-3 rounded-2xl p-2 transition w-full border ${isSelected ? "border-[var(--accent)] bg-[var(--accent)]/5" : "border-transparent hover:bg-black/5"}`}
-                    >
-                      <ProfileLink
-                        username={friend.username}
-                        disableProfileNavigation
-                        className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl p-1 -m-1 transition hover:bg-black/5"
+      {!group.isDirect ? (
+        <Dialog
+          open={showAddModal}
+          onOpenChange={(nextOpen) => {
+            if (!addingMembers) {
+              setShowAddModal(nextOpen);
+            }
+          }}
+        >
+          <DialogContent className="sm:max-w-md rounded-[2rem] border-none bg-[var(--surface-soft)] p-6">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold">Add to Group</DialogTitle>
+              <DialogDescription className="text-sm text-[var(--foreground)]/60">
+                Add more friends to this conversation without breaking the current thread.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="mt-2 rounded-[1.5rem] border bg-white/55 p-3">
+              <div className="pinly-map-panel-scroll space-y-2 pr-1" style={addMembersListStyle}>
+                {friends.length === 0 ? (
+                  <p className="py-4 text-center text-sm text-[var(--foreground)]/60">No friends available to add.</p>
+                ) : (
+                  friends.map((friend) => {
+                    const isSelected = selectedFriendIds.has(friend.id);
+                    return (
+                      <button
+                        key={friend.id}
+                        type="button"
+                        onClick={() => {
+                          const next = new Set(selectedFriendIds);
+                          if (isSelected) {
+                            next.delete(friend.id);
+                          } else {
+                            next.add(friend.id);
+                          }
+                          setSelectedFriendIds(next);
+                        }}
+                        className={cn(
+                          "flex min-h-11 w-full items-center gap-3 rounded-2xl border p-2 text-left transition",
+                          isSelected
+                            ? "border-[var(--accent)] bg-[var(--accent)]/5"
+                            : "border-transparent bg-white/55 hover:bg-white/80"
+                        )}
                       >
-                        <Avatar name={friend.name} src={friend.avatarUrl} className="h-10 w-10 shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="truncate text-sm font-medium">{friend.name}</p>
-                          <p className="truncate text-xs text-[var(--foreground)]/58">@{friend.username}</p>
+                        <div className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl p-1">
+                          <Avatar name={friend.name} src={friend.avatarUrl} className="h-10 w-10 shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">{friend.name}</p>
+                            <p className="truncate text-xs text-[var(--foreground)]/58">@{friend.username}</p>
+                          </div>
                         </div>
-                      </ProfileLink>
-                      <div className="shrink-0 text-[var(--accent)] px-2">
-                        {isSelected && <CheckCircle2 className="h-5 w-5" />}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
+                        <div className="shrink-0 px-2 text-[var(--accent)]">
+                          {isSelected ? <CheckCircle2 className="h-5 w-5" /> : null}
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
             </div>
 
-            <Button 
-              className="w-full h-12 rounded-2xl text-base font-semibold" 
-              disabled={selectedFriendIds.size === 0 || addingMembers}
-              onClick={submitAddMembers}
-            >
-              {addingMembers ? <LoaderCircle className="h-5 w-5 animate-spin" /> : `Add ${selectedFriendIds.size} Member${selectedFriendIds.size !== 1 ? 's' : ''}`}
-            </Button>
-          </div>
-        </div>
+            <DialogFooter className="mt-2 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button variant="ghost" className="rounded-full" onClick={() => setShowAddModal(false)} disabled={addingMembers}>
+                Cancel
+              </Button>
+              <Button
+                className="h-12 rounded-2xl px-5 text-base font-semibold"
+                disabled={selectedFriendIds.size === 0 || addingMembers}
+                onClick={submitAddMembers}
+              >
+                {addingMembers ? (
+                  <LoaderCircle className="mr-2 h-5 w-5 animate-spin" />
+                ) : null}
+                {`Add ${selectedFriendIds.size} Member${selectedFriendIds.size !== 1 ? "s" : ""}`}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       ) : null}
     </div>
   );

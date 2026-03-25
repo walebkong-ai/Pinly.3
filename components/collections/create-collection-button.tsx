@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { type CSSProperties, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { FolderPlus, LoaderCircle } from "lucide-react";
 import { Drawer } from "vaul";
@@ -27,6 +27,9 @@ export function CreateCollectionButton({
   const [color, setColor] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<CollectionVisibility>("private");
   const [isPending, startTransition] = useTransition();
+  const drawerStyle = {
+    "--pinly-sheet-top-gap": "6rem"
+  } as CSSProperties;
 
   function handleCreate() {
     const trimmedName = name.trim();
@@ -71,7 +74,10 @@ export function CreateCollectionButton({
       </Drawer.Trigger>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm transition-opacity" />
-        <Drawer.Content className="fixed inset-x-0 bottom-0 z-[200] mt-24 rounded-t-[2.5rem] bg-[var(--surface-strong)] pb-safe after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]">
+        <Drawer.Content
+          className="pinly-mobile-drawer fixed inset-x-0 z-[200] mt-24 rounded-t-[2.5rem] bg-[var(--surface-strong)] after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]"
+          style={drawerStyle}
+        >
           <div className="mx-auto mt-4 h-1.5 w-12 rounded-full bg-[var(--foreground)]/15" />
           <div className="p-6">
             <h3 className="font-[var(--font-serif)] text-2xl font-semibold">Create a collection</h3>

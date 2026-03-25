@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, Clock3, LoaderCircle, Search, Send, Share2, UserPlus, Users } from "lucide-react";
 import { Drawer } from "vaul";
 import { toast } from "sonner";
@@ -60,6 +60,11 @@ export function ShareSheet({
   const [requestingUserId, setRequestingUserId] = useState<string | null>(null);
   const peopleSearchAbortRef = useRef<AbortController | null>(null);
   const peopleSearchTimerRef = useRef<number | null>(null);
+  const drawerStyle = {
+    "--pinly-sheet-height": "85vh",
+    "--pinly-sheet-height-md": "75vh",
+    "--pinly-sheet-top-gap": "6rem"
+  } as CSSProperties;
 
   useEffect(() => {
     return () => {
@@ -359,7 +364,10 @@ export function ShareSheet({
       </Drawer.Trigger>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm transition-opacity" />
-        <Drawer.Content className="fixed inset-x-0 bottom-0 z-[200] mt-24 flex h-[85vh] flex-col rounded-t-[2.5rem] bg-[var(--surface-strong)] pb-safe after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)] md:h-[75vh]">
+        <Drawer.Content
+          className="pinly-mobile-drawer pinly-mobile-drawer--full fixed inset-x-0 z-[200] mt-24 flex flex-col rounded-t-[2.5rem] bg-[var(--surface-strong)] after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]"
+          style={drawerStyle}
+        >
           <div className="mx-auto mt-4 h-1.5 w-12 shrink-0 rounded-full bg-[var(--foreground)]/15" />
           <div className="flex flex-1 flex-col overflow-hidden p-6">
             <h2 className="font-[var(--font-serif)] text-2xl font-semibold">Share memory</h2>

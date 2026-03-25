@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { BellRing, MapPinned, MessageCircleHeart } from "lucide-react";
 import { Drawer } from "vaul";
 import { Button } from "@/components/ui/button";
@@ -17,11 +18,18 @@ export function PushPermissionSheet({
   onEnable,
   onOpenChange
 }: PushPermissionSheetProps) {
+  const drawerStyle = {
+    "--pinly-sheet-top-gap": "6rem"
+  } as CSSProperties;
+
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange}>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-[220] bg-black/38 backdrop-blur-sm transition-opacity" />
-        <Drawer.Content className="fixed inset-x-0 bottom-0 z-[220] mt-24 rounded-t-[2.5rem] bg-[var(--surface-strong)] pb-safe after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]">
+        <Drawer.Content
+          className="pinly-mobile-drawer fixed inset-x-0 z-[220] mt-24 rounded-t-[2.5rem] bg-[var(--surface-strong)] after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]"
+          style={drawerStyle}
+        >
           <div className="mx-auto flex w-full max-w-lg flex-col gap-5 px-5 pb-8 pt-4">
             <div className="mx-auto h-1.5 w-14 rounded-full bg-[var(--foreground)]/12" />
 

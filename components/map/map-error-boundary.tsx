@@ -26,7 +26,7 @@ export class MapErrorBoundary extends Component<Props, State> {
   override render() {
     if (this.state.hasError) {
       return (
-        <div className="flex h-[70vh] flex-col items-center justify-center gap-4 rounded-[2rem] border bg-[var(--surface-soft)] p-6 text-center">
+        <div className="pinly-map-fallback-stage flex flex-col items-center justify-center gap-4 rounded-[2rem] border bg-[var(--surface-soft)] p-6 text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--surface-strong)]">
             <AlertTriangle className="h-6 w-6 text-[var(--foreground)]/60" />
           </div>

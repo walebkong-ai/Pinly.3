@@ -52,7 +52,7 @@ import type { LayerMode, MapCategory, MapCollectionOverlay, MapGroupOption, MapR
 const DynamicMapCanvas = dynamic(() => import("@/components/map/map-canvas").then((mod) => mod.MapCanvas), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[70vh] items-center justify-center rounded-[2rem] border bg-[var(--surface-soft)]">
+    <div className="pinly-map-fallback-stage flex items-center justify-center rounded-[2rem] border bg-[var(--surface-soft)]">
       <LoaderCircle className="h-6 w-6 animate-spin text-[var(--map-accent)]" />
     </div>
   )
@@ -666,7 +666,7 @@ export function MapPageClient() {
   }, []);
 
   return (
-    <section className="relative isolate min-h-[calc(100vh-7.5rem)] overflow-hidden rounded-[2.2rem] border bg-[var(--surface-soft)] shadow-2xl shadow-black/5">
+    <section className="pinly-map-stage relative isolate flex-1 overflow-hidden rounded-[2.2rem] border bg-[var(--surface-soft)] shadow-2xl shadow-black/5">
       <MapErrorBoundary>
         <DynamicMapCanvas
           markers={mapData.markers}
@@ -735,7 +735,7 @@ export function MapPageClient() {
 
         {!previewSurfaceOpen ? (
           <>
-            <div className="pointer-events-none flex h-full flex-col justify-between p-4 md:p-5">
+            <div className="pointer-events-none relative z-10 flex h-full flex-col justify-between p-4 md:p-5">
               <div className="space-y-4">
                 <div className="pointer-events-auto hidden max-w-xl items-center gap-4 rounded-full border bg-[var(--surface-strong)] px-4 py-3 shadow-sm md:inline-flex">
                   <Brand compact />
@@ -768,8 +768,8 @@ export function MapPageClient() {
                       </div>
                     </div>
                     <div className="flex items-center justify-between gap-3 md:hidden">
-                      {renderFilterControl("max-w-[calc(50%-0.375rem)]")}
-                      {renderLocationControl("ml-auto max-w-[calc(50%-0.375rem)]")}
+                      {renderFilterControl()}
+                      {renderLocationControl()}
                     </div>
                   </div>
                   {showControls ? (

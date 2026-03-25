@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-[var(--background)] p-6">
+    <div className="pinly-centered-page flex flex-col items-center justify-center bg-[var(--background)] p-6">
       <div className="w-full max-w-sm space-y-6 rounded-[2rem] border bg-[var(--surface-strong)] p-8 shadow-sm">
         
         <div className="space-y-2 text-center">
@@ -69,7 +69,7 @@ export default function ForgotPasswordPage() {
           </form>
         )}
 
-        <div className="text-center mt-6">
+        <div className="mt-6 text-center">
           <Link href="/sign-in" className="inline-flex items-center text-sm font-medium text-[var(--foreground)]/60 hover:text-[var(--foreground)] transition-colors">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to sign in

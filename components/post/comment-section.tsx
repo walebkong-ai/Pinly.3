@@ -256,8 +256,15 @@ export function CommentSection({
       </button>
 
       {expanded ? (
-        <div className="mt-3 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <div ref={scrollRef} className="max-h-72 space-y-3 overflow-y-auto pr-1">
+        <div
+          className="mt-3 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300"
+          style={{ paddingBottom: "calc(var(--keyboard-offset) + var(--keyboard-safe-area-bottom))" }}
+        >
+          <div
+            ref={scrollRef}
+            className="max-h-72 space-y-3 overflow-y-auto pr-1"
+            style={{ scrollPaddingBottom: "calc(var(--keyboard-offset) + var(--keyboard-safe-area-bottom) + 5rem)" }}
+          >
             {loading ? (
               <div className="flex justify-center py-4">
                 <LoaderCircle className="h-5 w-5 animate-spin text-[var(--foreground)]" />

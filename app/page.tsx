@@ -38,7 +38,7 @@ export default async function LandingPage() {
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-7xl px-6 py-8">
+    <main className="pinly-document-page mx-auto max-w-7xl px-6 py-8">
       <section className="landing-hero glass-panel relative isolate overflow-hidden rounded-[2rem] p-6 sm:p-10">
         <div aria-hidden="true" className="landing-hero__ambient pointer-events-none absolute inset-0 z-0" />
         <HeroGlobeBackground />

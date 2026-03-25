@@ -11,7 +11,7 @@ type LegalDocumentProps = {
 
 export function LegalDocument({ title, summary, lastUpdated, sections }: LegalDocumentProps) {
   return (
-    <main className="mx-auto min-h-screen max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+    <main className="pinly-document-page mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
       <div className="rounded-[2rem] border bg-[var(--surface-strong)] p-5 shadow-xl shadow-black/5 sm:p-8">
         <div className="flex items-start justify-between gap-4">
           <Brand compact />

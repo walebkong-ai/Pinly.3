@@ -33,7 +33,7 @@ export const DialogContent = React.forwardRef<
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          "pinly-dialog-content fixed left-1/2 top-1/2 z-[1001] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-[2rem] bg-[var(--surface-soft)] p-6 shadow-[0_24px_80px_rgba(15,23,42,0.24)] outline-none",
+          "pinly-dialog-content pinly-mobile-dialog fixed left-1/2 z-[1001] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-[2rem] bg-[var(--surface-soft)] p-6 pb-[calc(1.5rem+var(--keyboard-safe-area-bottom))] shadow-[0_24px_80px_rgba(15,23,42,0.24)] outline-none",
           className
         )}
         {...props}

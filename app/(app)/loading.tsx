@@ -3,7 +3,7 @@ import { Brand } from "@/components/brand";
 
 export default function Loading() {
   return (
-    <div className="flex min-h-[70vh] items-center justify-center px-3 py-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] animate-in fade-in duration-500">
+    <div className="pinly-map-fallback-stage flex items-center justify-center px-3 py-4 animate-in fade-in duration-500">
       <div className="glass-panel w-full max-w-lg rounded-[2rem] p-5 shadow-[0_24px_60px_rgba(24,85,56,0.12)]">
         <div className="flex items-center gap-3">
           <Brand compact />

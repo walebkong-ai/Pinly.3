@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, type SyntheticEvent } from "react";
+import { useRef, type CSSProperties, type SyntheticEvent } from "react";
 import { ArrowLeft, CalendarDays, MapPin, X } from "lucide-react";
 import type { PostSummary } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
@@ -30,6 +30,11 @@ export function BottomSheet({
     : post
       ? `Memory from ${post.placeName}`
       : "";
+  const layerStyle = {
+    "--pinly-layer-gap": "0.5rem",
+    "--pinly-sheet-top-gap": "5rem",
+    "--pinly-sheet-scroll-gap": "0.75rem"
+  } as CSSProperties;
 
   if (!post) {
     return null;
@@ -71,7 +76,10 @@ export function BottomSheet({
   }
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-[990] isolate flex items-end justify-center px-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-16 sm:p-3">
+    <div
+      className="pinly-bottom-layer pointer-events-none fixed inset-0 z-[990] isolate flex items-end justify-center px-2 pt-16 sm:px-3 sm:pt-3"
+      style={layerStyle}
+    >
       <div
         aria-hidden="true"
         className="pointer-events-auto absolute inset-0 bg-[rgba(8,17,26,0.22)] backdrop-blur-[2px]"
@@ -81,7 +89,7 @@ export function BottomSheet({
       />
 
       <div
-        className="pointer-events-auto relative z-[1] isolate flex max-h-[calc(100dvh-5rem)] w-full max-w-3xl flex-col overflow-hidden rounded-[2rem] border bg-[var(--card)] shadow-2xl shadow-black/20 sm:max-h-[min(84vh,46rem)]"
+        className="pinly-bottom-surface pointer-events-auto relative z-[1] isolate flex w-full max-w-3xl flex-col overflow-hidden rounded-[2rem] border bg-[var(--card)] shadow-2xl shadow-black/20 sm:max-h-[min(84vh,46rem)]"
         onPointerDown={(event) => event.stopPropagation()}
         onPointerUp={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
@@ -114,7 +122,7 @@ export function BottomSheet({
             </div>
           </div>
 
-          <div className="overflow-y-auto overscroll-contain px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 sm:px-4">
+          <div className="pinly-sheet-scroll overflow-y-auto overscroll-contain px-3 pt-3 sm:px-4">
             <div className="grid gap-4 md:grid-cols-[0.9fr_1.1fr]">
               <div className="relative isolate aspect-[4/3] overflow-hidden rounded-[1.5rem]">
                 <MediaView mediaType={post.mediaType} mediaUrl={post.mediaUrl} thumbnailUrl={post.thumbnailUrl} />

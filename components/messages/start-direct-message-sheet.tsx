@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import { Drawer } from "vaul";
 import { LoaderCircle, MessageCircle, Search } from "lucide-react";
 import { toast } from "sonner";
@@ -79,6 +79,11 @@ export function StartDirectMessageSheet() {
       ]
     );
   }, [friends, query]);
+  const drawerStyle = {
+    "--pinly-sheet-height": "80vh",
+    "--pinly-sheet-height-md": "70vh",
+    "--pinly-sheet-top-gap": "6rem"
+  } as CSSProperties;
 
   return (
     <Drawer.Root open={open} onOpenChange={setOpen}>
@@ -90,7 +95,10 @@ export function StartDirectMessageSheet() {
       </Drawer.Trigger>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm transition-opacity" />
-        <Drawer.Content className="fixed inset-x-0 bottom-0 z-[200] mt-24 flex h-[80vh] flex-col rounded-t-[2.5rem] bg-[var(--surface-strong)] pb-safe after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)] md:h-[70vh]">
+        <Drawer.Content
+          className="pinly-mobile-drawer pinly-mobile-drawer--full fixed inset-x-0 z-[200] mt-24 flex flex-col rounded-t-[2.5rem] bg-[var(--surface-strong)] after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]"
+          style={drawerStyle}
+        >
           <div className="mx-auto mt-4 h-1.5 w-12 shrink-0 rounded-full bg-[var(--foreground)]/15" />
           <div className="flex flex-1 flex-col overflow-hidden p-6">
             <h2 className="font-[var(--font-serif)] text-2xl font-semibold">Start a direct chat</h2>

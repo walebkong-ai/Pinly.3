@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type SyntheticEvent } from "react";
+import { useRef, type CSSProperties, type SyntheticEvent } from "react";
 import { ArrowLeft, CalendarDays, Layers3, MapPin, X } from "lucide-react";
 import type { PlaceClusterMarker, PostSummary } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
@@ -20,6 +20,11 @@ export function SameLocationSheet({
   onSelectPost: (post: PostSummary) => void;
 }) {
   const closeTriggeredRef = useRef(false);
+  const layerStyle = {
+    "--pinly-layer-gap": "0.5rem",
+    "--pinly-sheet-top-gap": "5rem",
+    "--pinly-sheet-scroll-gap": "1rem"
+  } as CSSProperties;
 
   if (!marker) {
     return null;
@@ -66,7 +71,10 @@ export function SameLocationSheet({
   }
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-[995] isolate flex items-end justify-center px-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-16 sm:p-3">
+    <div
+      className="pinly-bottom-layer pointer-events-none fixed inset-0 z-[995] isolate flex items-end justify-center px-2 pt-16 sm:px-3 sm:pt-3"
+      style={layerStyle}
+    >
       <div
         aria-hidden="true"
         className="pointer-events-auto absolute inset-0 bg-[rgba(8,17,26,0.28)] backdrop-blur-[2px]"
@@ -76,7 +84,7 @@ export function SameLocationSheet({
       />
 
       <div
-        className="pointer-events-auto relative z-[1] isolate flex max-h-[calc(100dvh-5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-[2rem] border bg-[var(--card)] shadow-2xl shadow-black/20 sm:max-h-[min(84vh,46rem)]"
+        className="pinly-bottom-surface pointer-events-auto relative z-[1] isolate flex w-full max-w-2xl flex-col overflow-hidden rounded-[2rem] border bg-[var(--card)] shadow-2xl shadow-black/20 sm:max-h-[min(84vh,46rem)]"
         onPointerDown={(event) => event.stopPropagation()}
         onPointerUp={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
@@ -148,7 +156,7 @@ export function SameLocationSheet({
             ) : null}
           </div>
 
-          <div className="space-y-3 overflow-y-auto overscroll-contain px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4 sm:px-5">
+          <div className="pinly-sheet-scroll space-y-3 overflow-y-auto overscroll-contain px-4 pt-4 sm:px-5">
             {marker.posts.map((post, index) => {
               const primaryCaption = post.caption.trim() || `Memory from ${post.placeName}`;
 
