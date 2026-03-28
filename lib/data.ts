@@ -6,6 +6,7 @@ import { getMapStage, getTimeFilterStart, buildLayerUserIds, buildMapPayload } f
 import { prisma } from "@/lib/prisma";
 import { buildProfileTravelSummary } from "@/lib/profile-summary";
 import { isPrismaSchemaNotReadyError } from "@/lib/prisma-errors";
+import { buildPostSearchTermWhere, getPostSearchFields } from "@/lib/post-search";
 import {
   getFriendIdsForViewer,
   getRelationshipDetails,
@@ -80,6 +81,18 @@ const mapPostSelect = Prisma.validator<Prisma.PostSelect>()({
       name: true,
       username: true,
       avatarUrl: true
+    }
+  },
+  visitedWith: {
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          avatarUrl: true
+        }
+      }
     }
   }
 });
@@ -437,7 +450,10 @@ function normalizePostSummaries(posts: IncludedPost[]) {
 }
 
 function normalizeMapQueryPost(post: MapQueryPost): PostSummary {
-  return post;
+  return {
+    ...post,
+    visitedWith: post.visitedWith.map((tag) => tag.user)
+  };
 }
 
 function getSharedPostIdFromMessage(content: string) {
@@ -642,16 +658,7 @@ export async function getMapData({
 
   if (searchTerms.length > 0) {
     whereClauses.push({
-      AND: searchTerms.map((term) => ({
-        OR: [
-          { placeName: { contains: term, mode: "insensitive" } },
-          { city: { contains: term, mode: "insensitive" } },
-          { country: { contains: term, mode: "insensitive" } },
-          { caption: { contains: term, mode: "insensitive" } },
-          { user: { name: { contains: term, mode: "insensitive" } } },
-          { user: { username: { contains: term, mode: "insensitive" } } }
-        ]
-      }))
+      AND: searchTerms.map(buildPostSearchTermWhere)
     });
   }
 
@@ -691,14 +698,7 @@ export async function getMapData({
       ? rankBySearch(
           normalizedPosts,
           query ?? "",
-          (post) => [
-            { value: post.placeName, weight: 4.5 },
-            { value: post.city, weight: 4 },
-            { value: post.country, weight: 3.4 },
-            { value: post.user.username, weight: 3.1 },
-            { value: post.user.name, weight: 2.8 },
-            { value: post.caption, weight: 1.8 }
-          ],
+          getPostSearchFields,
           (post) => new Date(post.visitedAt).getTime()
         )
       : normalizedPosts;

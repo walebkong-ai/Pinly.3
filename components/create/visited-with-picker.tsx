@@ -153,10 +153,12 @@ export function VisitedWithPicker({
             >
               <div className="mx-auto mt-4 h-1.5 w-12 shrink-0 rounded-full bg-[var(--foreground)]/15" />
               <div className="flex flex-1 flex-col overflow-hidden p-6">
-                <h3 className="font-[var(--font-serif)] text-2xl font-semibold">Tag friends</h3>
-                <p className="mt-1 text-sm text-[var(--foreground)]/58">
+                <Drawer.Title className="font-[var(--font-serif)] text-2xl font-semibold">
+                  Tag friends
+                </Drawer.Title>
+                <Drawer.Description className="mt-1 text-sm text-[var(--foreground)]/58">
                   Choose which friends were with you for this memory.
-                </p>
+                </Drawer.Description>
 
                 <div className="relative mt-4">
                   <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--foreground)]/40" />
