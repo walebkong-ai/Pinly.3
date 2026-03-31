@@ -213,8 +213,6 @@ export function CollectionPicker({
   const [newCollectionVisibility, setNewCollectionVisibility] = useState<CollectionVisibility>("private");
   const [creating, startCreateTransition] = useTransition();
   const drawerStyle = {
-    "--pinly-sheet-height": "80vh",
-    "--pinly-sheet-height-md": "70vh",
     "--pinly-sheet-top-gap": "6rem"
   } as CSSProperties;
 

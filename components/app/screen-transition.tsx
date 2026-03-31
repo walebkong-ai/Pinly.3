@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -22,14 +23,25 @@ export function ScreenTransition({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [transitionsReady, setTransitionsReady] = useState(false);
   const variant = getTransitionVariant(pathname);
+
+  useEffect(() => {
+    setTransitionsReady(false);
+    const frameId = window.requestAnimationFrame(() => {
+      setTransitionsReady(true);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [pathname]);
 
   return (
     <div
-      key={pathname}
       className={cn(
         "pinly-screen-transition",
-        variant === "detail" ? "pinly-screen-transition--detail" : "pinly-screen-transition--screen"
+        transitionsReady && (variant === "detail" ? "pinly-screen-transition--detail" : "pinly-screen-transition--screen")
       )}
     >
       {children}

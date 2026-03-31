@@ -71,8 +71,8 @@ export function GroupsList({ initialGroups }: { initialGroups?: MessageGroupSumm
   }
 
   return (
-    <div className="pinly-content-shell--wide pinly-screen-grid animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
-      <section className="glass-panel pinly-panel">
+    <div className="pinly-content-shell pinly-screen-grid animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
+      <section className="glass-panel pinly-panel w-full min-w-0">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="pinly-eyebrow">Messages</p>
@@ -128,7 +128,7 @@ export function GroupsList({ initialGroups }: { initialGroups?: MessageGroupSumm
                     : "bg-[var(--surface-soft)]"
                 }`}
               >
-                <div className="flex items-center gap-4">
+                <div className="flex min-w-0 flex-1 items-center gap-3.5">
                   {group.isDirect && group.directUser ? (
                     <ProfileLink username={group.directUser.username} disableProfileNavigation>
                       <Avatar
@@ -142,7 +142,7 @@ export function GroupsList({ initialGroups }: { initialGroups?: MessageGroupSumm
                       <Users className="h-6 w-6" />
                     </div>
                   )}
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       {group.isDirect && group.directUser ? (
                         <ProfileLink
@@ -187,11 +187,11 @@ export function GroupsList({ initialGroups }: { initialGroups?: MessageGroupSumm
                     </p>
                   </div>
                 </div>
-                <div className="flex shrink-0 flex-col items-end gap-2 pt-0.5 text-right">
-                  <span className={`text-xs ${group.hasUnread ? "font-medium text-[var(--map-accent)]" : "text-[var(--foreground)]/45"}`}>
+                <div className="flex w-[4.75rem] shrink-0 flex-col items-end gap-2 pt-0.5 text-right sm:w-[5.25rem]">
+                  <span className={`max-w-full truncate text-xs ${group.hasUnread ? "font-medium text-[var(--map-accent)]" : "text-[var(--foreground)]/45"}`}>
                     {formatDistanceToNow(new Date(group.lastMessage?.createdAt ?? group.updatedAt), { addSuffix: true })}
                   </span>
-                  <span className="inline-flex items-center gap-1 text-xs text-[var(--foreground)]/55">
+                  <span className="inline-flex max-w-full items-center justify-end gap-1 text-xs text-[var(--foreground)]/55">
                     <MessageCircle className="h-3.5 w-3.5" />
                     {group._count.messages}
                   </span>

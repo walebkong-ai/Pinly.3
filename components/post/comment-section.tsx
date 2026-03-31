@@ -41,7 +41,7 @@ export function CommentSection({
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [postOwnerId, setPostOwnerId] = useState<string | null>(null);
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!expanded || hasLoaded || commentsDisabled) {
@@ -145,7 +145,7 @@ export function CommentSection({
       }
 
       requestAnimationFrame(() => {
-        scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+        bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
       });
     } catch {
       toast.error("Could not post comment right now.");
@@ -260,11 +260,7 @@ export function CommentSection({
           className="mt-3 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300"
           style={{ paddingBottom: "calc(var(--keyboard-offset) + var(--keyboard-safe-area-bottom))" }}
         >
-          <div
-            ref={scrollRef}
-            className="max-h-72 space-y-3 overflow-y-auto pr-1"
-            style={{ scrollPaddingBottom: "calc(var(--keyboard-offset) + var(--keyboard-safe-area-bottom) + 5rem)" }}
-          >
+          <div className="space-y-3 pr-1">
             {loading ? (
               <div className="flex justify-center py-4">
                 <LoaderCircle className="h-5 w-5 animate-spin text-[var(--foreground)]" />
@@ -427,6 +423,7 @@ export function CommentSection({
                 ) : null}
               </div>
             ))}
+            <div ref={bottomRef} />
           </div>
 
           <form

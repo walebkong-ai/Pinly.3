@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { CalendarDays, MapPin, PencilLine } from "lucide-react";
+import { AppScreen } from "@/components/app/app-screen";
 import { auth } from "@/lib/auth";
 import { getOwnedCollectionsForPost, getVisiblePostById, getWantToGoPlaceByLocation } from "@/lib/data";
 import { prisma } from "@/lib/prisma";
@@ -68,9 +69,9 @@ export default async function PostDetailPage({ params }: Props) {
   const primaryCaption = post.caption.trim() || `Memory from ${post.placeName}`;
 
   return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
-      <BackButton />
-      <div className="mx-auto max-w-xl">
+    <AppScreen>
+      <div className="pinly-content-shell pinly-screen-stack animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
+        <BackButton />
         <article className="overflow-hidden rounded-[1.75rem] border bg-[var(--surface-strong)] shadow-sm">
           {/* Media */}
           <div className="aspect-[4/3] md:aspect-[16/10]">
@@ -200,6 +201,6 @@ export default async function PostDetailPage({ params }: Props) {
           </div>
         </article>
       </div>
-    </div>
+    </AppScreen>
   );
 }

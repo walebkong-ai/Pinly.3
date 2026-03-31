@@ -60,11 +60,9 @@ export function ShareSheet({
   const [requestingUserId, setRequestingUserId] = useState<string | null>(null);
   const peopleSearchAbortRef = useRef<AbortController | null>(null);
   const peopleSearchTimerRef = useRef<number | null>(null);
-  const drawerStyle = {
-    "--pinly-sheet-height": "85vh",
-    "--pinly-sheet-height-md": "75vh",
-    "--pinly-sheet-top-gap": "6rem"
-  } as CSSProperties;
+const drawerStyle = {
+  "--pinly-sheet-top-gap": "6rem"
+} as CSSProperties;
 
   useEffect(() => {
     return () => {

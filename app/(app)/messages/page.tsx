@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { AppScreen } from "@/components/app/app-screen";
 import { auth } from "@/lib/auth";
 import { getMessageGroups } from "@/lib/data";
 import { GroupsList } from "@/components/groups/groups-list";
@@ -12,5 +13,9 @@ export default async function MessagesPage() {
 
   const groups = await getMessageGroups(session.user.id);
 
-  return <GroupsList initialGroups={groups} />;
+  return (
+    <AppScreen>
+      <GroupsList initialGroups={groups} />
+    </AppScreen>
+  );
 }

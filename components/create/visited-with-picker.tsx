@@ -112,8 +112,6 @@ export function VisitedWithPicker({
     );
   }, [friends, query]);
   const drawerStyle = {
-    "--pinly-sheet-height": "78vh",
-    "--pinly-sheet-height-md": "68vh",
     "--pinly-sheet-top-gap": "6rem"
   } as CSSProperties;
 

@@ -80,8 +80,6 @@ export function StartDirectMessageSheet() {
     );
   }, [friends, query]);
   const drawerStyle = {
-    "--pinly-sheet-height": "80vh",
-    "--pinly-sheet-height-md": "70vh",
     "--pinly-sheet-top-gap": "6rem"
   } as CSSProperties;
 

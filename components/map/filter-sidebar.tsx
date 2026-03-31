@@ -1,6 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
+import { OverlayPortal } from "@/components/app/overlay-portal";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MAP_CATEGORY_OPTIONS } from "@/lib/map-filters";
@@ -53,17 +54,17 @@ export function FilterSidebar({
   onClose: () => void;
 }) {
   return (
-    <>
+    <OverlayPortal>
       <div
         className={cn(
-          "absolute inset-0 z-[780] bg-[var(--foreground)]/18 transition",
+          "fixed inset-0 z-[980] bg-[var(--foreground)]/18 transition",
           open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         )}
         onClick={onClose}
       />
       <aside
         className={cn(
-          "glass-panel absolute inset-y-0 right-0 z-[790] flex w-full max-w-[26rem] flex-col overflow-y-auto overscroll-contain rounded-l-[1.75rem] border-l p-4 pb-[calc(1rem+var(--safe-area-bottom))] pt-[max(1rem,var(--safe-area-top))] transition-transform duration-300",
+          "glass-panel fixed inset-y-0 right-0 z-[990] flex w-full max-w-[min(var(--pinly-content-max),calc(100vw-1.5rem))] flex-col overflow-y-auto overscroll-contain rounded-l-[1.75rem] border-l p-4 pb-[calc(1rem+var(--safe-area-bottom))] pt-[max(1rem,var(--safe-area-top))] transition-transform duration-300",
           open ? "pointer-events-auto translate-x-0" : "pointer-events-none translate-x-full"
         )}
       >
@@ -223,6 +224,6 @@ export function FilterSidebar({
           </Button>
         </div>
       </aside>
-    </>
+    </OverlayPortal>
   );
 }

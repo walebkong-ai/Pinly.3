@@ -2,7 +2,28 @@
 
 import { type ReactNode, useEffect, useState } from "react";
 import { useKeyboardOffset } from "@/hooks/useKeyboardOffset";
-import { isKeyboardEditableElement } from "@/lib/keyboard-offset";
+import { computeKeyboardRevealDelta, isKeyboardEditableElement } from "@/lib/keyboard-offset";
+
+function findKeyboardScrollContainer(element: HTMLElement | null) {
+  let current = element?.parentElement ?? null;
+
+  while (current && current !== document.body) {
+    if (current.dataset.pinlyScrollContainer === "true") {
+      return current;
+    }
+
+    const computedStyle = window.getComputedStyle(current);
+    const overflowY = computedStyle.overflowY;
+
+    if ((overflowY === "auto" || overflowY === "scroll") && current.scrollHeight > current.clientHeight + 1) {
+      return current;
+    }
+
+    current = current.parentElement;
+  }
+
+  return document.scrollingElement instanceof HTMLElement ? document.scrollingElement : null;
+}
 
 export function KeyboardViewportProvider({
   children
@@ -54,14 +75,30 @@ export function KeyboardViewportProvider({
         const viewportTop = (viewport?.offsetTop ?? 0) + 24;
         const viewportBottom = (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight) - 24;
         const rect = currentActiveElement.getBoundingClientRect();
+        const revealDelta = computeKeyboardRevealDelta({
+          elementTop: rect.top,
+          elementBottom: rect.bottom,
+          viewportTop,
+          viewportBottom
+        });
 
-        if (rect.top >= viewportTop && rect.bottom <= viewportBottom) {
+        if (revealDelta === 0) {
           return;
         }
 
-        currentActiveElement.scrollIntoView({
-          block: "center",
-          inline: "nearest"
+        const scrollContainer = findKeyboardScrollContainer(currentActiveElement);
+
+        if (scrollContainer) {
+          scrollContainer.scrollBy({
+            top: revealDelta,
+            behavior: delay === 0 ? "auto" : "smooth"
+          });
+          return;
+        }
+
+        window.scrollBy({
+          top: revealDelta,
+          behavior: delay === 0 ? "auto" : "smooth"
         });
       }, delay)
     );

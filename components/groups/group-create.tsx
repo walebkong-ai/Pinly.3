@@ -99,7 +99,7 @@ export function GroupCreate() {
 
           <div>
             <label className="mb-2 block text-sm font-medium">Select Friends</label>
-            <div className="pinly-map-panel-scroll space-y-2 pr-2" style={friendListStyle}>
+            <div className="space-y-2" style={friendListStyle}>
               {friends.length === 0 ? (
                 <p className="text-sm text-[var(--foreground)]/60">No friends to add.</p>
               ) : (

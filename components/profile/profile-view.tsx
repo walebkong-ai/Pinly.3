@@ -73,7 +73,7 @@ export function ProfileView({
   });
 
   return (
-    <div className="pinly-content-shell--wide pinly-screen-stack animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
+    <div className="pinly-content-shell pinly-screen-stack animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
       <section className="glass-panel pinly-panel">
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           {isOwnProfile ? (

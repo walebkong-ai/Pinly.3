@@ -6,11 +6,13 @@ import { useEffect, useState, useRef, type CSSProperties } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Send, Users, UserPlus, CheckCircle2, LoaderCircle, MapPin, Share2, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
+import { AppScreen } from "@/components/app/app-screen";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { LocationCountryText } from "@/components/ui/country-flag";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { BackButton } from "@/components/post/back-button";
 import { ProfileLink } from "@/components/profile/profile-link";
 import type { MessageConversationDetails, MessageConversationMessage } from "@/lib/data";
 import { buildPostLocationMapHref } from "@/lib/map-post-navigation";
@@ -20,11 +22,15 @@ import { cn, getMediaProxyUrl } from "@/lib/utils";
 export function GroupDetail({
   groupId,
   viewerId,
+  backHref,
+  backLabel = "Messages",
   initialGroup,
   initialMessages
 }: {
   groupId: string;
   viewerId: string;
+  backHref?: string;
+  backLabel?: string;
   initialGroup?: MessageConversationDetails | null;
   initialMessages?: MessageConversationMessage[];
 }) {
@@ -59,9 +65,23 @@ export function GroupDetail({
       return;
     }
 
+    const abortController = new AbortController();
+    let ignore = false;
+
     async function fetchAll() {
       try {
-        const [groupRes, msgRes] = await Promise.all([fetch(`/api/groups/${groupId}`), fetch(`/api/groups/${groupId}/messages`)]);
+        const [groupRes, msgRes] = await Promise.all([
+          fetch(`/api/groups/${groupId}`, {
+            signal: abortController.signal
+          }),
+          fetch(`/api/groups/${groupId}/messages`, {
+            signal: abortController.signal
+          })
+        ]);
+
+        if (ignore) {
+          return;
+        }
 
         if (groupRes.ok && msgRes.ok) {
           const groupData = await groupRes.json();
@@ -70,11 +90,22 @@ export function GroupDetail({
           setMessages(msgData.messages);
           scrollToBottom("auto");
         }
+      } catch (error) {
+        if (ignore || (error instanceof DOMException && error.name === "AbortError")) {
+          return;
+        }
       } finally {
-        setLoading(false);
+        if (!ignore) {
+          setLoading(false);
+        }
       }
     }
     void fetchAll();
+
+    return () => {
+      ignore = true;
+      abortController.abort();
+    };
   }, [groupId, hasInitialData, initialGroup, initialMessages]);
 
   useEffect(() => {
@@ -172,123 +203,133 @@ export function GroupDetail({
     }
   };
 
-  if (loading) return <div className="p-4 text-sm">Loading conversation...</div>;
-  if (!group) return <div className="p-4 text-sm text-red-500">Conversation not found or access denied.</div>;
+  if (loading) {
+    return (
+      <AppScreen>
+        <div className="pinly-content-shell pinly-screen-stack">
+          <div className="glass-panel rounded-[var(--pinly-panel-radius-lg)] px-4 py-5 text-sm text-[var(--foreground)]/60">
+            Loading conversation...
+          </div>
+        </div>
+      </AppScreen>
+    );
+  }
+
+  if (!group) {
+    return (
+      <AppScreen>
+        <div className="pinly-content-shell pinly-screen-stack">
+          <div className="glass-panel rounded-[var(--pinly-panel-radius-lg)] px-4 py-5 text-sm text-[var(--danger)]">
+            Conversation not found or access denied.
+          </div>
+        </div>
+      </AppScreen>
+    );
+  }
 
   const conversationName = group.isDirect ? group.directUser?.name ?? group.name : group.name;
   const conversationSubtitle = group.isDirect
     ? "Direct conversation"
     : "Group chat for shared plans, memories, and updates";
+  const composer = (
+    <form
+      onSubmit={handleSend}
+      className="glass-panel rounded-[var(--pinly-panel-radius-lg)] border border-black/5 bg-white/70 p-3.5"
+    >
+      <div className="relative flex items-center">
+        <Input
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder={group.isDirect ? `Message ${conversationName}...` : "Type a message..."}
+          className="h-12 rounded-full border-none bg-white pr-12 shadow-sm"
+        />
+        <Button
+          type="submit"
+          disabled={!content.trim() || sending}
+          aria-label="Send message"
+          className="absolute right-1 flex h-10 w-10 items-center justify-center rounded-full p-0"
+        >
+          <Send className="h-4 w-4" />
+        </Button>
+      </div>
+    </form>
+  );
 
   return (
-    <div className="pinly-content-shell--wide grid h-full min-h-0 gap-[var(--pinly-page-gap)] xl:grid-cols-[0.8fr_1.2fr]">
-      {/* Conversation Info Sidebar */}
-      <section className="glass-panel pinly-panel hidden flex-col xl:flex">
-        {group.isDirect && group.directUser ? (
-          <ProfileLink username={group.directUser.username} className="w-fit rounded-[1.5rem]">
-            <Avatar
-              name={group.directUser.name}
-              src={group.directUser.avatarUrl}
-              className="h-16 w-16 rounded-2xl border border-white/70"
-            />
-          </ProfileLink>
-        ) : (
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--accent)]/10 text-[var(--accent)]">
-            <Users className="h-8 w-8" />
-          </div>
-        )}
-        {group.isDirect && group.directUser ? (
-          <ProfileLink
-            username={group.directUser.username}
-            className="mt-4 inline-flex w-fit flex-col rounded-[1.5rem] p-1 -m-1 transition hover:bg-white/45"
-          >
-            <h1 className="font-[var(--font-serif)] text-[var(--pinly-display-title-size)] leading-[1.08]">{conversationName}</h1>
-            <p className="mt-1 text-sm text-[var(--foreground)]/60">@{group.directUser.username}</p>
-          </ProfileLink>
-        ) : (
-          <>
-            <h1 className="mt-4 font-[var(--font-serif)] text-[var(--pinly-display-title-size)] leading-[1.08]">{conversationName}</h1>
-            <p className="mt-1 text-sm text-[var(--foreground)]/60">{conversationSubtitle}</p>
-          </>
-        )}
-        {group.isDirect ? (
-          <p className="mt-1 text-sm text-[var(--foreground)]/60">{conversationSubtitle}</p>
-        ) : null}
+    <>
+      <AppScreen
+        footer={composer}
+        className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out"
+      >
+        <div className="pinly-content-shell pinly-screen-stack">
+          {backHref ? <BackButton fallbackHref={backHref} label={backLabel} /> : null}
 
-        <div className="mt-8 flex items-center justify-between">
-          <h2 className="font-semibold uppercase tracking-widest text-xs text-[var(--foreground)]/45">
-            {group.isDirect ? `People (${group.members.length})` : `Members (${group.members.length})`}
-          </h2>
-          {!group.isDirect ? (
-            <Button variant="ghost" onClick={openAddModal} className="h-7 gap-1 px-2 text-xs text-[var(--accent)] hover:bg-[var(--accent)]/10">
-              <UserPlus className="h-3 w-3" /> Add
-            </Button>
-          ) : null}
-        </div>
-        <div className="mt-4 flex-1 space-y-3 overflow-y-auto">
-          {group.members.map((member) => (
-            <ProfileLink
-              key={member.user.id}
-              username={member.user.username}
-              className="flex items-center gap-3 rounded-2xl bg-white/50 p-2 transition hover:bg-white/70"
-            >
-              <Avatar name={member.user.name} src={member.user.avatarUrl} className="h-8 w-8" />
-              <div>
-                <p className="text-sm font-medium">{member.user.name}</p>
-                <p className="text-xs text-[var(--foreground)]/60">@{member.user.username} {member.role === "OWNER" && "• Owner"}</p>
+          <section className="glass-panel relative flex flex-col overflow-hidden rounded-[var(--pinly-panel-radius-lg)]">
+            <div className="flex items-center justify-between gap-3 border-b border-black/5 bg-white/40 p-3.5">
+              <div className="flex min-w-0 items-center gap-3">
+                {group.isDirect && group.directUser ? (
+                  <ProfileLink username={group.directUser.username} className="shrink-0 rounded-full">
+                    <Avatar name={group.directUser.name} src={group.directUser.avatarUrl} className="h-10 w-10 shrink-0" />
+                  </ProfileLink>
+                ) : (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent)]/10 text-[var(--accent)]">
+                    <Users className="h-5 w-5" />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  {group.isDirect && group.directUser ? (
+                    <ProfileLink username={group.directUser.username} className="rounded-md px-0.5 -ml-0.5 font-semibold transition hover:text-[var(--foreground)]">
+                      {conversationName}
+                    </ProfileLink>
+                  ) : (
+                    <h2 className="truncate font-semibold">{conversationName}</h2>
+                  )}
+                  <p className="text-xs text-[var(--foreground)]/50">
+                    {group.isDirect ? conversationSubtitle : `${group.members.length} members`}
+                  </p>
+                </div>
               </div>
-            </ProfileLink>
-          ))}
-        </div>
-      </section>
-
-      {/* Messaging Area */}
-      <section className="glass-panel relative flex min-h-0 flex-col overflow-hidden rounded-[var(--pinly-panel-radius-lg)]">
-        {/* Mobile Header */}
-        <div className="flex items-center justify-between gap-3 border-b border-black/5 bg-white/40 p-3.5 xl:hidden">
-          <div className="flex min-w-0 items-center gap-3">
-            {group.isDirect && group.directUser ? (
-              <ProfileLink username={group.directUser.username} className="shrink-0 rounded-full">
-                <Avatar name={group.directUser.name} src={group.directUser.avatarUrl} className="h-10 w-10 shrink-0" />
-              </ProfileLink>
-            ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent)]/10 text-[var(--accent)]">
-                <Users className="h-5 w-5" />
-              </div>
-            )}
-            <div className="min-w-0">
-              {group.isDirect && group.directUser ? (
-                <ProfileLink username={group.directUser.username} className="rounded-md px-0.5 -ml-0.5 font-semibold transition hover:text-[var(--foreground)]">
-                  {conversationName}
-                </ProfileLink>
-              ) : (
-                <h2 className="truncate font-semibold">{conversationName}</h2>
-              )}
-              <p className="text-xs text-[var(--foreground)]/50">
-                {group.isDirect ? conversationSubtitle : `${group.members.length} members`}
-              </p>
+              {!group.isDirect ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={openAddModal}
+                  className="h-11 shrink-0 gap-1 rounded-full px-3 text-xs text-[var(--accent)] hover:bg-[var(--accent)]/10"
+                >
+                  <UserPlus className="h-3.5 w-3.5" />
+                  Add
+                </Button>
+              ) : null}
             </div>
-          </div>
-          {!group.isDirect ? (
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={openAddModal}
-              className="h-11 shrink-0 gap-1 rounded-full px-3 text-xs text-[var(--accent)] hover:bg-[var(--accent)]/10"
-            >
-              <UserPlus className="h-3.5 w-3.5" />
-              Add
-            </Button>
-          ) : null}
-        </div>
 
-        {/* Messages */}
-        <div
-          className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-3.5"
-          style={{ scrollPaddingBottom: "calc(6rem + var(--keyboard-safe-area-bottom))" }}
-        >
+            <div className="space-y-4 p-3.5" style={{ scrollPaddingBottom: "calc(6rem + var(--keyboard-safe-area-bottom))" }}>
+              {!group.isDirect ? (
+                <div className="rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-soft)] p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--foreground)]/45">
+                        Members ({group.members.length})
+                      </p>
+                      <p className="mt-1 text-sm text-[var(--foreground)]/58">{conversationSubtitle}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {group.members.map((member) => (
+                      <ProfileLink
+                        key={member.user.id}
+                        username={member.user.username}
+                        className="flex items-center gap-2 rounded-full border bg-white/65 px-3 py-2 text-sm transition hover:bg-white"
+                      >
+                        <Avatar name={member.user.name} src={member.user.avatarUrl} className="h-7 w-7" />
+                        <span className="max-w-[9rem] truncate">{member.user.name}</span>
+                      </ProfileLink>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
           {messages.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-sm text-[var(--foreground)]/50">
+            <div className="flex items-center justify-center rounded-[var(--pinly-panel-radius)] bg-[var(--surface-soft)] px-4 py-10 text-sm text-[var(--foreground)]/50">
               {group.isDirect ? "No messages yet. Start the conversation." : "No messages here yet. Say hi!"}
             </div>
           ) : (
@@ -398,32 +439,11 @@ export function GroupDetail({
               </div>
             ))
           )}
-          <div ref={bottomRef} />
+              <div ref={bottomRef} />
+            </div>
+          </section>
         </div>
-
-        {/* Input area */}
-        <form
-          onSubmit={handleSend}
-          className="border-t border-black/5 bg-white/40 p-3.5 pb-[calc(0.875rem+var(--keyboard-safe-area-bottom))]"
-        >
-          <div className="relative flex items-center">
-            <Input
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder={group.isDirect ? `Message ${conversationName}...` : "Type a message..."}
-              className="pr-12 rounded-full bg-white border-none shadow-sm h-12"
-            />
-            <Button
-              type="submit"
-              disabled={!content.trim() || sending}
-              aria-label="Send message"
-              className="absolute right-1 flex h-10 w-10 items-center justify-center rounded-full p-0"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
-        </form>
-      </section>
+      </AppScreen>
 
       {!group.isDirect ? (
         <Dialog
@@ -504,6 +524,6 @@ export function GroupDetail({
           </DialogContent>
         </Dialog>
       ) : null}
-    </div>
+    </>
   );
 }

@@ -53,7 +53,7 @@ export function CityBrowser({ showLikeCounts = true }: { showLikeCounts?: boolea
   }
 
   return (
-    <div className="pinly-content-shell--wide pinly-screen-stack">
+    <div className="pinly-content-shell pinly-screen-stack">
       <section className="glass-panel pinly-panel">
         <p className="pinly-eyebrow">City discovery</p>
         <h1 className="pinly-display-title">Browse places through your friends</h1>

@@ -9,8 +9,6 @@ type NetworkStatusContextValue = {
 
 const NetworkStatusContext = createContext<NetworkStatusContextValue | null>(null);
 const NETWORK_STATUS_HEALTHCHECK_PATH = "/api/health";
-const NETWORK_STATUS_SYNC_INTERVAL_MS = 15_000;
-
 type ResolveConfirmedNetworkStatusOptions = {
   signal?: AbortSignal;
   navigatorOnline?: boolean;
@@ -101,12 +99,6 @@ export function NetworkStatusProvider({ children }: { children: React.ReactNode 
     window.addEventListener("offline", handleOffline);
     window.addEventListener("focus", handleWindowFocus);
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    const syncInterval = window.setInterval(() => {
-      if (document.visibilityState === "visible") {
-        void syncStatus();
-      }
-    }, NETWORK_STATUS_SYNC_INTERVAL_MS);
-
     return () => {
       isCancelled = true;
       activeController?.abort();
@@ -114,7 +106,6 @@ export function NetworkStatusProvider({ children }: { children: React.ReactNode 
       window.removeEventListener("offline", handleOffline);
       window.removeEventListener("focus", handleWindowFocus);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.clearInterval(syncInterval);
     };
   }, []);
 

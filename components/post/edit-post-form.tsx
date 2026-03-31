@@ -553,7 +553,7 @@ export function EditPostForm({ post }: { post: PostSummary }) {
               ) : null}
             </div>
             {!!placeResults.length ? (
-              <div className="mt-3 max-h-52 space-y-2 overflow-y-auto">
+              <div className="mt-3 space-y-2">
                 {placeResults.map((place) => (
                   <button
                     key={place.id}

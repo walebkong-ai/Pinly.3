@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRef, type CSSProperties, type SyntheticEvent } from "react";
 import { ArrowLeft, CalendarDays, MapPin, X } from "lucide-react";
+import { OverlayPortal } from "@/components/app/overlay-portal";
 import type { PostSummary } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -76,25 +77,25 @@ export function BottomSheet({
   }
 
   return (
-    <div
-      className="pinly-bottom-layer pointer-events-none fixed inset-0 z-[990] isolate flex items-end justify-center px-[var(--pinly-page-gutter)] pt-14 sm:px-3 sm:pt-3"
-      style={layerStyle}
-    >
+    <OverlayPortal>
       <div
-        aria-hidden="true"
-        className="pointer-events-auto absolute inset-0 bg-[rgba(8,17,26,0.22)] backdrop-blur-[2px]"
-        onPointerDown={(event) => event.stopPropagation()}
-        onPointerUp={(event) => event.stopPropagation()}
-        onClick={handleBackdropClick}
-      />
-
-      <div
-        className="pinly-bottom-surface pointer-events-auto relative z-[1] isolate flex w-full max-w-[30rem] flex-col overflow-hidden rounded-[1.75rem] border bg-[var(--card)] shadow-2xl shadow-black/20 sm:max-h-[min(84vh,46rem)]"
-        onPointerDown={(event) => event.stopPropagation()}
-        onPointerUp={(event) => event.stopPropagation()}
-        onClick={(event) => event.stopPropagation()}
+        className="pinly-bottom-layer pointer-events-none fixed inset-0 z-[990] isolate flex items-end justify-center px-[var(--pinly-page-gutter)] pt-14 sm:px-3 sm:pt-3"
+        style={layerStyle}
       >
-        <>
+        <div
+          aria-hidden="true"
+          className="pointer-events-auto absolute inset-0 bg-[rgba(8,17,26,0.22)] backdrop-blur-[2px]"
+          onPointerDown={(event) => event.stopPropagation()}
+          onPointerUp={(event) => event.stopPropagation()}
+          onClick={handleBackdropClick}
+        />
+
+        <div
+          className="pinly-bottom-surface pointer-events-auto relative z-[1] isolate flex w-full max-w-[var(--pinly-content-max)] flex-col overflow-hidden rounded-[1.75rem] border bg-[var(--card)] shadow-2xl shadow-black/20 sm:max-h-[calc(var(--app-viewport-height)-5rem)]"
+          onPointerDown={(event) => event.stopPropagation()}
+          onPointerUp={(event) => event.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
+        >
           <div className="sticky top-0 z-[2] border-b border-[var(--foreground)]/8 bg-[var(--card)]/96 px-4 pb-3.5 pt-3 backdrop-blur-xl sm:px-5">
             <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[var(--foreground)]/14" />
             <div className="flex items-center justify-between gap-3">
@@ -184,8 +185,8 @@ export function BottomSheet({
               </div>
             </div>
           </div>
-        </>
+        </div>
       </div>
-    </div>
+    </OverlayPortal>
   );
 }

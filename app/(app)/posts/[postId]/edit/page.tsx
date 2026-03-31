@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { AppScreen } from "@/components/app/app-screen";
 import { auth } from "@/lib/auth";
 import { getVisiblePostById } from "@/lib/data";
 import { BackButton } from "@/components/post/back-button";
@@ -23,9 +24,11 @@ export default async function EditPostPage({ params }: Props) {
   }
 
   return (
-    <div className="space-y-4">
-      <BackButton />
-      <EditPostForm post={post} />
-    </div>
+    <AppScreen>
+      <div className="pinly-content-shell pinly-screen-stack">
+        <BackButton />
+        <EditPostForm post={post} />
+      </div>
+    </AppScreen>
   );
 }

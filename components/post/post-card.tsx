@@ -27,6 +27,72 @@ import {
   type TapPoint
 } from "@/lib/post-tap-gesture";
 
+type PendingTapSubscription = {
+  hasPending: () => boolean;
+  isSameSurface: (target: EventTarget | null) => boolean;
+  isInteractiveTarget: (target: EventTarget | null) => boolean;
+  cancelPendingNavigation: () => void;
+  resetTapCandidate: () => void;
+  resetTouchGesture: () => void;
+};
+
+const pendingTapSubscriptions = new Set<PendingTapSubscription>();
+let pendingTapListenersTeardown: (() => void) | null = null;
+
+function teardownPendingTapListenersIfIdle() {
+  if (pendingTapSubscriptions.size === 0 && pendingTapListenersTeardown) {
+    pendingTapListenersTeardown();
+    pendingTapListenersTeardown = null;
+  }
+}
+
+function ensurePendingTapListeners() {
+  if (pendingTapListenersTeardown || typeof window === "undefined") {
+    return;
+  }
+
+  const handleGlobalPointerDown = (event: globalThis.PointerEvent) => {
+    for (const subscription of pendingTapSubscriptions) {
+      if (!subscription.hasPending()) {
+        continue;
+      }
+
+      const interruption = resolvePendingTapInterruption({
+        targetIsSameSurface: subscription.isSameSurface(event.target),
+        targetIsInteractive: subscription.isInteractiveTarget(event.target)
+      });
+
+      if (interruption.cancelPendingNavigation) {
+        subscription.cancelPendingNavigation();
+      }
+
+      if (interruption.resetTapCandidate) {
+        subscription.resetTapCandidate();
+      }
+    }
+  };
+
+  const handleGlobalScroll = () => {
+    for (const subscription of pendingTapSubscriptions) {
+      if (!subscription.hasPending()) {
+        continue;
+      }
+
+      subscription.cancelPendingNavigation();
+      subscription.resetTapCandidate();
+      subscription.resetTouchGesture();
+    }
+  };
+
+  window.addEventListener("pointerdown", handleGlobalPointerDown, true);
+  window.addEventListener("scroll", handleGlobalScroll, true);
+
+  pendingTapListenersTeardown = () => {
+    window.removeEventListener("pointerdown", handleGlobalPointerDown, true);
+    window.removeEventListener("scroll", handleGlobalScroll, true);
+  };
+}
+
 export function PostCard({
   post,
   compact = false,
@@ -67,39 +133,23 @@ export function PostCard({
     if (!openOnBodyTap) {
       return;
     }
-
-    function handleGlobalPointerDown(event: globalThis.PointerEvent) {
-      if (pendingNavigationRef.current === null && lastTouchTapRef.current === null) {
-        return;
-      }
-
-      const target = event.target;
-      const interruption = resolvePendingTapInterruption({
-        targetIsSameSurface: Boolean(bodyRef.current && target instanceof Node && bodyRef.current.contains(target)),
-        targetIsInteractive: isInteractiveTarget(target)
-      });
-
-      if (interruption.cancelPendingNavigation) {
-        clearPendingNavigation();
-      }
-
-      if (interruption.resetTapCandidate) {
+    const subscription: PendingTapSubscription = {
+      hasPending: () => pendingNavigationRef.current !== null || lastTouchTapRef.current !== null,
+      isSameSurface: (target) => Boolean(bodyRef.current && target instanceof Node && bodyRef.current.contains(target)),
+      isInteractiveTarget,
+      cancelPendingNavigation: clearPendingNavigation,
+      resetTapCandidate: () => {
         lastTouchTapRef.current = null;
-      }
-    }
+      },
+      resetTouchGesture
+    };
 
-    function handleGlobalScroll() {
-      clearPendingNavigation();
-      lastTouchTapRef.current = null;
-      resetTouchGesture();
-    }
-
-    window.addEventListener("pointerdown", handleGlobalPointerDown, true);
-    window.addEventListener("scroll", handleGlobalScroll, true);
+    pendingTapSubscriptions.add(subscription);
+    ensurePendingTapListeners();
 
     return () => {
-      window.removeEventListener("pointerdown", handleGlobalPointerDown, true);
-      window.removeEventListener("scroll", handleGlobalScroll, true);
+      pendingTapSubscriptions.delete(subscription);
+      teardownPendingTapListenersIfIdle();
     };
   }, [openOnBodyTap]);
 

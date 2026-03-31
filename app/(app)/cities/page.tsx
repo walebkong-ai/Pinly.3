@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { AppScreen } from "@/components/app/app-screen";
 import { CityBrowser } from "@/components/cities/city-browser";
 
 export default async function CitiesPage() {
@@ -11,5 +12,9 @@ export default async function CitiesPage() {
       })
     : null;
 
-  return <CityBrowser showLikeCounts={settings?.showLikeCounts ?? true} />;
+  return (
+    <AppScreen>
+      <CityBrowser showLikeCounts={settings?.showLikeCounts ?? true} />
+    </AppScreen>
+  );
 }

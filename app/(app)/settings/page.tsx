@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { AppScreen } from "@/components/app/app-screen";
 import { auth } from "@/lib/auth";
 import { LegalLinks } from "@/components/legal/legal-links";
 import { LEGAL_LAST_UPDATED_LABEL } from "@/lib/legal";
@@ -39,37 +40,39 @@ export default async function SettingsPage() {
   }
 
   return (
-    <div className="pinly-content-shell pinly-screen-stack animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
-      <BackButton fallbackHref={`/profile/${user.username}`} label="Profile" />
-      <section className="glass-panel pinly-panel">
-        <p className="pinly-eyebrow">Settings</p>
-        <h1 className="pinly-display-title">Profile settings</h1>
-        <p className="pinly-body-copy">
-          Manage your profile photo and the interaction controls tied to your posts.
-        </p>
-      </section>
+    <AppScreen>
+      <div className="pinly-content-shell pinly-screen-stack animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
+        <BackButton fallbackHref={`/profile/${user.username}`} label="Profile" />
+        <section className="glass-panel pinly-panel">
+          <p className="pinly-eyebrow">Settings</p>
+          <h1 className="pinly-display-title">Profile settings</h1>
+          <p className="pinly-body-copy">
+            Manage your profile photo and the interaction controls tied to your posts.
+          </p>
+        </section>
 
-      <section className="glass-panel pinly-panel">
-        <SettingsForm
-          initialProfile={user}
-          initialSettings={{
-            showLikeCounts: settings?.showLikeCounts ?? true,
-            commentsEnabled: settings?.commentsEnabled ?? true
-          }}
-        />
-      </section>
+        <section className="glass-panel pinly-panel">
+          <SettingsForm
+            initialProfile={user}
+            initialSettings={{
+              showLikeCounts: settings?.showLikeCounts ?? true,
+              commentsEnabled: settings?.commentsEnabled ?? true
+            }}
+          />
+        </section>
 
-      <section className="glass-panel pinly-panel">
-        <DeleteAccountCard username={user.username} isDemoAccount={isReservedDemoEmail(user.email)} />
-      </section>
+        <section className="glass-panel pinly-panel">
+          <DeleteAccountCard username={user.username} isDemoAccount={isReservedDemoEmail(user.email)} />
+        </section>
 
-      <section className="glass-panel pinly-panel">
-        <p className="text-sm font-medium">Legal</p>
-        <p className="mt-1 text-xs leading-5 text-[var(--foreground)]/58">
-          Review the current Terms of Service and Privacy Policy. Last updated {LEGAL_LAST_UPDATED_LABEL}.
-        </p>
-        <LegalLinks className="mt-3" />
-      </section>
-    </div>
+        <section className="glass-panel pinly-panel">
+          <p className="text-sm font-medium">Legal</p>
+          <p className="mt-1 text-xs leading-5 text-[var(--foreground)]/58">
+            Review the current Terms of Service and Privacy Policy. Last updated {LEGAL_LAST_UPDATED_LABEL}.
+          </p>
+          <LegalLinks className="mt-3" />
+        </section>
+      </div>
+    </AppScreen>
   );
 }

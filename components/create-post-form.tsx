@@ -593,7 +593,7 @@ export function CreatePostForm() {
   return (
     <div
       data-testid="create-post-form"
-      className="pinly-content-shell--wide pinly-screen-stack animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out"
+      className="pinly-content-shell pinly-screen-stack animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out"
     >
       {showFirstMemoryGuide ? (
         <section className="glass-panel pinly-panel">
@@ -788,7 +788,7 @@ export function CreatePostForm() {
                 {searchingPlaces && <LoaderCircle className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[var(--map-accent)]" />}
               </div>
               {!!placeResults.length && (
-                <div className="mt-3 max-h-52 space-y-2 overflow-y-auto">
+                <div className="mt-3 space-y-2">
                   {placeResults.map((place) => (
                     <button
                       key={place.id}

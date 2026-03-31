@@ -104,15 +104,6 @@ export function NotificationsList({
     setNotifications(initialNotifications);
   }, [initialNotifications]);
 
-  useEffect(() => {
-    function handleNotificationsUpdated() {
-      router.refresh();
-    }
-
-    window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, handleNotificationsUpdated);
-    return () => window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, handleNotificationsUpdated);
-  }, [router]);
-
   async function markNotificationsRead(notificationIds?: string[], markAll = false) {
     const response = await fetch("/api/notifications/read", {
       method: "POST",

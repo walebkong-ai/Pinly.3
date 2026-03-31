@@ -811,7 +811,7 @@ export function MapPageClient() {
             </div>
 
             {(showControls || showWelcomeCard || satelliteToggleVisible) && (
-              <div className="pointer-events-none absolute inset-x-3 bottom-[5.5rem] grid gap-3 md:bottom-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-end xl:px-1 animate-in fade-in duration-500 ease-out">
+              <div className="pointer-events-none absolute inset-x-3 bottom-[calc(5.25rem+var(--keyboard-safe-area-bottom))] grid gap-3 md:bottom-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-end xl:px-1 animate-in fade-in duration-500 ease-out">
                 <div className="pointer-events-none flex flex-col-reverse gap-3 xl:flex-row xl:items-end xl:justify-between xl:gap-4">
                   {satelliteToggleVisible ? (
                     <div className="pointer-events-auto self-start xl:self-end">
