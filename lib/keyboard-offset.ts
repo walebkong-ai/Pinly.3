@@ -18,6 +18,14 @@ export type KeyboardViewportComputation = {
   isKeyboardOpen: boolean;
 };
 
+export type KeyboardRevealComputationInput = {
+  elementTop: number;
+  elementBottom: number;
+  viewportTop: number;
+  viewportBottom: number;
+  margin?: number;
+};
+
 export function isKeyboardEditableElement(element: Element | null) {
   if (!(element instanceof HTMLElement)) {
     return false;
@@ -58,6 +66,31 @@ export function clampKeyboardOffset(rawOffset: number, baselineHeight: number) {
 
   const maxOffset = Math.round(baselineHeight * MAX_KEYBOARD_OFFSET_RATIO);
   return Math.max(0, Math.min(Math.round(rawOffset), maxOffset));
+}
+
+export function computeKeyboardRevealDelta({
+  elementTop,
+  elementBottom,
+  viewportTop,
+  viewportBottom,
+  margin = 16
+}: KeyboardRevealComputationInput) {
+  if (!Number.isFinite(elementTop) || !Number.isFinite(elementBottom) || !Number.isFinite(viewportTop) || !Number.isFinite(viewportBottom)) {
+    return 0;
+  }
+
+  const safeViewportTop = viewportTop + margin;
+  const safeViewportBottom = viewportBottom - margin;
+
+  if (elementTop < safeViewportTop) {
+    return Math.round(elementTop - safeViewportTop);
+  }
+
+  if (elementBottom > safeViewportBottom) {
+    return Math.round(elementBottom - safeViewportBottom);
+  }
+
+  return 0;
 }
 
 export function computeKeyboardViewportState({

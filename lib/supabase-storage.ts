@@ -8,6 +8,7 @@ const SERVER_SUPABASE_URL_ENV = "SUPABASE_URL";
 const SERVER_SUPABASE_ANON_KEY_ENV = "SUPABASE_ANON_KEY";
 const SUPABASE_SERVICE_ROLE_ENV = "SUPABASE_SERVICE_ROLE_KEY";
 const SUPABASE_BUCKET_ENV = "SUPABASE_STORAGE_BUCKET";
+const DEFAULT_SIGNED_MEDIA_TTL_SECONDS = 60;
 
 export class SupabaseMediaConfigError extends Error {
   constructor(message: string) {
@@ -92,21 +93,7 @@ export type SupabaseRuntimeDiagnostics = {
 };
 
 export function getSupabaseClientPublicBaseUrl() {
-  const candidate = readEnvValue(PUBLIC_SUPABASE_URL_ENV);
-
-  if (!candidate) {
-    throw new SupabaseMediaConfigError(`Set ${PUBLIC_SUPABASE_URL_ENV} for Pinly public media rendering.`);
-  }
-
-  const parsed = normalizeHttpsUrl(candidate);
-
-  if (!parsed || !parsed.hostname.endsWith(SUPABASE_HOST_SUFFIX)) {
-    throw new SupabaseMediaConfigError("Pinly public media rendering requires an HTTPS Supabase project URL.");
-  }
-
-  parsed.pathname = "";
-  parsed.search = "";
-  return parsed.toString().replace(/\/$/, "");
+  return getSupabasePublicBaseUrl();
 }
 
 export function getSupabasePublicBaseUrl() {
@@ -189,6 +176,21 @@ export function createSupabaseAdminClient() {
 
 export function createSupabaseUploadClient() {
   return createSupabaseClient(getSupabaseUploadKey());
+}
+
+export function isOwnedSupabaseObjectUrl(
+  url: string | null | undefined,
+  ownerId: string,
+  bucket = getSupabaseStorageBucket()
+) {
+  const parsed = parseSupabasePublicMediaUrl(url);
+
+  if (!parsed || parsed.bucket !== bucket) {
+    return false;
+  }
+
+  const [ownerSegment] = parsed.objectPath.split("/");
+  return ownerSegment === ownerId;
 }
 
 function encodePath(pathname: string) {
@@ -286,4 +288,27 @@ export async function deleteSupabaseStorageObjects(urls: Array<string | null | u
       throw new Error(`Supabase storage delete failed for bucket "${bucket}": ${error.message}`);
     }
   }
+}
+
+export async function createSignedSupabaseObjectUrl(
+  url: string,
+  options?: {
+    expiresIn?: number;
+  }
+) {
+  const parsed = parseSupabasePublicMediaUrl(url);
+
+  if (!parsed) {
+    throw new SupabaseMediaConfigError("Supabase media URLs must point to a trusted Pinly storage object.");
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const expiresIn = options?.expiresIn ?? DEFAULT_SIGNED_MEDIA_TTL_SECONDS;
+  const { data, error } = await supabase.storage.from(parsed.bucket).createSignedUrl(parsed.objectPath, expiresIn);
+
+  if (error || !data?.signedUrl) {
+    throw new Error(`Supabase signed URL generation failed: ${error?.message ?? "Unknown error"}`);
+  }
+
+  return data.signedUrl;
 }
