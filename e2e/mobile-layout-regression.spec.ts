@@ -96,6 +96,34 @@ test("mobile messages keep group creation, chat composer, and add-members dialog
   await expect(dialog).toBeHidden({ timeout: 15_000 });
 });
 
+test("mobile map keeps the canvas dominant within the viewport", async ({ page }) => {
+  await signInAsDemo(page);
+  await page.locator(".pinly-map-stage").waitFor({ state: "visible", timeout: 20_000 });
+  await page.waitForTimeout(400);
+
+  const metrics = await page.evaluate(() => {
+    const stage = document.querySelector(".pinly-map-stage");
+    const nav = document.querySelector(".pinly-mobile-nav");
+
+    if (!(stage instanceof HTMLElement) || !(nav instanceof HTMLElement)) {
+      return null;
+    }
+
+    const stageRect = stage.getBoundingClientRect();
+    const navRect = nav.getBoundingClientRect();
+
+    return {
+      stageHeight: stageRect.height,
+      viewportHeight: window.innerHeight,
+      gapAboveNav: navRect.top - stageRect.bottom
+    };
+  });
+
+  expect(metrics).not.toBeNull();
+  expect(metrics!.stageHeight).toBeGreaterThan(metrics!.viewportHeight * 0.6);
+  expect(metrics!.gapAboveNav).toBeLessThan(32);
+});
+
 test("mobile create and post-detail drawers keep search fields and actions visible", async ({ page }) => {
   await signInAsDemo(page);
 
@@ -105,7 +133,9 @@ test("mobile create and post-detail drawers keep search fields and actions visib
   await page.getByRole("button", { name: /add friends/i }).click();
   await expect(page.getByRole("heading", { name: "Tag friends" })).toBeVisible({ timeout: 15_000 });
   await expect(page.getByPlaceholder("Search friends...")).toBeVisible();
-  await closeMobileDrawer(page);
+  const doneButton = page.getByRole("button", { name: /^done$/i }).last();
+  await expect(doneButton).toBeVisible({ timeout: 15_000 });
+  await doneButton.click();
   await expect(page.getByPlaceholder("Search friends...")).toBeHidden({ timeout: 15_000 });
 
   await page.getByRole("button", { name: /add folders/i }).click();

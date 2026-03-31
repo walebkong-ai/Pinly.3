@@ -692,7 +692,7 @@ export function MapPageClient() {
   }, []);
 
   return (
-    <section className="pinly-map-stage relative isolate flex-1 overflow-hidden rounded-[1.75rem] border bg-[var(--surface-soft)] shadow-2xl shadow-black/5">
+    <section className="pinly-map-stage relative isolate flex h-full min-h-0 flex-1 overflow-hidden rounded-[1.75rem] border bg-[var(--surface-soft)] shadow-2xl shadow-black/5">
       <MapErrorBoundary>
         <DynamicMapCanvas
           markers={mapData.markers}

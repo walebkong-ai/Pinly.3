@@ -144,9 +144,9 @@ export function VisitedWithPicker({
             </Button>
           </Drawer.Trigger>
           <Drawer.Portal>
-            <Drawer.Overlay className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm transition-opacity" />
+            <Drawer.Overlay className="fixed inset-0 z-[980] bg-black/40 backdrop-blur-sm transition-opacity" />
             <Drawer.Content
-              className="pinly-mobile-drawer pinly-mobile-drawer--full fixed inset-x-0 z-[200] mt-24 flex flex-col rounded-t-[2.5rem] bg-[var(--surface-strong)] after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]"
+              className="pinly-mobile-drawer pinly-mobile-drawer--full fixed inset-x-0 z-[990] mt-24 flex flex-col rounded-t-[2.5rem] bg-[var(--surface-strong)] after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]"
               style={drawerStyle}
             >
               <div className="mx-auto mt-4 h-1.5 w-12 shrink-0 rounded-full bg-[var(--foreground)]/15" />
