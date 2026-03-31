@@ -16,17 +16,17 @@ export default async function CollectionsPage() {
   const collections = await getOwnedCollections(session.user.id, 32);
 
   return (
-    <div className="mx-auto max-w-xl space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
-      <section className="glass-panel rounded-[1.75rem] p-4">
+    <div className="pinly-content-shell pinly-screen-stack animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
+      <section className="glass-panel pinly-panel">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[rgba(56,182,201,0.12)] text-[var(--map-accent)]">
               <Folders className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Collections</p>
-              <h1 className="mt-1.5 font-[var(--font-serif)] text-2xl md:text-3xl">Trip folders</h1>
-              <p className="mt-2 text-sm leading-6 text-[var(--foreground)]/66">
+              <p className="pinly-eyebrow">Collections</p>
+              <h1 className="pinly-display-title">Trip folders</h1>
+              <p className="pinly-body-copy">
                 Keep related memories together by trip, season, or weekend.
               </p>
             </div>
@@ -36,13 +36,13 @@ export default async function CollectionsPage() {
       </section>
 
       {collections.length > 0 ? (
-        <section className="grid gap-4 sm:grid-cols-2">
+        <section className="grid gap-[var(--pinly-page-gap)] sm:grid-cols-2">
           {collections.map((collection) => (
             <CollectionCard key={collection.id} collection={collection} />
           ))}
         </section>
       ) : (
-        <section className="rounded-[1.75rem] border bg-[var(--surface-strong)] p-6 text-center">
+        <section className="pinly-list-empty border bg-[var(--surface-strong)] text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--surface-soft)] text-[var(--map-accent)]">
             <FolderOpen className="h-5 w-5" />
           </div>

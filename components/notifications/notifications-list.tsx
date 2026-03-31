@@ -177,7 +177,7 @@ export function NotificationsList({
 
   if (visibleNotifications.length === 0) {
     return (
-      <div className="rounded-[1.75rem] border bg-[var(--surface-strong)] p-6 text-center">
+      <div className="pinly-list-empty border bg-[var(--surface-strong)] text-center">
         <p className="text-sm font-medium text-[var(--foreground)]">You&apos;re all caught up.</p>
         <p className="mt-2 text-xs text-[var(--foreground)]/58">Unread notifications disappear from this list as soon as they&apos;re read.</p>
       </div>
@@ -186,7 +186,7 @@ export function NotificationsList({
 
   return (
     <div className="space-y-4">
-      <section className="flex items-center justify-between rounded-[1.5rem] border bg-[var(--surface-strong)] px-4 py-3">
+      <section className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-strong)] px-4 py-3">
         <div>
           <p className="text-sm font-medium">{unreadCount} unread</p>
           <p className="text-xs text-[var(--foreground)]/54">Likes, comments, replies, shares, and friend activity.</p>
@@ -217,7 +217,7 @@ export function NotificationsList({
               onClick={() => void handleOpen(notification)}
               onKeyDown={(event) => handleNotificationKeyDown(event, notification)}
               className={cn(
-                "w-full cursor-pointer rounded-[1.75rem] border p-4 text-left transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--social-accent)]/35",
+                "w-full cursor-pointer rounded-[var(--pinly-panel-radius-lg)] border p-4 text-left transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--social-accent)]/35",
                 isUnread
                   ? "border-[rgba(255,95,162,0.18)] bg-[rgba(255,95,162,0.07)]"
                   : "bg-[var(--surface-strong)] hover:bg-[var(--surface-soft)]"

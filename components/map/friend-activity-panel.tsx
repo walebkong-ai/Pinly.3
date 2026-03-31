@@ -36,7 +36,7 @@ export function FriendActivityPanel({
   return (
     <div 
       className={`glass-panel w-full max-w-sm transition-all ${
-        collapsed ? "rounded-full p-2 px-4 md:rounded-[2rem] md:p-4" : "rounded-3xl p-3 md:rounded-[2rem] md:p-4"
+        collapsed ? "rounded-full p-2 px-3.5 md:rounded-[2rem] md:p-4" : "rounded-[1.5rem] p-3 md:rounded-[2rem] md:p-4"
       }`}
     >
       <button 
@@ -46,7 +46,7 @@ export function FriendActivityPanel({
       >
         <div className={collapsed ? "flex items-center gap-2 md:block" : ""}>
           <p className="text-[10px] md:text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45 select-none">Friend activity</p>
-          <h2 className={`font-[var(--font-serif)] text-xl md:text-3xl md:mt-2 ${collapsed ? "hidden md:block" : "mt-1 block"}`}>
+          <h2 className={`font-[var(--font-serif)] text-[1.1rem] md:text-3xl md:mt-2 ${collapsed ? "hidden md:block" : "mt-1 block"}`}>
             Recent nearby memories
           </h2>
         </div>
@@ -78,7 +78,7 @@ export function FriendActivityPanel({
               tabIndex={0}
               onClick={() => openPost(item.postId)}
               onKeyDown={(event) => handlePostKeyDown(event, item.postId)}
-              className="flex cursor-pointer items-center gap-2 rounded-2xl border bg-[var(--surface-soft)] p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/40 md:gap-3 md:rounded-3xl md:p-3"
+              className="flex cursor-pointer items-center gap-2 rounded-[1.2rem] border bg-[var(--surface-soft)] p-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/40 md:gap-3 md:rounded-3xl md:p-3"
             >
               <ProfileLink username={item.user.username} className="shrink-0 rounded-full">
                 <Avatar name={item.user.name} src={item.user.avatarUrl} className="h-8 w-8 md:h-9 md:w-9" />

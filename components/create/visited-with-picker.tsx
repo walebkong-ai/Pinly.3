@@ -128,7 +128,7 @@ export function VisitedWithPicker({
   }
 
   return (
-    <div className="rounded-[1.75rem] border bg-[var(--surface-soft)] p-4">
+    <div className="rounded-[var(--pinly-panel-radius-lg)] border bg-[var(--surface-soft)] p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 text-sm font-medium text-[var(--foreground)]">
@@ -152,8 +152,8 @@ export function VisitedWithPicker({
               style={drawerStyle}
             >
               <div className="mx-auto mt-4 h-1.5 w-12 shrink-0 rounded-full bg-[var(--foreground)]/15" />
-              <div className="flex flex-1 flex-col overflow-hidden p-6">
-                <Drawer.Title className="font-[var(--font-serif)] text-2xl font-semibold">
+              <div className="pinly-sheet-body">
+                <Drawer.Title className="pinly-section-title font-[var(--font-serif)]">
                   Tag friends
                 </Drawer.Title>
                 <Drawer.Description className="mt-1 text-sm text-[var(--foreground)]/58">
@@ -186,7 +186,7 @@ export function VisitedWithPicker({
                             type="button"
                             onClick={() => toggleFriend(friend.id)}
                             className={cn(
-                              "flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition-colors",
+                              "flex w-full items-center gap-3 rounded-[1.25rem] border p-3 text-left transition-colors",
                               isSelected
                                 ? "border-[var(--social-accent)] bg-[var(--social-accent-soft)]"
                                 : "border-transparent bg-[var(--surface-soft)] hover:bg-[var(--surface-strong)]"
@@ -214,7 +214,7 @@ export function VisitedWithPicker({
                   )}
                 </div>
 
-                <Button type="button" className="h-12 rounded-2xl" onClick={() => setOpen(false)}>
+                <Button type="button" className="rounded-2xl" onClick={() => setOpen(false)}>
                   Done
                 </Button>
               </div>

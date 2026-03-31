@@ -301,7 +301,7 @@ export function PostCard({
           </div>
         ) : null}
       </div>
-      <div className="space-y-3 p-4">
+      <div className="space-y-2.5 p-3.5">
         <div className="flex items-center gap-3">
           <ProfileLink
             username={post.user.username}
@@ -323,8 +323,8 @@ export function PostCard({
           <p
             className={
               compact
-                ? "line-clamp-3 font-[var(--font-serif)] text-base leading-snug text-[var(--foreground)]"
-                : "line-clamp-3 font-[var(--font-serif)] text-[1.08rem] leading-snug text-[var(--foreground)]"
+                ? "line-clamp-3 font-[var(--font-serif)] text-[0.98rem] leading-snug text-[var(--foreground)]"
+                : "line-clamp-3 font-[var(--font-serif)] text-[1.02rem] leading-snug text-[var(--foreground)]"
             }
           >
             {primaryCaption}
@@ -333,7 +333,7 @@ export function PostCard({
             href={mapLocationHref}
             scroll={false}
             data-post-card-control
-            className="flex min-h-11 min-w-0 items-start gap-2 rounded-[1.1rem] p-2 -m-2 text-left text-xs text-[var(--foreground)]/58 transition hover:bg-[var(--surface-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/40"
+            className="flex min-h-11 min-w-0 items-start gap-2 rounded-[1rem] p-1.5 -m-1.5 text-left text-xs text-[var(--foreground)]/58 transition hover:bg-[var(--surface-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/40"
             aria-label={`Open ${post.placeName} on the map`}
             onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => event.stopPropagation()}
@@ -354,11 +354,11 @@ export function PostCard({
   );
 
   return (
-    <article className="overflow-hidden rounded-[1.75rem] border bg-[var(--surface-strong)] shadow-sm">
+    <article className="pinly-scroll-card overflow-hidden rounded-[1.5rem] border bg-[var(--surface-strong)] shadow-sm">
       {body}
 
       {/* Like + Comment + Share + Open */}
-      <div className="flex flex-wrap items-center gap-1 border-t px-4 pb-4 pt-2">
+      <div className="flex flex-wrap items-center gap-1.5 border-t px-3.5 pb-3.5 pt-2">
         <LikeButton
           postId={post.id}
           initialLiked={post.likedByViewer}

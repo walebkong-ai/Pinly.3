@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { FolderOpen, ImageOff, MapPin } from "lucide-react";
+import { RevealImage } from "@/components/ui/reveal-image";
 import type { CollectionSummary } from "@/types/app";
 import { formatVisitDate, getMediaProxyUrl } from "@/lib/utils";
 
@@ -18,16 +18,18 @@ export function CollectionCard({
   return (
     <Link
       href={`/collections/${collection.id}`}
-      className="group overflow-hidden rounded-[1.5rem] border bg-[var(--surface-strong)] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/40"
+      className="group overflow-hidden rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-strong)] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/40"
     >
       <div className={compact ? "aspect-[1.3/1]" : "aspect-[4/3]"}>
         {previewPost ? (
           <div className="relative h-full w-full overflow-hidden">
             {previewUrl ? (
-              <Image
+              <RevealImage
                 src={previewUrl}
                 alt=""
                 fill
+                sizes={compact ? "(max-width: 768px) 50vw, 33vw" : "(max-width: 768px) 100vw, 33vw"}
+                wrapperClassName="h-full w-full"
                 className="object-cover transition duration-500 group-hover:scale-[1.02]"
               />
             ) : (
@@ -36,8 +38,8 @@ export function CollectionCard({
               </div>
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-              <p className="line-clamp-1 text-lg font-semibold">{collection.name}</p>
+            <div className="absolute inset-x-0 bottom-0 p-3.5 text-white">
+              <p className="line-clamp-1 text-[1.02rem] font-semibold">{collection.name}</p>
               <div className="mt-1 flex items-center gap-1.5 text-xs text-white/80">
                 <MapPin className="h-3.5 w-3.5" />
                 <span className="truncate">
@@ -68,7 +70,7 @@ export function CollectionCard({
           </div>
         )}
       </div>
-      <div className="flex items-center justify-between gap-3 p-4">
+      <div className="flex items-center justify-between gap-3 p-3.5">
         <div className="flex min-w-0 items-center gap-2">
           {color && (
             <span

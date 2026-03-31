@@ -34,7 +34,7 @@ export function CityContextPanel({ cityContext }: { cityContext: CityContext | n
   return (
     <div 
       className={`glass-panel w-full max-w-md transition-all ${
-        collapsed ? "rounded-full p-2 px-4 md:rounded-[2rem] md:p-4" : "rounded-3xl p-3 md:rounded-[2rem] md:p-4"
+        collapsed ? "rounded-full p-2 px-3.5 md:rounded-[2rem] md:p-4" : "rounded-[1.5rem] p-3 md:rounded-[2rem] md:p-4"
       }`}
     >
       <button 
@@ -44,7 +44,7 @@ export function CityContextPanel({ cityContext }: { cityContext: CityContext | n
       >
         <div className={collapsed ? "flex items-center gap-2 md:block" : ""}>
           <p className="text-[10px] md:text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45 select-none">City context</p>
-          <h2 className={`font-[var(--font-serif)] text-xl md:text-3xl md:mt-2 ${collapsed ? "hidden md:block" : "mt-1 block"}`}>
+          <h2 className={`font-[var(--font-serif)] text-[1.1rem] md:text-3xl md:mt-2 ${collapsed ? "hidden md:block" : "mt-1 block"}`}>
             {cityContext.city}, {cityContext.country}
           </h2>
           <p className={`text-xs md:text-sm text-[var(--foreground)]/62 md:mt-2 ${collapsed ? "hidden md:block" : "mt-1 block"}`}>
@@ -70,7 +70,7 @@ export function CityContextPanel({ cityContext }: { cityContext: CityContext | n
                   <ProfileLink
                     key={visitor.id}
                     username={visitor.username}
-                    className="flex items-center gap-2 rounded-full border bg-[var(--surface-soft)] px-3 py-2 transition hover:bg-[var(--surface-strong)]"
+                    className="flex min-h-11 items-center gap-2 rounded-full border bg-[var(--surface-soft)] px-3 py-2 transition hover:bg-[var(--surface-strong)]"
                   >
                     <Avatar name={visitor.name} src={visitor.avatarUrl} className="h-7 w-7" />
                     <span className="text-sm">{visitor.name}</span>
@@ -89,7 +89,7 @@ export function CityContextPanel({ cityContext }: { cityContext: CityContext | n
                     tabIndex={0}
                     onClick={() => openPost(trip.id)}
                     onKeyDown={(event) => handlePostKeyDown(event, trip.id)}
-                    className="flex cursor-pointer items-start gap-3 rounded-3xl border bg-[var(--surface-soft)] p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/40"
+                    className="flex cursor-pointer items-start gap-3 rounded-[1.35rem] border bg-[var(--surface-soft)] p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/40"
                   >
                     <ProfileLink username={trip.user.username} className="shrink-0 rounded-full">
                       <Avatar name={trip.user.name} src={trip.user.avatarUrl} className="h-8 w-8" />

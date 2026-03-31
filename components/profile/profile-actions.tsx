@@ -247,7 +247,7 @@ export function ProfileActions({ username, relationship }: ProfileActionsProps) 
       </div>
 
       <Dialog open={showClearDialog} onOpenChange={setShowClearDialog}>
-        <DialogContent className="sm:max-w-md rounded-[2rem] border-none bg-[var(--surface-soft)] p-6">
+        <DialogContent className="pinly-dialog-surface sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold">{clearActionLabel}?</DialogTitle>
             <DialogDescription className="text-sm text-[var(--foreground)]/60">
@@ -274,7 +274,7 @@ export function ProfileActions({ username, relationship }: ProfileActionsProps) 
       </Dialog>
 
       <Dialog open={showBlockDialog} onOpenChange={setShowBlockDialog}>
-        <DialogContent className="sm:max-w-md rounded-[2rem] border-none bg-[var(--surface-soft)] p-6">
+        <DialogContent className="pinly-dialog-surface sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-destructive">Block @{username}?</DialogTitle>
             <DialogDescription className="text-sm text-[var(--foreground)]/60">

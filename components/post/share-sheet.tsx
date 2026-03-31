@@ -369,8 +369,8 @@ export function ShareSheet({
           style={drawerStyle}
         >
           <div className="mx-auto mt-4 h-1.5 w-12 shrink-0 rounded-full bg-[var(--foreground)]/15" />
-          <div className="flex flex-1 flex-col overflow-hidden p-6">
-            <h2 className="font-[var(--font-serif)] text-2xl font-semibold">Share memory</h2>
+          <div className="pinly-sheet-body">
+            <h2 className="pinly-section-title font-[var(--font-serif)]">Share memory</h2>
             <p className="mt-1 text-sm text-[var(--foreground)]/58">
               Send it to a friend directly or drop it into one of your groups.
             </p>
@@ -411,7 +411,7 @@ export function ShareSheet({
                       {visiblePeople.map((person) => (
                         <div
                           key={person.id}
-                          className="flex items-center gap-3 rounded-2xl border bg-[var(--surface-soft)] p-3"
+                          className="flex items-center gap-3 rounded-[1.25rem] border bg-[var(--surface-soft)] p-3"
                         >
                           <ProfileLink
                             username={person.username}
@@ -427,7 +427,7 @@ export function ShareSheet({
                           {person.requestStatus === "friends" ? (
                             <Button
                               type="button"
-                              className="h-9 gap-2 rounded-full px-3"
+                              className="gap-2 rounded-full px-3"
                               disabled={sendingUserId === person.id}
                               onClick={() => void handleDirectShare(person)}
                             >
@@ -443,7 +443,7 @@ export function ShareSheet({
                             <Button
                               type="button"
                               variant="secondary"
-                              className="h-9 gap-2 rounded-full px-3"
+                              className="gap-2 rounded-full px-3"
                               disabled={requestingUserId === person.id}
                               onClick={() => void handleFriendRequest(person)}
                             >
@@ -496,7 +496,7 @@ export function ShareSheet({
                             type="button"
                             onClick={() => toggleGroup(group.id)}
                             className={cn(
-                              "flex w-full items-center gap-4 rounded-2xl border p-3 text-left transition-colors",
+                              "flex w-full items-center gap-4 rounded-[1.25rem] border p-3 text-left transition-colors",
                               isSelected
                                 ? "border-[var(--social-accent)] bg-[var(--social-accent-soft)]"
                                 : "border-transparent bg-[var(--surface-soft)] hover:bg-[var(--foreground)]/5"
@@ -532,7 +532,7 @@ export function ShareSheet({
               <Button
                 onClick={() => void handleGroupShare()}
                 disabled={selectedGroups.size === 0 || sendingGroups}
-                className="h-14 w-full rounded-2xl text-[15px] font-semibold"
+                className="w-full rounded-2xl text-[15px] font-semibold"
               >
                 {sendingGroups ? (
                   <LoaderCircle className="h-5 w-5 animate-spin" />

@@ -63,21 +63,21 @@ export function FilterSidebar({
       />
       <aside
         className={cn(
-          "glass-panel absolute inset-y-0 right-0 z-[790] flex w-full max-w-sm flex-col overflow-y-auto overscroll-contain rounded-l-[2rem] border-l p-5 pb-[calc(1.25rem+var(--safe-area-bottom))] pt-[max(1.25rem,var(--safe-area-top))] transition-transform duration-300",
+          "glass-panel absolute inset-y-0 right-0 z-[790] flex w-full max-w-[26rem] flex-col overflow-y-auto overscroll-contain rounded-l-[1.75rem] border-l p-4 pb-[calc(1rem+var(--safe-area-bottom))] pt-[max(1rem,var(--safe-area-top))] transition-transform duration-300",
           open ? "pointer-events-auto translate-x-0" : "pointer-events-none translate-x-full"
         )}
       >
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Filters</p>
-            <h2 className="mt-2 font-[var(--font-serif)] text-3xl">Refine the map</h2>
+            <p className="pinly-eyebrow">Filters</p>
+            <h2 className="pinly-display-title">Refine the map</h2>
           </div>
           <Button variant="ghost" className="rounded-full p-2" onClick={onClose} aria-label="Close filters">
             <X className="h-4 w-4" />
           </Button>
         </div>
 
-        <section className="mt-8 space-y-4">
+        <section className="mt-6 space-y-4">
           <div>
             <p className="text-sm font-semibold">Collections/Trips</p>
             <p className="mt-1 text-sm text-[var(--foreground)]/58">
@@ -88,7 +88,7 @@ export function FilterSidebar({
             type="button"
             onClick={onToggleCollectionsOverlay}
             className={cn(
-              "flex w-full items-center justify-between rounded-3xl border px-4 py-3 text-left text-sm transition",
+              "flex w-full items-center justify-between rounded-[1.35rem] border px-4 py-3 text-left text-sm transition",
               collectionsOverlayMode
                 ? "border-[rgba(56,182,201,0.24)] bg-[var(--map-accent-soft)] text-[var(--foreground)]"
                 : "bg-[var(--surface-soft)] hover:bg-[var(--surface-strong)]"
@@ -125,7 +125,7 @@ export function FilterSidebar({
                   type="button"
                   onClick={() => onChangeCollectionsOverlayMode(option.value)}
                   className={cn(
-                    "rounded-full border px-3 py-2 text-sm font-medium transition",
+                    "min-h-11 rounded-full border px-3 py-2 text-sm font-medium transition",
                     collectionsOverlayMode === option.value
                       ? "border-[rgba(56,182,201,0.24)] bg-[var(--foreground)] text-[var(--background)] shadow-sm"
                       : "bg-[var(--surface-soft)] text-[var(--foreground)]/72 hover:bg-[var(--surface-strong)]"
@@ -138,7 +138,7 @@ export function FilterSidebar({
           ) : null}
         </section>
 
-        <section className="mt-8 space-y-4">
+        <section className="mt-6 space-y-4">
           <p className="text-sm font-semibold">Time</p>
           <div className="space-y-2">
             {timeOptions.map((option) => (
@@ -147,7 +147,7 @@ export function FilterSidebar({
                 type="button"
                 onClick={() => onTimeChange(option.value)}
                 className={cn(
-                  "flex w-full items-center justify-between rounded-3xl border px-4 py-3 text-left text-sm transition",
+                  "flex w-full items-center justify-between rounded-[1.35rem] border px-4 py-3 text-left text-sm transition",
                   time === option.value
                     ? "border-[rgba(56,182,201,0.24)] bg-[var(--map-accent-soft)] text-[var(--foreground)]"
                     : "bg-[var(--surface-soft)] hover:bg-[var(--surface-strong)]"
@@ -160,7 +160,7 @@ export function FilterSidebar({
           </div>
         </section>
 
-        <section className="mt-8 space-y-4">
+        <section className="mt-6 space-y-4">
           <div>
             <p className="text-sm font-semibold">Groups</p>
             <p className="mt-1 text-sm text-[var(--foreground)]/58">Create a temporary friend group for this map view.</p>
@@ -178,7 +178,7 @@ export function FilterSidebar({
                   type="button"
                   onClick={() => onToggleGroup(group.id)}
                   className={cn(
-                    "inline-flex items-center rounded-full border px-3 py-2 text-sm transition",
+                    "inline-flex min-h-11 items-center rounded-full border px-3 py-2 text-sm transition",
                     selectedGroupIds.includes(group.id)
                       ? "border-[rgba(56,182,201,0.24)] bg-[var(--map-accent-soft)] text-[var(--foreground)]"
                       : "bg-[var(--surface-soft)] text-[var(--foreground)]/72 hover:bg-[var(--surface-strong)]"
@@ -192,7 +192,7 @@ export function FilterSidebar({
           )}
         </section>
 
-        <section className="mt-8 space-y-4">
+        <section className="mt-6 space-y-4">
           <div>
             <p className="text-sm font-semibold">Categories</p>
             <p className="mt-1 text-sm text-[var(--foreground)]/58">Narrow the map by media type and memory category.</p>
@@ -204,7 +204,7 @@ export function FilterSidebar({
                 type="button"
                 onClick={() => onToggleCategory(category.value)}
                 className={cn(
-                  "rounded-full border px-3 py-2 text-sm transition",
+                  "min-h-11 rounded-full border px-3 py-2 text-sm transition",
                   selectedCategories.includes(category.value)
                     ? "border-[rgba(56,182,201,0.24)] bg-[var(--map-accent-soft)] text-[var(--foreground)]"
                     : "bg-[var(--surface-soft)] text-[var(--foreground)]/72 hover:bg-[var(--surface-strong)]"
@@ -216,7 +216,7 @@ export function FilterSidebar({
           </div>
         </section>
 
-        <div className="mt-auto flex items-center justify-between rounded-[1.75rem] border bg-[var(--surface-soft)] p-4 text-sm text-[var(--foreground)]/62">
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-[var(--pinly-panel-radius-lg)] border bg-[var(--surface-soft)] p-4 text-sm text-[var(--foreground)]/62">
           <span>Filters are applied instantly.</span>
           <Button variant="secondary" onClick={onClear}>
             Clear all

@@ -212,11 +212,11 @@ export function FriendsManager() {
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr] animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
-      <section className="glass-panel rounded-[2rem] p-5">
-        <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Grow your circle</p>
-        <h1 className="mt-2 font-[var(--font-serif)] text-4xl">Friends & requests</h1>
-        <div className="relative mt-6">
+    <div className="pinly-content-shell--wide pinly-screen-grid--split animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
+      <section className="glass-panel pinly-panel">
+        <p className="pinly-eyebrow">Grow your circle</p>
+        <h1 className="pinly-display-title">Friends & requests</h1>
+        <div className="relative mt-4">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--foreground)]/40" />
           <Input
             value={query}
@@ -226,8 +226,8 @@ export function FriendsManager() {
           />
         </div>
         {!state.friends.length && !state.incomingRequests.length && !state.outgoingRequests.length && query.trim().length < 2 ? (
-          <div className="mt-5 rounded-[1.75rem] border bg-[var(--surface-soft)] p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">First friends</p>
+          <div className="mt-4 rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-soft)] p-4">
+            <p className="pinly-eyebrow">First friends</p>
             <h2 className="mt-1.5 text-lg font-semibold">Start with the people you actually travel with.</h2>
             <p className="mt-2 text-sm leading-6 text-[var(--foreground)]/62">
               Once a friend accepts, you can see each other&apos;s memories on the map, share posts, and message directly.
@@ -242,14 +242,14 @@ export function FriendsManager() {
             </div>
           </div>
         ) : null}
-        <div className="mt-5 space-y-3">
+        <div className="mt-4 space-y-3">
           {searching ? (
             <div className="flex justify-center py-3">
               <LoaderCircle className="h-5 w-5 animate-spin text-[var(--accent)]" />
             </div>
           ) : null}
           {searchResults.map((user) => (
-            <div key={user.id} className="flex items-center justify-between rounded-3xl border bg-[var(--surface-soft)] p-3">
+            <div key={user.id} className="flex items-center justify-between rounded-[1.35rem] border bg-[var(--surface-soft)] p-3">
               <ProfileLink
                 username={user.username}
                 className="mr-3 flex min-w-0 flex-1 items-center gap-3 rounded-2xl p-1 -m-1 transition hover:bg-[var(--surface-strong)]"
@@ -292,8 +292,8 @@ export function FriendsManager() {
         </div>
       </section>
 
-      <div className="grid gap-4">
-        <section className="glass-panel flex items-center justify-between rounded-[2rem] p-5">
+      <div className="pinly-screen-stack">
+        <section className="glass-panel pinly-panel flex items-center justify-between">
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-widest text-[var(--foreground)]/45">Invite Friends</h2>
             <p className="mt-1 text-sm text-[var(--foreground)]/80">Can&apos;t find them? Send a link.</p>
@@ -304,11 +304,11 @@ export function FriendsManager() {
           </Button>
         </section>
 
-        <section className="glass-panel rounded-[2rem] p-5">
+        <section className="glass-panel pinly-panel">
           <h2 className="text-xl font-semibold">Incoming requests</h2>
           <div className="mt-4 space-y-3">
             {state.incomingRequests.map((request) => (
-              <div key={request.id} className="flex items-center justify-between rounded-3xl border bg-[var(--surface-soft)] p-3">
+              <div key={request.id} className="flex items-center justify-between rounded-[1.35rem] border bg-[var(--surface-soft)] p-3">
                 <ProfileLink
                   username={request.fromUser.username}
                   className="mr-3 flex min-w-0 flex-1 items-center gap-3 rounded-2xl p-1 -m-1 transition hover:bg-[var(--surface-strong)]"
@@ -337,11 +337,11 @@ export function FriendsManager() {
           </div>
         </section>
 
-        <section className="glass-panel rounded-[2rem] p-5">
+        <section className="glass-panel pinly-panel">
           <h2 className="text-xl font-semibold">Your friends</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {state.friends.map((friend) => (
-              <div key={friend.id} className="rounded-3xl border bg-[var(--surface-soft)] p-3">
+              <div key={friend.id} className="rounded-[1.35rem] border bg-[var(--surface-soft)] p-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <Link href={`/profile/${friend.username}`} className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl transition hover:bg-[var(--surface-strong)]">
                     <Avatar name={friend.name} src={friend.avatarUrl} className="shrink-0" />
@@ -370,7 +370,7 @@ export function FriendsManager() {
               <h3 className="mt-6 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--foreground)]/45">Sent requests</h3>
               <div className="mt-3 space-y-3">
                 {state.outgoingRequests.map((request) => (
-                  <div key={request.id} className="flex items-center justify-between gap-3 rounded-3xl border bg-[var(--surface-soft)] p-3">
+                  <div key={request.id} className="flex items-center justify-between gap-3 rounded-[1.35rem] border bg-[var(--surface-soft)] p-3">
                     <ProfileLink
                       username={request.toUser.username}
                       className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl p-1 -m-1 transition hover:bg-[var(--surface-strong)]"

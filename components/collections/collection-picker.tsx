@@ -93,8 +93,8 @@ function CollectionSelectionPanel({
   }, [collections, query]);
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden p-6">
-      <h3 className="font-[var(--font-serif)] text-2xl font-semibold">Trips & collections</h3>
+    <div className="pinly-sheet-body">
+      <h3 className="pinly-section-title font-[var(--font-serif)]">Trips & collections</h3>
       <p className="mt-1 text-sm text-[var(--foreground)]/58">
         Group related memories together so they are easy to revisit later.
       </p>
@@ -323,7 +323,7 @@ export function CollectionPicker({
                 creating={creating}
                 loading={loading}
                 footer={
-                  <Button type="button" className="h-12 rounded-2xl" onClick={() => setOpen(false)}>
+                  <Button type="button" className="rounded-2xl" onClick={() => setOpen(false)}>
                     Done
                   </Button>
                 }
@@ -531,7 +531,7 @@ export function ManagePostCollectionsCard({
                 footer={
                   <Button
                     type="button"
-                    className="h-12 rounded-2xl"
+                    className="rounded-2xl"
                     onClick={handleSave}
                     disabled={saving}
                   >

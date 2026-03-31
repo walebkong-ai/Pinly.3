@@ -1,10 +1,10 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Archive, Bookmark, Folders, ImageOff, MapPinned, Settings2 } from "lucide-react";
 import type { CollectionSummary, PostSummary, ProfileTravelSummary } from "@/types/app";
 import type { RelationshipDetails } from "@/lib/relationships";
 import { getMediaProxyUrl } from "@/lib/utils";
 import { Avatar } from "@/components/ui/avatar";
+import { RevealImage } from "@/components/ui/reveal-image";
 import { PostCard } from "@/components/post/post-card";
 import { EditProfile } from "@/components/profile/edit-profile";
 import { MessageFriendButton } from "@/components/messages/message-friend-button";
@@ -73,12 +73,12 @@ export function ProfileView({
   });
 
   return (
-    <div className="grid gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
-      <section className="glass-panel rounded-[2rem] p-5">
+    <div className="pinly-content-shell--wide pinly-screen-stack animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
+      <section className="glass-panel pinly-panel">
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           {isOwnProfile ? (
             <div className="flex-1">
-              <p className="mb-2 text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">
+              <p className="pinly-eyebrow mb-2">
                 Your profile
               </p>
               <EditProfile
@@ -130,10 +130,10 @@ export function ProfileView({
             <div className="flex items-center gap-4 min-w-0">
               <Avatar name={profile.user.name} src={profile.user.avatarUrl} className="h-16 w-16 shrink-0" />
               <div className="min-w-0 flex-1">
-                <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">
+                <p className="pinly-eyebrow">
                   {relationship.status === "friends" ? "Friend profile" : "Profile"}
                 </p>
-                <h1 className="mt-1 font-[var(--font-serif)] text-3xl md:text-4xl truncate">{profile.user.name}</h1>
+                <h1 className="pinly-display-title truncate">{profile.user.name}</h1>
                 <p className="text-sm text-[var(--foreground)]/62 truncate">@{profile.user.username}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <ProfileActions
@@ -153,15 +153,15 @@ export function ProfileView({
             </div>
           )}
           <div className="grid grid-cols-2 gap-3 text-center sm:grid-cols-3">
-            <div className="rounded-3xl border bg-[var(--surface-soft)] px-4 py-3">
+            <div className="rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-soft)] px-4 py-3">
               <p className="text-2xl font-semibold">{profile.posts.length}</p>
               <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">Posts</p>
             </div>
-            <div className="rounded-3xl border bg-[var(--surface-soft)] px-4 py-3">
+            <div className="rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-soft)] px-4 py-3">
               <p className="text-2xl font-semibold">{profile.travelSummary.cityCount}</p>
               <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">Cities</p>
             </div>
-            <div className="rounded-3xl border bg-[var(--surface-soft)] px-4 py-3">
+            <div className="rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-soft)] px-4 py-3">
               <p className="text-2xl font-semibold">{profile.travelSummary.countryCount}</p>
               <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">Countries</p>
             </div>
@@ -186,10 +186,10 @@ export function ProfileView({
       </section>
 
       {!isOwnProfile && profile.posts.length > 0 ? (
-        <section className="glass-panel rounded-[2rem] p-5">
-          <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Travel summary</p>
-          <h2 className="mt-1.5 text-2xl font-semibold">{firstName}&apos;s travel footprint</h2>
-          <p className="mt-2 text-sm leading-6 text-[var(--foreground)]/62">
+        <section className="glass-panel pinly-panel">
+          <p className="pinly-eyebrow">Travel summary</p>
+          <h2 className="pinly-section-title">{firstName}&apos;s travel footprint</h2>
+          <p className="pinly-body-copy">
             A quick look at where they&apos;ve pinned memories lately, without turning the profile into a stats dashboard.
           </p>
 
@@ -242,11 +242,12 @@ export function ProfileView({
                 >
                   <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-[var(--surface-soft)]">
                     {getMediaProxyUrl(memory.thumbnailUrl ?? memory.mediaUrl) ? (
-                      <Image
+                      <RevealImage
                         src={getMediaProxyUrl(memory.thumbnailUrl ?? memory.mediaUrl)}
                         alt={memory.placeName}
                         fill
                         sizes="56px"
+                        wrapperClassName="h-full w-full"
                         className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                       />
                     ) : (
@@ -275,12 +276,12 @@ export function ProfileView({
       ) : null}
 
       {isOwnProfile ? (
-        <section className="glass-panel rounded-[2rem] p-5">
+        <section className="glass-panel pinly-panel">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Trips & collections</p>
-              <h2 className="mt-1.5 text-2xl font-semibold">Grouped memories</h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--foreground)]/62">
+              <p className="pinly-eyebrow">Trips & collections</p>
+              <h2 className="pinly-section-title">Grouped memories</h2>
+              <p className="pinly-body-copy">
                 Organize your posts by trip, season, or any memory thread you want to revisit.
               </p>
             </div>
@@ -303,17 +304,17 @@ export function ProfileView({
         </section>
       ) : null}
 
-      <section className="glass-panel rounded-[2rem] p-5">
-        <h2 className="text-2xl font-semibold">Pinned moments</h2>
+      <section className="glass-panel pinly-panel">
+        <h2 className="pinly-section-title">Pinned moments</h2>
         {profile.posts.length > 0 ? (
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-4 grid gap-[var(--pinly-page-gap)] md:grid-cols-2 xl:grid-cols-3">
             {profile.posts.map((post) => (
               <PostCard key={post.id} post={post} showLikeCounts={showLikeCounts} />
             ))}
           </div>
         ) : isOwnProfile ? (
-          <div className="mt-5 rounded-[1.75rem] border bg-[var(--surface-soft)] p-5">
-            <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Start here</p>
+          <div className="mt-4 rounded-[var(--pinly-panel-radius-lg)] border bg-[var(--surface-soft)] p-5">
+            <p className="pinly-eyebrow">Start here</p>
             <h3 className="mt-1.5 font-[var(--font-serif)] text-2xl">Your first memory will show up here.</h3>
             <p className="mt-2 text-sm leading-6 text-[var(--foreground)]/62">
               Create one post to start shaping your personal map, then add friends so your circle can see it too.

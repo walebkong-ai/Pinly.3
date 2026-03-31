@@ -32,18 +32,18 @@ export default async function ArchivedPostsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
+    <div className="pinly-content-shell pinly-screen-stack animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
       <BackButton fallbackHref={`/profile/${user.username}`} label="Profile" />
 
-      <section className="glass-panel rounded-[1.75rem] p-4">
+      <section className="glass-panel pinly-panel">
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--surface-soft)] text-[var(--foreground)]">
             <Archive className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Archived</p>
-            <h1 className="mt-1.5 font-[var(--font-serif)] text-2xl md:text-3xl">Hidden memories</h1>
-            <p className="mt-2 text-sm leading-6 text-[var(--foreground)]/66">
+            <p className="pinly-eyebrow">Archived</p>
+            <h1 className="pinly-display-title">Hidden memories</h1>
+            <p className="pinly-body-copy">
               Archived posts stay out of your feed, map, and normal profile until you restore them.
             </p>
           </div>
@@ -51,7 +51,7 @@ export default async function ArchivedPostsPage() {
       </section>
 
       {posts.length > 0 ? (
-        <section className="space-y-4">
+        <section className="pinly-screen-stack">
           {posts.map((post) => (
             <div key={post.id} className="space-y-2">
               <PostCard
@@ -59,7 +59,7 @@ export default async function ArchivedPostsPage() {
                 showLikeCounts={settings?.showLikeCounts ?? true}
                 openOnBodyTap
               />
-              <div className="rounded-[1.5rem] border bg-[var(--surface-soft)] p-3">
+              <div className="rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-soft)] p-3">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-sm text-[var(--foreground)]/62">
                     This memory is hidden from normal browsing surfaces until you restore it.
@@ -76,7 +76,7 @@ export default async function ArchivedPostsPage() {
           ))}
         </section>
       ) : (
-        <section className="rounded-[1.75rem] border bg-[var(--surface-strong)] p-6 text-center">
+        <section className="pinly-list-empty border bg-[var(--surface-strong)] text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[rgba(56,182,201,0.12)] text-[var(--map-accent)]">
             <ArchiveRestore className="h-5 w-5" />
           </div>

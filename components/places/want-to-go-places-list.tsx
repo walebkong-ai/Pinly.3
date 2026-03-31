@@ -14,7 +14,7 @@ export function WantToGoPlacesList({
 
   if (places.length === 0) {
     return (
-      <div className="rounded-[1.75rem] border bg-[var(--surface-strong)] p-6 text-center">
+      <div className="pinly-list-empty border bg-[var(--surface-strong)] text-center">
         <p className="text-sm text-[var(--foreground)]/58">
           You haven&apos;t saved any want-to-go places yet.
         </p>

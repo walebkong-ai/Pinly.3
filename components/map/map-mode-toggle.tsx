@@ -23,7 +23,7 @@ export function MapModeToggle({
       type="button"
       onClick={() => onChange(satelliteEnabled ? "default" : "satellite")}
       className={cn(
-        "inline-flex min-h-10 items-center gap-2 rounded-full border px-3 py-2 text-[11px] font-medium whitespace-nowrap backdrop-blur-[18px] transition md:px-3.5 md:text-xs",
+        "inline-flex min-h-11 items-center gap-2 rounded-full border px-3 py-2 text-[11px] font-medium whitespace-nowrap backdrop-blur-[18px] transition md:px-3.5 md:text-xs",
         satelliteEnabled
           ? "border-[rgba(252,236,218,0.14)] bg-[#185538] text-white shadow-[0_14px_30px_rgba(24,85,56,0.3)] hover:bg-[#164d33]"
           : "border-[var(--line)] bg-[var(--card)] text-[var(--foreground)]/78 shadow-[0_18px_48px_rgba(24,85,56,0.08)] hover:bg-[rgba(255,250,244,0.96)]",

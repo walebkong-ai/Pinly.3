@@ -77,7 +77,7 @@ export function BottomSheet({
 
   return (
     <div
-      className="pinly-bottom-layer pointer-events-none fixed inset-0 z-[990] isolate flex items-end justify-center px-2 pt-16 sm:px-3 sm:pt-3"
+      className="pinly-bottom-layer pointer-events-none fixed inset-0 z-[990] isolate flex items-end justify-center px-[var(--pinly-page-gutter)] pt-14 sm:px-3 sm:pt-3"
       style={layerStyle}
     >
       <div
@@ -89,13 +89,13 @@ export function BottomSheet({
       />
 
       <div
-        className="pinly-bottom-surface pointer-events-auto relative z-[1] isolate flex w-full max-w-3xl flex-col overflow-hidden rounded-[2rem] border bg-[var(--card)] shadow-2xl shadow-black/20 sm:max-h-[min(84vh,46rem)]"
+        className="pinly-bottom-surface pointer-events-auto relative z-[1] isolate flex w-full max-w-[30rem] flex-col overflow-hidden rounded-[1.75rem] border bg-[var(--card)] shadow-2xl shadow-black/20 sm:max-h-[min(84vh,46rem)]"
         onPointerDown={(event) => event.stopPropagation()}
         onPointerUp={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
       >
         <>
-          <div className="sticky top-0 z-[2] border-b border-[var(--foreground)]/8 bg-[var(--card)]/96 px-4 pb-4 pt-3 backdrop-blur-xl sm:px-5">
+          <div className="sticky top-0 z-[2] border-b border-[var(--foreground)]/8 bg-[var(--card)]/96 px-4 pb-3.5 pt-3 backdrop-blur-xl sm:px-5">
             <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[var(--foreground)]/14" />
             <div className="flex items-center justify-between gap-3">
               {onBack ? (
@@ -143,7 +143,7 @@ export function BottomSheet({
 
                 <div className="mt-5 space-y-4">
                   <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--foreground)]/42">Expanded memory</p>
-                  <p className="font-[var(--font-serif)] text-[1.8rem] leading-[1.14] text-[var(--foreground)] md:text-[2.35rem] md:leading-[1.1]">
+                  <p className="font-[var(--font-serif)] text-[1.5rem] leading-[1.12] text-[var(--foreground)] md:text-[2.15rem] md:leading-[1.1]">
                     {primaryCopy}
                   </p>
                   <div className="flex flex-wrap gap-2 text-xs text-[var(--foreground)]/62">

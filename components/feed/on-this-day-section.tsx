@@ -44,12 +44,12 @@ export function OnThisDaySection({ groups }: { groups: OnThisDayMemoryGroup[] })
   }
 
   return (
-    <section className="glass-panel rounded-[1.75rem] p-4">
+    <section className="glass-panel pinly-panel">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Memory reminder</p>
-          <h2 className="mt-1.5 font-[var(--font-serif)] text-2xl">On This Day</h2>
-          <p className="mt-2 text-sm leading-6 text-[var(--foreground)]/64">
+          <p className="pinly-eyebrow">Memory reminder</p>
+          <h2 className="pinly-section-title font-[var(--font-serif)]">On This Day</h2>
+          <p className="pinly-body-copy">
             Revisit a place you pinned around this time of year in past trips.
           </p>
         </div>
@@ -62,7 +62,7 @@ export function OnThisDaySection({ groups }: { groups: OnThisDayMemoryGroup[] })
         {groups.map((group) => (
           <article
             key={group.id}
-            className="w-[18.5rem] shrink-0 snap-start overflow-hidden rounded-[1.5rem] border bg-[var(--surface-soft)]"
+            className="w-[17.25rem] shrink-0 snap-start overflow-hidden rounded-[1.5rem] border bg-[var(--surface-soft)]"
           >
             <div className="relative aspect-[4/3] overflow-hidden">
               <MediaView
@@ -88,7 +88,7 @@ export function OnThisDaySection({ groups }: { groups: OnThisDayMemoryGroup[] })
               </div>
             ) : null}
 
-            <div className="space-y-3 p-4">
+            <div className="space-y-3 p-3.5">
               <div className="flex flex-wrap gap-2 text-[11px] text-[var(--foreground)]/55">
                 <span className="inline-flex items-center rounded-full border bg-[var(--surface-strong)] px-2.5 py-1 uppercase tracking-[0.16em]">
                   {buildMemorySubtitle(group)}
@@ -123,14 +123,14 @@ export function OnThisDaySection({ groups }: { groups: OnThisDayMemoryGroup[] })
               <div className="flex items-center gap-2">
                 <Link
                   href={`/posts/${group.leadPost.id}`}
-                  className="inline-flex min-h-10 flex-1 items-center justify-center rounded-full bg-[var(--foreground)] px-4 py-2.5 text-sm font-medium text-[var(--background)] transition hover:opacity-92"
+                  className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full bg-[var(--foreground)] px-4 py-2.5 text-sm font-medium text-[var(--background)] transition hover:opacity-92"
                 >
                   Open memory
                 </Link>
                 <Link
                   href={buildPostLocationMapHref(group.leadPost)}
                   scroll={false}
-                  className="inline-flex min-h-10 items-center justify-center rounded-full border bg-[var(--surface-strong)] px-4 py-2.5 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--foreground)]/5"
+                  className="inline-flex min-h-11 items-center justify-center rounded-full border bg-[var(--surface-strong)] px-4 py-2.5 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--foreground)]/5"
                 >
                   Map
                 </Link>
@@ -142,4 +142,3 @@ export function OnThisDaySection({ groups }: { groups: OnThisDayMemoryGroup[] })
     </section>
   );
 }
-

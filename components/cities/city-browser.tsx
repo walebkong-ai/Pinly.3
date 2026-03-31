@@ -53,11 +53,11 @@ export function CityBrowser({ showLikeCounts = true }: { showLikeCounts?: boolea
   }
 
   return (
-    <div className="grid gap-4">
-      <section className="glass-panel rounded-[2rem] p-5">
-        <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">City discovery</p>
-        <h1 className="mt-2 font-[var(--font-serif)] text-4xl">Browse places through your friends</h1>
-        <div className="mt-6 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+    <div className="pinly-content-shell--wide pinly-screen-stack">
+      <section className="glass-panel pinly-panel">
+        <p className="pinly-eyebrow">City discovery</p>
+        <h1 className="pinly-display-title">Browse places through your friends</h1>
+        <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_1fr_auto]">
           <div className="relative">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--foreground)]/40" />
             <Input value={city} onChange={(event) => setCity(event.target.value)} placeholder="City" className="pl-11" />
@@ -70,11 +70,11 @@ export function CityBrowser({ showLikeCounts = true }: { showLikeCounts?: boolea
       </section>
 
       {result && (
-        <section className="glass-panel rounded-[2rem] p-5">
+        <section className="glass-panel pinly-panel">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div className="min-w-0">
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Results</p>
-              <h2 className="mt-2 font-[var(--font-serif)] text-3xl md:text-4xl truncate">
+              <p className="pinly-eyebrow">Results</p>
+              <h2 className="pinly-display-title truncate">
                 {result.city}, {result.country}
               </h2>
             </div>

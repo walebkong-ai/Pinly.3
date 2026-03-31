@@ -156,7 +156,7 @@ export function DeleteAccountCard({
           }
         }}
       >
-        <DialogContent className="rounded-[2rem] border-none bg-[var(--surface-soft)] p-6 sm:max-w-lg">
+        <DialogContent className="pinly-dialog-surface sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-[var(--danger)]">Delete @{username}?</DialogTitle>
             <DialogDescription className="text-sm leading-6 text-[var(--foreground)]/64">

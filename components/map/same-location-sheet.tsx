@@ -72,7 +72,7 @@ export function SameLocationSheet({
 
   return (
     <div
-      className="pinly-bottom-layer pointer-events-none fixed inset-0 z-[995] isolate flex items-end justify-center px-2 pt-16 sm:px-3 sm:pt-3"
+      className="pinly-bottom-layer pointer-events-none fixed inset-0 z-[995] isolate flex items-end justify-center px-[var(--pinly-page-gutter)] pt-14 sm:px-3 sm:pt-3"
       style={layerStyle}
     >
       <div
@@ -84,13 +84,13 @@ export function SameLocationSheet({
       />
 
       <div
-        className="pinly-bottom-surface pointer-events-auto relative z-[1] isolate flex w-full max-w-2xl flex-col overflow-hidden rounded-[2rem] border bg-[var(--card)] shadow-2xl shadow-black/20 sm:max-h-[min(84vh,46rem)]"
+        className="pinly-bottom-surface pointer-events-auto relative z-[1] isolate flex w-full max-w-[30rem] flex-col overflow-hidden rounded-[1.75rem] border bg-[var(--card)] shadow-2xl shadow-black/20 sm:max-h-[min(84vh,46rem)]"
         onPointerDown={(event) => event.stopPropagation()}
         onPointerUp={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
       >
         <>
-          <div className="sticky top-0 z-[2] border-b border-[var(--foreground)]/8 bg-[var(--card)]/96 px-4 pb-4 pt-3 backdrop-blur-xl sm:px-5">
+          <div className="sticky top-0 z-[2] border-b border-[var(--foreground)]/8 bg-[var(--card)]/96 px-4 pb-3.5 pt-3 backdrop-blur-xl sm:px-5">
             <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[var(--foreground)]/14" />
             <div className="flex items-center justify-between gap-3">
               <Button
@@ -114,7 +114,7 @@ export function SameLocationSheet({
 
             <div className="mt-4 min-w-0">
               <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--foreground)]/45">Same pin</p>
-              <h2 className="mt-1 font-[var(--font-serif)] text-[1.8rem] leading-tight text-[var(--foreground)] sm:text-2xl">
+              <h2 className="mt-1 font-[var(--font-serif)] text-[1.5rem] leading-tight text-[var(--foreground)] sm:text-2xl">
                 {marker.placeName}
               </h2>
               <LocationCountryText
@@ -163,7 +163,7 @@ export function SameLocationSheet({
               return (
                 <div
                   key={post.id}
-                  className="rounded-[1.5rem] border bg-[var(--surface-strong)] p-3.5 shadow-[0_14px_30px_rgba(24,85,56,0.06)]"
+                  className="rounded-[1.35rem] border bg-[var(--surface-strong)] p-3.5 shadow-[0_14px_30px_rgba(24,85,56,0.06)]"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[var(--foreground)]/52">
                     <span className="inline-flex items-center rounded-full border bg-[var(--surface-soft)] px-2.5 py-1 font-medium uppercase tracking-[0.16em] text-[var(--foreground)]/56">

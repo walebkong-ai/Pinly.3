@@ -79,8 +79,8 @@ export function CreateCollectionButton({
           style={drawerStyle}
         >
           <div className="mx-auto mt-4 h-1.5 w-12 rounded-full bg-[var(--foreground)]/15" />
-          <div className="p-6">
-            <h3 className="font-[var(--font-serif)] text-2xl font-semibold">Create a collection</h3>
+          <div className="pinly-sheet-body">
+            <h3 className="pinly-section-title font-[var(--font-serif)]">Create a collection</h3>
             <p className="mt-1 text-sm text-[var(--foreground)]/58">
               Start a folder for a trip, season, or any set of memories you want grouped together.
             </p>
@@ -106,7 +106,7 @@ export function CreateCollectionButton({
             </div>
             <Button
               type="button"
-              className="mt-6 h-12 w-full rounded-2xl"
+              className="mt-6 w-full rounded-2xl"
               onClick={handleCreate}
               disabled={isPending || name.trim().length < 2}
             >

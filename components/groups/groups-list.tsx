@@ -71,13 +71,13 @@ export function GroupsList({ initialGroups }: { initialGroups?: MessageGroupSumm
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[1fr_1fr] animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
-      <section className="glass-panel rounded-[2rem] p-5">
+    <div className="pinly-content-shell--wide pinly-screen-grid animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
+      <section className="glass-panel pinly-panel">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Messages</p>
-            <h1 className="mt-2 font-[var(--font-serif)] text-4xl">Your inbox</h1>
-            <p className="mt-2 max-w-lg text-sm text-[var(--foreground)]/62">
+            <p className="pinly-eyebrow">Messages</p>
+            <h1 className="pinly-display-title">Your inbox</h1>
+            <p className="pinly-body-copy max-w-lg">
               Keep group trip chats and one-to-one friend conversations together in one place.
             </p>
           </div>
@@ -93,7 +93,7 @@ export function GroupsList({ initialGroups }: { initialGroups?: MessageGroupSumm
           </div>
         </div>
 
-        <div className="relative mt-5">
+        <div className="relative mt-4">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--foreground)]/40" />
           <Input
             value={query}
@@ -103,7 +103,7 @@ export function GroupsList({ initialGroups }: { initialGroups?: MessageGroupSumm
           />
         </div>
 
-        <div className="mt-6 space-y-3">
+        <div className="mt-4 space-y-3">
           {loading ? (
             <div className="text-sm text-[var(--foreground)]/60">Loading conversations...</div>
           ) : groups.length === 0 ? (
@@ -122,7 +122,7 @@ export function GroupsList({ initialGroups }: { initialGroups?: MessageGroupSumm
                 tabIndex={0}
                 onClick={() => openConversation(group.id)}
                 onKeyDown={(event) => handleConversationKeyDown(event, group.id)}
-                className={`flex cursor-pointer items-start justify-between gap-3 rounded-3xl border p-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/40 hover:bg-[var(--surface-strong)] ${
+                className={`flex cursor-pointer items-start justify-between gap-3 rounded-[1.5rem] border p-3.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/40 hover:bg-[var(--surface-strong)] ${
                   group.hasUnread
                     ? "border-[rgba(56,182,201,0.22)] bg-[rgba(56,182,201,0.1)]"
                     : "bg-[var(--surface-soft)]"
@@ -150,11 +150,11 @@ export function GroupsList({ initialGroups }: { initialGroups?: MessageGroupSumm
                           disableProfileNavigation
                           className="min-w-0 rounded-xl px-1 py-1 -ml-1 transition hover:bg-[var(--surface-strong)]"
                         >
-                          <h3 className="truncate text-lg font-semibold">{group.directUser.name}</h3>
-                        </ProfileLink>
-                      ) : (
-                        <h3 className="truncate text-lg font-semibold">{group.name}</h3>
-                      )}
+                        <h3 className="truncate text-[1.02rem] font-semibold">{group.directUser.name}</h3>
+                      </ProfileLink>
+                    ) : (
+                        <h3 className="truncate text-[1.02rem] font-semibold">{group.name}</h3>
+                    )}
                       <span
                         className={`inline-flex shrink-0 items-center rounded-full px-2 py-1 text-[11px] font-semibold ${
                           group.isDirect

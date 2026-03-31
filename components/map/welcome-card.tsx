@@ -37,7 +37,7 @@ export function WelcomeCard({ forceOpen = false }: { forceOpen?: boolean }) {
 
   return (
     <div className="pointer-events-auto w-full max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
-      <div className="relative rounded-[1.75rem] border bg-[var(--surface-strong)] p-5 shadow-xl backdrop-blur-xl">
+      <div className="relative rounded-[var(--pinly-panel-radius-lg)] border bg-[var(--surface-strong)] p-4 shadow-xl backdrop-blur-xl">
         <button
           type="button"
           onClick={dismiss}
@@ -47,8 +47,8 @@ export function WelcomeCard({ forceOpen = false }: { forceOpen?: boolean }) {
           <X className="h-3.5 w-3.5" />
         </button>
 
-        <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Welcome to Pinly</p>
-        <h2 className="mt-2 font-[var(--font-serif)] text-xl leading-tight">Your map is ready.</h2>
+        <p className="pinly-eyebrow">Welcome to Pinly</p>
+        <h2 className="mt-2 font-[var(--font-serif)] text-[1.2rem] leading-tight">Your map is ready.</h2>
         <p className="mt-2 text-sm leading-6 text-[var(--foreground)]/66">
           Pin memories to the places that matter. Start with one memory, a couple of real friends, and a quick look around the globe.
         </p>
@@ -57,7 +57,7 @@ export function WelcomeCard({ forceOpen = false }: { forceOpen?: boolean }) {
           <Link
             href="/create"
             onClick={dismiss}
-            className="flex items-center gap-3 rounded-2xl border bg-[var(--accent-soft)] p-3 transition hover:bg-[var(--accent-soft)]/80"
+            className="flex items-center gap-3 rounded-[1.25rem] border bg-[var(--accent-soft)] p-3 transition hover:bg-[var(--accent-soft)]/80"
           >
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] text-[var(--accent-foreground)] shadow-sm">
               <Plus className="h-4 w-4" />
@@ -71,7 +71,7 @@ export function WelcomeCard({ forceOpen = false }: { forceOpen?: boolean }) {
           <Link
             href="/friends"
             onClick={dismiss}
-            className="flex items-center gap-3 rounded-2xl border bg-[var(--surface-soft)] p-3 transition hover:bg-[var(--foreground)]/5"
+            className="flex items-center gap-3 rounded-[1.25rem] border bg-[var(--surface-soft)] p-3 transition hover:bg-[var(--foreground)]/5"
           >
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--social-accent-soft)] text-[var(--social-accent)] shadow-sm">
               <UserPlus className="h-4 w-4" />
@@ -82,7 +82,7 @@ export function WelcomeCard({ forceOpen = false }: { forceOpen?: boolean }) {
             </div>
           </Link>
 
-          <div className="flex items-center gap-3 rounded-2xl border bg-[var(--map-accent-soft)] p-3">
+          <div className="flex items-center gap-3 rounded-[1.25rem] border bg-[var(--map-accent-soft)] p-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--map-accent)] text-white shadow-sm">
               <MapPin className="h-4 w-4" />
             </div>

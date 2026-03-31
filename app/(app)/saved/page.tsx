@@ -22,23 +22,23 @@ export default async function SavedPostsPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-xl space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
-      <section className="glass-panel rounded-[1.75rem] p-4">
+    <div className="pinly-content-shell pinly-screen-stack animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
+      <section className="glass-panel pinly-panel">
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--social-accent-soft)] text-[var(--social-accent)]">
             <Bookmark className="h-5 w-5 fill-current" />
           </div>
           <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Saved</p>
-            <h1 className="mt-1.5 font-[var(--font-serif)] text-2xl md:text-3xl">Saved memories</h1>
-            <p className="mt-2 text-sm leading-6 text-[var(--foreground)]/66">
+            <p className="pinly-eyebrow">Saved</p>
+            <h1 className="pinly-display-title">Saved memories</h1>
+            <p className="pinly-body-copy">
               Revisit the posts you bookmarked for later. Saved items still follow normal visibility rules.
             </p>
           </div>
         </div>
       </section>
 
-      <section className="space-y-4">
+      <section className="pinly-screen-stack">
         {posts.map((post) => (
           <PostCard
             key={post.id}
@@ -48,7 +48,7 @@ export default async function SavedPostsPage() {
           />
         ))}
         {posts.length === 0 ? (
-          <div className="rounded-[1.75rem] border bg-[var(--surface-strong)] p-6 text-center">
+          <div className="pinly-list-empty border bg-[var(--surface-strong)] text-center">
             <p className="text-sm text-[var(--foreground)]/58">
               You haven&apos;t saved any memories yet.
             </p>

@@ -181,9 +181,9 @@ export function GroupDetail({
     : "Group chat for shared plans, memories, and updates";
 
   return (
-    <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[0.8fr_1.2fr]">
+    <div className="pinly-content-shell--wide grid h-full min-h-0 gap-[var(--pinly-page-gap)] xl:grid-cols-[0.8fr_1.2fr]">
       {/* Conversation Info Sidebar */}
-      <section className="glass-panel hidden flex-col rounded-[2rem] p-5 xl:flex">
+      <section className="glass-panel pinly-panel hidden flex-col xl:flex">
         {group.isDirect && group.directUser ? (
           <ProfileLink username={group.directUser.username} className="w-fit rounded-[1.5rem]">
             <Avatar
@@ -202,12 +202,12 @@ export function GroupDetail({
             username={group.directUser.username}
             className="mt-4 inline-flex w-fit flex-col rounded-[1.5rem] p-1 -m-1 transition hover:bg-white/45"
           >
-            <h1 className="font-[var(--font-serif)] text-3xl">{conversationName}</h1>
+            <h1 className="font-[var(--font-serif)] text-[var(--pinly-display-title-size)] leading-[1.08]">{conversationName}</h1>
             <p className="mt-1 text-sm text-[var(--foreground)]/60">@{group.directUser.username}</p>
           </ProfileLink>
         ) : (
           <>
-            <h1 className="mt-4 font-[var(--font-serif)] text-3xl">{conversationName}</h1>
+            <h1 className="mt-4 font-[var(--font-serif)] text-[var(--pinly-display-title-size)] leading-[1.08]">{conversationName}</h1>
             <p className="mt-1 text-sm text-[var(--foreground)]/60">{conversationSubtitle}</p>
           </>
         )}
@@ -243,9 +243,9 @@ export function GroupDetail({
       </section>
 
       {/* Messaging Area */}
-      <section className="glass-panel relative flex min-h-0 flex-col overflow-hidden rounded-[2rem]">
+      <section className="glass-panel relative flex min-h-0 flex-col overflow-hidden rounded-[var(--pinly-panel-radius-lg)]">
         {/* Mobile Header */}
-        <div className="flex items-center justify-between gap-3 border-b border-black/5 bg-white/40 p-4 xl:hidden">
+        <div className="flex items-center justify-between gap-3 border-b border-black/5 bg-white/40 p-3.5 xl:hidden">
           <div className="flex min-w-0 items-center gap-3">
             {group.isDirect && group.directUser ? (
               <ProfileLink username={group.directUser.username} className="shrink-0 rounded-full">
@@ -284,7 +284,7 @@ export function GroupDetail({
 
         {/* Messages */}
         <div
-          className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4"
+          className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-3.5"
           style={{ scrollPaddingBottom: "calc(6rem + var(--keyboard-safe-area-bottom))" }}
         >
           {messages.length === 0 ? (
@@ -316,7 +316,7 @@ export function GroupDetail({
                     </span>
                   </div>
                   {msg.content.startsWith("[SHARED_POST]:") ? (
-                    <div className="mt-1 w-[240px] overflow-hidden rounded-2xl border bg-white shadow-sm md:w-[280px]">
+                    <div className="mt-1 w-[220px] overflow-hidden rounded-[1.25rem] border bg-white shadow-sm md:w-[280px]">
                       <div className="flex items-center gap-2 border-b bg-black/5 p-3 text-sm font-medium">
                         <Share2 className="h-4 w-4 text-[var(--accent)]" />
                         {msg.user.id === viewerId ? "You shared a post" : "Shared a post"}
@@ -380,7 +380,7 @@ export function GroupDetail({
                   ) : (
                     <div
                       className={cn(
-                        "mt-1 inline-block whitespace-pre-wrap break-words rounded-2xl p-3 text-sm shadow-sm md:max-w-[80%]",
+                        "mt-1 inline-block whitespace-pre-wrap break-words rounded-[1.25rem] p-3 text-sm shadow-sm md:max-w-[80%]",
                         msg.user.id === viewerId
                           ? "rounded-tr-none bg-[var(--accent)] text-[var(--accent-foreground)]"
                           : "rounded-tl-none bg-white text-[var(--foreground)]"
@@ -404,7 +404,7 @@ export function GroupDetail({
         {/* Input area */}
         <form
           onSubmit={handleSend}
-          className="border-t border-black/5 bg-white/40 p-4 pb-[calc(1rem+var(--keyboard-safe-area-bottom))]"
+          className="border-t border-black/5 bg-white/40 p-3.5 pb-[calc(0.875rem+var(--keyboard-safe-area-bottom))]"
         >
           <div className="relative flex items-center">
             <Input
@@ -434,7 +434,7 @@ export function GroupDetail({
             }
           }}
         >
-          <DialogContent className="sm:max-w-md rounded-[2rem] border-none bg-[var(--surface-soft)] p-6">
+          <DialogContent className="pinly-dialog-surface sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="text-xl font-semibold">Add to Group</DialogTitle>
               <DialogDescription className="text-sm text-[var(--foreground)]/60">

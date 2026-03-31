@@ -139,8 +139,8 @@ export function SettingsForm({ initialProfile, initialSettings }: SettingsFormPr
   }
 
   return (
-    <div className="space-y-5">
-      <section className="rounded-[1.75rem] border bg-[var(--surface-soft)] p-4">
+    <div className="space-y-4">
+      <section className="rounded-[var(--pinly-panel-radius-lg)] border bg-[var(--surface-soft)] p-4">
         <div className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[var(--foreground)]/10 text-[var(--foreground)]">
             <Settings2 className="h-4 w-4" />
@@ -151,7 +151,7 @@ export function SettingsForm({ initialProfile, initialSettings }: SettingsFormPr
           </div>
         </div>
 
-        <div className="mt-4 flex items-center gap-4">
+        <div className="mt-4 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
           <Avatar name={initialProfile.name} src={avatarUrl} className="h-20 w-20 shrink-0 border-2 border-[var(--surface-strong)]" />
           <div className="min-w-0">
             <p className="text-sm font-medium">{initialProfile.name}</p>
@@ -199,7 +199,7 @@ export function SettingsForm({ initialProfile, initialSettings }: SettingsFormPr
 
       <section className="space-y-4">
         {showNativePushSettings ? (
-          <div className="flex items-center justify-between rounded-2xl border bg-[var(--surface-soft)] p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-soft)] p-4">
             <div className="pr-4">
               <div className="flex items-center gap-2">
                 <BellRing className="h-4 w-4 text-[var(--social-accent)]" />
@@ -221,7 +221,7 @@ export function SettingsForm({ initialProfile, initialSettings }: SettingsFormPr
           </div>
         ) : null}
 
-        <div className="flex items-center justify-between rounded-2xl border bg-[var(--surface-soft)] p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-soft)] p-4">
           <div className="pr-4">
             <p className="text-sm font-medium">Show like counts</p>
             <p className="mt-0.5 text-xs text-[var(--foreground)]/55">
@@ -238,7 +238,7 @@ export function SettingsForm({ initialProfile, initialSettings }: SettingsFormPr
           />
         </div>
 
-        <div className="flex items-center justify-between rounded-2xl border bg-[var(--surface-soft)] p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-soft)] p-4">
           <div className="pr-4">
             <p className="text-sm font-medium">Allow comments on your posts</p>
             <p className="mt-0.5 text-xs text-[var(--foreground)]/55">

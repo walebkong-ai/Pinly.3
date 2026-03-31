@@ -100,8 +100,8 @@ export function StartDirectMessageSheet() {
           style={drawerStyle}
         >
           <div className="mx-auto mt-4 h-1.5 w-12 shrink-0 rounded-full bg-[var(--foreground)]/15" />
-          <div className="flex flex-1 flex-col overflow-hidden p-6">
-            <h2 className="font-[var(--font-serif)] text-2xl font-semibold">Start a direct chat</h2>
+          <div className="pinly-sheet-body">
+            <h2 className="pinly-section-title font-[var(--font-serif)]">Start a direct chat</h2>
             <p className="mt-1 text-sm text-[var(--foreground)]/58">
               Pick a friend to open your one-to-one conversation.
             </p>
@@ -126,7 +126,7 @@ export function StartDirectMessageSheet() {
                   {visibleFriends.map((friend) => (
                     <div
                       key={friend.id}
-                      className="flex items-center gap-3 rounded-2xl border bg-[var(--surface-soft)] p-3"
+                      className="flex items-center gap-3 rounded-[1.25rem] border bg-[var(--surface-soft)] p-3"
                     >
                       <ProfileLink
                         username={friend.username}
@@ -143,7 +143,7 @@ export function StartDirectMessageSheet() {
                         friendId={friend.id}
                         label="Open"
                         variant="secondary"
-                        className="h-9 shrink-0 px-3"
+                        className="shrink-0 px-3"
                         onConversationOpened={() => setOpen(false)}
                       />
                     </div>

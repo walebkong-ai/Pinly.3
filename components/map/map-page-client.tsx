@@ -165,6 +165,32 @@ export function MapPageClient() {
       }),
     [activeMapMode]
   );
+  const mapInitialViewState = useMemo(
+    () =>
+      mapFocusTarget
+        ? {
+            longitude: mapFocusTarget.longitude,
+            latitude: mapFocusTarget.latitude,
+            zoom: 13,
+            pitch: 45,
+            bearing: 0
+          }
+        : undefined,
+    [mapFocusTarget]
+  );
+  const mapFocusedCoordinates = useMemo(
+    () =>
+      manualFocusCoordinates
+        ? manualFocusCoordinates
+        : mapFocusTarget
+          ? {
+              latitude: mapFocusTarget.latitude,
+              longitude: mapFocusTarget.longitude,
+              key: mapFocusTarget.key
+            }
+          : null,
+    [manualFocusCoordinates, mapFocusTarget]
+  );
 
   useEffect(() => {
     latestMapDataRef.current = mapData;
@@ -666,7 +692,7 @@ export function MapPageClient() {
   }, []);
 
   return (
-    <section className="pinly-map-stage relative isolate flex-1 overflow-hidden rounded-[2.2rem] border bg-[var(--surface-soft)] shadow-2xl shadow-black/5">
+    <section className="pinly-map-stage relative isolate flex-1 overflow-hidden rounded-[1.75rem] border bg-[var(--surface-soft)] shadow-2xl shadow-black/5">
       <MapErrorBoundary>
         <DynamicMapCanvas
           markers={mapData.markers}
@@ -677,28 +703,8 @@ export function MapPageClient() {
           userLocation={userLocation}
           collectionOverlays={collectionOverlays}
           collectionOverlayFitBoundsTarget={collectionOverlayFitBoundsTarget}
-          initialViewState={
-            mapFocusTarget
-              ? {
-                  longitude: mapFocusTarget.longitude,
-                  latitude: mapFocusTarget.latitude,
-                  zoom: 13,
-                  pitch: 45,
-                  bearing: 0
-                }
-              : undefined
-          }
-          focusedCoordinates={
-            manualFocusCoordinates
-              ? manualFocusCoordinates
-              : mapFocusTarget
-                ? {
-                    latitude: mapFocusTarget.latitude,
-                    longitude: mapFocusTarget.longitude,
-                    key: mapFocusTarget.key
-                  }
-                : null
-          }
+          initialViewState={mapInitialViewState}
+          focusedCoordinates={mapFocusedCoordinates}
           onExpandPost={handleExpandPost}
           onFocusedCoordinatesApplied={handleFocusedCoordinatesApplied}
           onOpenLocationCluster={handleOpenLocationCluster}
@@ -722,20 +728,20 @@ export function MapPageClient() {
         ) : null}
 
         {!previewSurfaceOpen && (
-          <div className="pointer-events-auto absolute left-4 top-4 z-10 hidden md:block md:left-5 md:top-5">
+          <div className="pointer-events-auto absolute left-3 top-3 z-10 hidden md:block md:left-5 md:top-5">
             {renderFilterControl()}
           </div>
         )}
 
         {!previewSurfaceOpen && (
-          <div className="pointer-events-auto absolute right-4 top-4 z-10 hidden md:block md:right-5 md:top-5">
+          <div className="pointer-events-auto absolute right-3 top-3 z-10 hidden md:block md:right-5 md:top-5">
             {renderLocationControl()}
           </div>
         )}
 
         {!previewSurfaceOpen ? (
           <>
-            <div className="pointer-events-none relative z-10 flex h-full flex-col justify-between p-4 md:p-5">
+            <div className="pointer-events-none relative z-10 flex h-full flex-col justify-between p-3 md:p-5">
               <div className="space-y-4">
                 <div className="pointer-events-auto hidden max-w-xl items-center gap-4 rounded-full border bg-[var(--surface-strong)] px-4 py-3 shadow-sm md:inline-flex">
                   <Brand compact />
@@ -767,7 +773,7 @@ export function MapPageClient() {
                         ) : null}
                       </div>
                     </div>
-                    <div className="flex items-center justify-between gap-3 md:hidden">
+                    <div className="flex items-center justify-between gap-2 md:hidden">
                       {renderFilterControl()}
                       {renderLocationControl()}
                     </div>
@@ -805,7 +811,7 @@ export function MapPageClient() {
             </div>
 
             {(showControls || showWelcomeCard || satelliteToggleVisible) && (
-              <div className="pointer-events-none absolute inset-x-4 bottom-24 grid gap-4 md:bottom-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-end xl:px-1 animate-in fade-in duration-500 ease-out">
+              <div className="pointer-events-none absolute inset-x-3 bottom-[5.5rem] grid gap-3 md:bottom-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-end xl:px-1 animate-in fade-in duration-500 ease-out">
                 <div className="pointer-events-none flex flex-col-reverse gap-3 xl:flex-row xl:items-end xl:justify-between xl:gap-4">
                   {satelliteToggleVisible ? (
                     <div className="pointer-events-auto self-start xl:self-end">

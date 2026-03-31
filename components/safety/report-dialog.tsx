@@ -86,7 +86,7 @@ export function ReportDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-[2rem] border-none bg-[var(--surface-soft)] p-6">
+      <DialogContent className="pinly-dialog-surface sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">{title}</DialogTitle>
           <DialogDescription className="text-sm text-[var(--foreground)]/60">

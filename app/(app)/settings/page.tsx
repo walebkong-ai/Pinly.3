@@ -39,17 +39,17 @@ export default async function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
+    <div className="pinly-content-shell pinly-screen-stack animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
       <BackButton fallbackHref={`/profile/${user.username}`} label="Profile" />
-      <section className="glass-panel rounded-[1.75rem] p-4">
-        <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Settings</p>
-        <h1 className="mt-1.5 font-[var(--font-serif)] text-2xl">Profile settings</h1>
-        <p className="mt-2 text-sm leading-6 text-[var(--foreground)]/66">
+      <section className="glass-panel pinly-panel">
+        <p className="pinly-eyebrow">Settings</p>
+        <h1 className="pinly-display-title">Profile settings</h1>
+        <p className="pinly-body-copy">
           Manage your profile photo and the interaction controls tied to your posts.
         </p>
       </section>
 
-      <section className="glass-panel rounded-[1.75rem] p-4">
+      <section className="glass-panel pinly-panel">
         <SettingsForm
           initialProfile={user}
           initialSettings={{
@@ -59,11 +59,11 @@ export default async function SettingsPage() {
         />
       </section>
 
-      <section className="glass-panel rounded-[1.75rem] p-4">
+      <section className="glass-panel pinly-panel">
         <DeleteAccountCard username={user.username} isDemoAccount={isReservedDemoEmail(user.email)} />
       </section>
 
-      <section className="glass-panel rounded-[1.75rem] p-4">
+      <section className="glass-panel pinly-panel">
         <p className="text-sm font-medium">Legal</p>
         <p className="mt-1 text-xs leading-5 text-[var(--foreground)]/58">
           Review the current Terms of Service and Privacy Policy. Last updated {LEGAL_LAST_UPDATED_LABEL}.

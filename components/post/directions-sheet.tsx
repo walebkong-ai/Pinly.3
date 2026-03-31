@@ -114,13 +114,13 @@ export function DirectionsSheet({
           style={drawerStyle}
         >
           <div className="mx-auto mt-4 h-1.5 w-12 rounded-full bg-[var(--foreground)]/15" />
-          <div className="px-5 pb-8 pt-5 sm:px-6">
+          <div className="pinly-sheet-body pb-[calc(var(--keyboard-safe-area-bottom)+1rem)]">
             <div className="flex items-start gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--map-accent-soft)] text-[var(--map-accent)]">
                 <Map className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <h2 className="font-[var(--font-serif)] text-2xl font-semibold">Open directions</h2>
+                <h2 className="pinly-section-title font-[var(--font-serif)]">Open directions</h2>
                 <div className="mt-1 flex min-w-0 max-w-full items-center gap-1 text-sm text-[var(--foreground)]/62">
                   <span className="truncate">{post.placeName},</span>
                   <LocationCountryText city={post.city} country={post.country} className="min-w-0 max-w-full" />

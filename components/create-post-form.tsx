@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Camera, Crop, Crosshair, Images, LoaderCircle, MapPin, Search, Upload, X } from "lucide-react";
@@ -14,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { VisitedWithPicker } from "@/components/create/visited-with-picker";
 import { CollectionPicker } from "@/components/collections/collection-picker";
+import { RevealImage } from "@/components/ui/reveal-image";
 import {
   buildLocationDisplayName,
   getGeolocationErrorMessage,
@@ -351,7 +351,7 @@ export function CreatePostForm() {
   async function uploadFile(file: File) {
     if (!isOnline) {
       setUploadError(null);
-      toast.error("Reconnect to upload a photo or video.");
+      toast.error("Reconnect to upload a photo.");
       return null;
     }
 
@@ -373,12 +373,6 @@ export function CreatePostForm() {
           data?.code === "UPLOAD_STORAGE_MISCONFIGURED"
             ? "Uploads need Supabase storage configured for this environment."
             : data?.error ?? "Upload failed.";
-        console.error("[create-post] Upload failed", {
-          status: response.status,
-          code: data?.code ?? null,
-          error: data?.error ?? null,
-          details: data?.details ?? null
-        });
         setUploadError(message);
         if (data?.code !== "UPLOAD_STORAGE_MISCONFIGURED") {
           toast.error(message);
@@ -398,14 +392,6 @@ export function CreatePostForm() {
         toast.error("Upload returned an invalid media URL.");
         return null;
       }
-
-      console.info("[create-post] Upload succeeded", {
-        mediaType: data.mediaType,
-        rawMediaUrl: data?.mediaUrl ?? null,
-        rawThumbnailUrl: data?.thumbnailUrl ?? null,
-        normalizedMediaUrl: mediaUrl,
-        normalizedThumbnailUrl: thumbnailUrl
-      });
 
       const nextUploadState = {
         mediaUrl,
@@ -543,7 +529,7 @@ export function CreatePostForm() {
     }
 
     if (!uploadState) {
-      toast.error("Upload a photo or video first.");
+      toast.error("Upload a photo first.");
       return;
     }
 
@@ -605,25 +591,28 @@ export function CreatePostForm() {
   }
 
   return (
-    <div data-testid="create-post-form" className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
+    <div
+      data-testid="create-post-form"
+      className="pinly-content-shell--wide pinly-screen-stack animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out"
+    >
       {showFirstMemoryGuide ? (
-        <section className="glass-panel rounded-[2rem] p-5">
-          <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">First memory</p>
-          <h2 className="mt-2 font-[var(--font-serif)] text-3xl md:text-4xl">Start with one place you want to remember.</h2>
-          <p className="mt-3 text-sm leading-6 text-[var(--foreground)]/66">
-            You only need three things to make your first Pinly post feel right: a photo or video, the place, and a short memory caption.
+        <section className="glass-panel pinly-panel">
+          <p className="pinly-eyebrow">First memory</p>
+          <h2 className="pinly-display-title">Start with one place you want to remember.</h2>
+          <p className="pinly-body-copy">
+            You only need three things to make your first Pinly post feel right: a photo, the place, and a short memory caption.
           </p>
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-[1.5rem] border bg-[var(--surface-soft)] p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--foreground)]/45">1. Upload</p>
-              <p className="mt-2 text-sm text-[var(--foreground)]/68">Choose one photo or short video from the moment.</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-soft)] p-4">
+              <p className="pinly-eyebrow">1. Upload</p>
+              <p className="mt-2 text-sm text-[var(--foreground)]/68">Choose one photo from the moment.</p>
             </div>
-            <div className="rounded-[1.5rem] border bg-[var(--surface-soft)] p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--foreground)]/45">2. Place it</p>
+            <div className="rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-soft)] p-4">
+              <p className="pinly-eyebrow">2. Place it</p>
               <p className="mt-2 text-sm text-[var(--foreground)]/68">Search for the place or tap the map exactly where it happened.</p>
             </div>
-            <div className="rounded-[1.5rem] border bg-[var(--surface-soft)] p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--foreground)]/45">3. Publish</p>
+            <div className="rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-soft)] p-4">
+              <p className="pinly-eyebrow">3. Publish</p>
               <p className="mt-2 text-sm text-[var(--foreground)]/68">Add a caption and date, then pin it to your map.</p>
             </div>
           </div>
@@ -638,12 +627,12 @@ export function CreatePostForm() {
         />
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
-        <section className="glass-panel rounded-[2rem] p-5">
-          <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Step 1</p>
-          <h1 className="mt-2 font-[var(--font-serif)] text-4xl">Upload your moment</h1>
-          <p className="mt-3 text-sm leading-6 text-[var(--foreground)]/66">
-            Add a photo or video from a place you intentionally want to remember. No background tracking, ever.
+      <div className="pinly-screen-grid--split">
+        <section className="glass-panel pinly-panel">
+          <p className="pinly-eyebrow">Step 1</p>
+          <h1 className="pinly-display-title">Upload your moment</h1>
+          <p className="pinly-body-copy">
+            Add a photo from a place you intentionally want to remember. No background tracking, ever.
           </p>
           {uploadError ? (
             <div className="mt-4 rounded-[1.5rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -654,7 +643,7 @@ export function CreatePostForm() {
           <input
             ref={cameraFileRef}
             type="file"
-            accept="image/*,video/*"
+            accept="image/*"
             capture="environment"
             data-testid="camera-upload-input"
             className="hidden"
@@ -666,7 +655,7 @@ export function CreatePostForm() {
           <input
             ref={libraryFileRef}
             type="file"
-            accept="image/*,video/*"
+            accept="image/*"
             data-testid="library-upload-input"
             className="hidden"
             onChange={(event) => {
@@ -700,11 +689,12 @@ export function CreatePostForm() {
                 />
               ) : (
                 <div className="relative h-72 w-full rounded-[2rem] bg-[var(--surface-soft)]">
-                  <Image
+                  <RevealImage
                     src={uploadPreviewUrl}
                     alt="Upload preview"
                     fill
                     sizes="(max-width: 768px) 100vw, 50vw"
+                    wrapperClassName="h-full w-full rounded-[2rem]"
                     className="rounded-[2rem] object-cover"
                   />
                 </div>
@@ -748,7 +738,7 @@ export function CreatePostForm() {
           ) : (
             <div className="mt-6 flex h-64 w-full flex-col items-center justify-center rounded-[2rem] border border-dashed bg-[var(--surface-soft)] px-5 text-center">
               <Upload className="h-8 w-8 text-[var(--accent)]" />
-              <p className="mt-4 font-medium">Choose image or video</p>
+              <p className="mt-4 font-medium">Choose a photo</p>
               <p className="mt-2 max-w-xs text-sm text-[var(--foreground)]/55">
                 Use the camera for something fresh or pull from your library when the moment already happened.
               </p>
@@ -779,11 +769,11 @@ export function CreatePostForm() {
           )}
         </section>
 
-        <section className="glass-panel rounded-[2rem] p-5">
-          <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/45">Step 2</p>
-          <h2 className="mt-2 font-[var(--font-serif)] text-4xl">Choose the place</h2>
-          <div className="mt-6 space-y-4">
-            <div className="rounded-[1.75rem] border bg-[var(--surface-soft)] p-4">
+        <section className="glass-panel pinly-panel">
+          <p className="pinly-eyebrow">Step 2</p>
+          <h2 className="pinly-display-title">Choose the place</h2>
+          <div className="mt-4 space-y-4">
+            <div className="rounded-[var(--pinly-panel-radius-lg)] border bg-[var(--surface-soft)] p-4">
               <div className="flex items-center gap-2 text-sm font-medium text-[var(--foreground)]">
                 <Search className="h-4 w-4 text-[var(--map-accent)]" />
                 Search for a place
@@ -804,8 +794,8 @@ export function CreatePostForm() {
                       key={place.id}
                       type="button"
                       onClick={() => applyPlaceResult(place)}
-                      className="block w-full rounded-3xl border bg-[var(--surface-strong)] px-4 py-3 text-left transition hover:bg-[var(--card-strong)]"
-                    >
+                    className="block w-full rounded-[1.35rem] border bg-[var(--surface-strong)] px-4 py-3 text-left transition hover:bg-[var(--card-strong)]"
+                  >
                       <p className="text-sm font-medium">{place.placeName}</p>
                       <p className="mt-1 text-xs text-[var(--foreground)]/55">{place.displayName}</p>
                     </button>
@@ -820,13 +810,13 @@ export function CreatePostForm() {
               )}
             </div>
 
-            <div className="rounded-[1.75rem] border bg-[var(--surface-soft)] p-4">
+            <div className="rounded-[var(--pinly-panel-radius-lg)] border bg-[var(--surface-soft)] p-4">
               <div className="flex items-center gap-2 text-sm font-medium text-[var(--foreground)]">
                 <Crosshair className="h-4 w-4 text-[var(--map-accent)]" />
                 Or tap the map to drop the memory exactly where it happened
               </div>
 
-              <div className="mt-3 flex items-center gap-2">
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 <Button
                   type="button"
                   variant="secondary"
@@ -843,7 +833,7 @@ export function CreatePostForm() {
                 </Button>
               </div>
 
-              <div className="mt-4 overflow-hidden rounded-[1.75rem]">
+              <div className="mt-4 overflow-hidden rounded-[var(--pinly-panel-radius-lg)]">
                 <DynamicLocationPicker
                   position={latitude !== null && longitude !== null ? { latitude, longitude } : null}
                   onSelect={(coordinates) => handleCoordinateSelection(coordinates, "map")}
@@ -853,7 +843,7 @@ export function CreatePostForm() {
               {(locationFeedback || hasFiniteCoordinates(latitude, longitude)) && (
                 <div
                   data-testid="create-selected-location"
-                  className={`mt-4 rounded-[1.5rem] border px-4 py-3 ${
+                  className={`mt-4 rounded-[var(--pinly-panel-radius)] border px-4 py-3 ${
                     locationFeedback?.tone === "error"
                       ? "border-rose-200 bg-rose-50/80"
                       : locationFeedback?.tone === "success"
@@ -938,7 +928,7 @@ export function CreatePostForm() {
 
           <CollectionPicker selectedCollectionIds={collectionIds} onChange={setCollectionIds} />
 
-          <details className="rounded-3xl border bg-[var(--surface-soft)] p-4 text-sm text-[var(--foreground)]/65">
+          <details className="rounded-[var(--pinly-panel-radius-lg)] border bg-[var(--surface-soft)] p-4 text-sm text-[var(--foreground)]/65">
             <summary className="cursor-pointer font-medium text-[var(--foreground)]">Advanced coordinates</summary>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <Input
@@ -971,7 +961,7 @@ export function CreatePostForm() {
             </p>
           </details>
 
-          <div className="rounded-3xl border bg-[var(--surface-soft)] p-4 text-sm text-[var(--foreground)]/65">
+          <div className="rounded-[var(--pinly-panel-radius-lg)] border bg-[var(--surface-soft)] p-4 text-sm text-[var(--foreground)]/65">
             <div className="flex items-center gap-2 font-medium text-[var(--foreground)]">
               <MapPin className="h-4 w-4 text-[var(--map-accent)]" />
               Intentional place-based posting only
@@ -981,7 +971,7 @@ export function CreatePostForm() {
           <Button
             type="button"
             onClick={onSubmit}
-            className="h-11 w-full"
+            className="w-full"
             disabled={submitting || uploading || gettingLocation || resolvingLocation || !isOnline || !!pendingImageFile}
           >
             {submitting ? "Saving pin..." : "Publish memory"}

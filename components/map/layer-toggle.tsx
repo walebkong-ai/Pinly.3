@@ -24,7 +24,7 @@ export function LayerToggle({
           type="button"
           onClick={() => onChange(option.value)}
           className={cn(
-            "rounded-full px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-medium transition",
+            "min-h-11 rounded-full px-3 py-2 text-xs md:px-4 md:text-sm font-medium transition",
             value === option.value
               ? "bg-[var(--foreground)] text-[var(--background)] shadow-sm"
               : "text-[var(--foreground)]/70 hover:bg-[var(--foreground)]/5"
