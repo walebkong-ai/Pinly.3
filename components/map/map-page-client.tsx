@@ -510,6 +510,9 @@ export function MapPageClient() {
           type="button"
           onClick={() => setFilterOpen(true)}
           aria-label="Open filters"
+          aria-controls="pinly-map-filters"
+          aria-expanded={filterOpen}
+          aria-haspopup="dialog"
           className="flex min-h-11 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-[var(--foreground)]/70 transition hover:bg-[var(--foreground)]/5 md:gap-2 md:px-4 md:text-sm"
         >
           <Filter className="h-3.5 w-3.5 md:h-4 md:w-4" />
@@ -692,7 +695,13 @@ export function MapPageClient() {
   }, []);
 
   return (
-    <section className="pinly-map-stage relative isolate flex h-full min-h-0 flex-1 overflow-hidden rounded-[1.75rem] border bg-[var(--surface-soft)] shadow-2xl shadow-black/5">
+    <section
+      className={cn(
+        "pinly-map-stage relative isolate flex h-full min-h-0 flex-1 overflow-hidden rounded-[1.75rem] border bg-[var(--surface-soft)] shadow-2xl shadow-black/5",
+        filterOpen && "pinly-map-stage--filters-open"
+      )}
+      data-pinly-sidebar-open={filterOpen ? "true" : undefined}
+    >
       <MapErrorBoundary>
         <DynamicMapCanvas
           markers={mapData.markers}
@@ -714,7 +723,7 @@ export function MapPageClient() {
       </MapErrorBoundary>
 
       <div className="pointer-events-none absolute inset-0 z-[700]">
-        {showMapErrorState ? (
+        {!filterOpen && showMapErrorState ? (
           <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center p-4">
             <div className="pointer-events-auto w-full max-w-sm">
               <NoConnectionCard
@@ -727,19 +736,19 @@ export function MapPageClient() {
           </div>
         ) : null}
 
-        {!previewSurfaceOpen && (
+        {!previewSurfaceOpen && !filterOpen && (
           <div className="pointer-events-auto absolute left-3 top-3 z-10 hidden md:block md:left-5 md:top-5">
             {renderFilterControl()}
           </div>
         )}
 
-        {!previewSurfaceOpen && (
+        {!previewSurfaceOpen && !filterOpen && (
           <div className="pointer-events-auto absolute right-3 top-3 z-10 hidden md:block md:right-5 md:top-5">
             {renderLocationControl()}
           </div>
         )}
 
-        {!previewSurfaceOpen ? (
+        {!previewSurfaceOpen && !filterOpen ? (
           <>
             <div className="pointer-events-none relative z-10 flex h-full flex-col justify-between p-3 md:p-5">
               <div className="space-y-4">

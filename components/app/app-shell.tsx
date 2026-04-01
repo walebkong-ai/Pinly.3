@@ -147,9 +147,12 @@ export function AppShell({
   }, [refreshUnreadCounts]);
 
   return (
-    <div className="pinly-app-shell md:px-6 md:pt-[max(1rem,var(--safe-area-top))]">
+    <div className="pinly-app-shell md:px-6 md:pt-[max(1rem,var(--safe-area-top))]" data-pinly-app-shell="true">
       <NativePushManager />
-      <header className="pinly-app-header glass-panel z-[940] flex flex-wrap items-center justify-between gap-2.5 rounded-[1.5rem] px-3 py-2.5 md:rounded-[2rem] md:gap-4 md:px-4 md:py-3">
+      <header
+        className="pinly-app-header glass-panel z-[940] flex flex-wrap items-center justify-between gap-2.5 rounded-[1.5rem] px-3 py-2.5 md:rounded-[2rem] md:gap-4 md:px-4 md:py-3"
+        data-pinly-layout-region="header"
+      >
         <div className="flex items-center gap-4">
           <Brand compact />
           <nav className="hidden items-center gap-2 md:flex">
@@ -258,11 +261,14 @@ export function AppShell({
         </div>
       </header>
 
-      <main className="pinly-app-main pt-2.5 md:pt-4">
+      <main className="pinly-app-main pt-2.5 md:pt-4" data-pinly-layout-region="content">
         <ScreenTransition>{children}</ScreenTransition>
       </main>
 
-      <nav className="pinly-mobile-nav glass-panel fixed z-[950] flex items-center justify-between rounded-[1.5rem] px-1.5 py-1.5 md:hidden">
+      <nav
+        className="pinly-mobile-nav glass-panel fixed z-[950] flex items-center justify-between rounded-[1.5rem] px-1.5 py-1.5 md:hidden"
+        data-pinly-layout-region="bottom-nav"
+      >
         {[...primaryNavItems, ...secondaryNavItems.filter((item) => item.href !== "/cities" && item.href !== "/settings")].map(({ href, label, icon: Icon }) => {
           const resolvedHref = href === "/profile/me" ? `/profile/${user.username}` : href;
           return (

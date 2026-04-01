@@ -107,6 +107,19 @@ body {
   overflow-x: hidden;
 }
 
+[data-pinly-overlay-root="true"] {
+  position: fixed;
+  inset: 0;
+  z-index: 960;
+  pointer-events: none;
+  isolation: isolate;
+}
+
+:root[data-pinly-sidebar-open="true"] [data-pinly-app-shell="true"] {
+  pointer-events: none;
+  user-select: none;
+}
+
 .pinly-pressable {
   transform: translateZ(0);
   transition:
@@ -600,6 +613,24 @@ textarea,
 
 .pinly-map-canvas .maplibregl-canvas {
   will-change: transform;
+}
+
+.pinly-map-stage--filters-open .pinly-map-canvas,
+.pinly-map-stage--filters-open .maplibregl-canvas-container,
+.pinly-map-stage--filters-open .maplibregl-control-container {
+  pointer-events: none;
+}
+
+.pinly-map-stage--filters-open .maplibregl-ctrl-bottom-left,
+.pinly-map-stage--filters-open .maplibregl-ctrl-bottom-right,
+.pinly-map-stage--filters-open .maplibregl-ctrl-top-left,
+.pinly-map-stage--filters-open .maplibregl-ctrl-top-right,
+.pinly-map-stage--filters-open .maplibregl-ctrl-top-center,
+.pinly-map-stage--filters-open .maplibregl-ctrl-bottom-center,
+.pinly-map-stage--filters-open .pinly-popup-container.maplibregl-popup {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease;
 }
 
 .pinly-map-canvas .maplibregl-ctrl-bottom-left,

@@ -35,6 +35,8 @@ async function closeMobileDrawer(page: Page) {
   await page.keyboard.press("Escape");
 }
 
+const mobileWidths = [320, 375, 390, 430];
+
 test("mobile messages keep group creation, chat composer, and add-members dialog usable", async ({ page }) => {
   const groupName = `Mobile group ${Date.now()}`;
   const messageText = `Mobile chat message ${Date.now()}`;
@@ -123,6 +125,96 @@ test("mobile map keeps the canvas dominant within the viewport", async ({ page }
   expect(metrics!.stageHeight).toBeGreaterThan(metrics!.viewportHeight * 0.6);
   expect(metrics!.gapAboveNav).toBeLessThan(32);
 });
+
+for (const width of mobileWidths) {
+  test(`mobile map filter sidebar stays overlay-only without layout shift at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await signInAsDemo(page);
+    await page.locator(".pinly-map-stage").waitFor({ state: "visible", timeout: 20_000 });
+
+    const filterButton = page.getByRole("button", { name: /open filters/i });
+    const searchInput = page.getByPlaceholder("Search places, cities, countries, people, captions");
+
+    await expect(filterButton).toBeVisible({ timeout: 15_000 });
+    await expect(searchInput).toBeVisible({ timeout: 15_000 });
+
+    const stageBefore = await page.locator(".pinly-map-stage").boundingBox();
+    expect(stageBefore).not.toBeNull();
+
+    await filterButton.click();
+
+    const sidebar = page.getByRole("dialog", { name: /map filters/i });
+    await expect(sidebar).toBeVisible({ timeout: 15_000 });
+    await expect(filterButton).toBeHidden();
+    await expect(searchInput).toBeHidden();
+    await page.waitForFunction(() => {
+      const sidebarElement = document.querySelector("[data-testid='map-filter-sidebar']");
+
+      if (!(sidebarElement instanceof HTMLElement)) {
+        return false;
+      }
+
+      const sidebarRect = sidebarElement.getBoundingClientRect();
+      return Math.abs(sidebarRect.right - window.innerWidth) < 2;
+    });
+
+    const overlayMetrics = await page.evaluate(() => {
+      const stage = document.querySelector(".pinly-map-stage");
+      const sidebarElement = document.querySelector("[data-testid='map-filter-sidebar']");
+      const overlayRoot = document.querySelector("[data-pinly-overlay-root='true']");
+      const appShell = document.querySelector("[data-pinly-app-shell='true']") as (HTMLElement & { inert?: boolean }) | null;
+
+      if (!(stage instanceof HTMLElement) || !(sidebarElement instanceof HTMLElement)) {
+        return null;
+      }
+
+      const stageRect = stage.getBoundingClientRect();
+      const sidebarRect = sidebarElement.getBoundingClientRect();
+
+      return {
+        stageLeft: stageRect.left,
+        stageWidth: stageRect.width,
+        sidebarWidth: sidebarRect.width,
+        sidebarRight: sidebarRect.right,
+        viewportWidth: window.innerWidth,
+        overlayRootPresent: Boolean(overlayRoot?.contains(sidebarElement)),
+        shellInert: Boolean(appShell?.inert),
+        sidebarDataset: document.documentElement.dataset.pinlySidebarOpen ?? null
+      };
+    });
+
+    expect(overlayMetrics).not.toBeNull();
+    expect(overlayMetrics!.overlayRootPresent).toBe(true);
+    expect(overlayMetrics!.shellInert).toBe(true);
+    expect(overlayMetrics!.sidebarDataset).toBe("true");
+    expect(overlayMetrics!.stageLeft).toBeCloseTo(stageBefore!.x, 1);
+    expect(overlayMetrics!.stageWidth).toBeCloseTo(stageBefore!.width, 1);
+    expect(Math.abs(overlayMetrics!.sidebarRight - overlayMetrics!.viewportWidth)).toBeLessThanOrEqual(2);
+    expect(overlayMetrics!.sidebarWidth).toBeGreaterThanOrEqual(240);
+    expect(overlayMetrics!.sidebarWidth).toBeLessThanOrEqual(Math.min(300, overlayMetrics!.viewportWidth * 0.8) + 1);
+
+    await page.getByTestId("map-filter-backdrop").click({ position: { x: 20, y: 20 } });
+    await expect(sidebar).toBeHidden({ timeout: 15_000 });
+    await expect(filterButton).toBeVisible({ timeout: 15_000 });
+    await expect(searchInput).toBeVisible({ timeout: 15_000 });
+
+    const stageAfter = await page.locator(".pinly-map-stage").boundingBox();
+    expect(stageAfter).not.toBeNull();
+    expect(stageAfter!.x).toBeCloseTo(stageBefore!.x, 1);
+    expect(stageAfter!.width).toBeCloseTo(stageBefore!.width, 1);
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const appShell = document.querySelector("[data-pinly-app-shell='true']") as (HTMLElement & { inert?: boolean }) | null;
+          return {
+            shellInert: Boolean(appShell?.inert),
+            sidebarDataset: document.documentElement.dataset.pinlySidebarOpen ?? null
+          };
+        })
+      )
+      .toEqual({ shellInert: false, sidebarDataset: null });
+  });
+}
 
 test("mobile create and post-detail drawers keep search fields and actions visible", async ({ page }) => {
   await signInAsDemo(page);

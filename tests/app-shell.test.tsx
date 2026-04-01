@@ -95,4 +95,19 @@ describe("AppShell notification toggle", () => {
     expect(html).not.toContain(`color:${NOTIFICATION_BUTTON_ACTIVE_ICON}`);
     expect(html).not.toContain(`border-color:${NOTIFICATION_BUTTON_ACTIVE_BACKGROUND}`);
   });
+
+  test("marks header, content, and bottom navigation as isolated layout regions", () => {
+    mockedUsePathname.mockReturnValue("/map");
+
+    const html = renderToStaticMarkup(
+      <AppShell user={user}>
+        <div>Map page</div>
+      </AppShell>
+    );
+
+    expect(html).toContain('data-pinly-app-shell="true"');
+    expect(html).toContain('data-pinly-layout-region="header"');
+    expect(html).toContain('data-pinly-layout-region="content"');
+    expect(html).toContain('data-pinly-layout-region="bottom-nav"');
+  });
 });
