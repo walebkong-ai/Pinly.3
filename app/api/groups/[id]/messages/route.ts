@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { apiError } from "@/lib/api";
+import { apiError, readJsonBody, toApiErrorResponse } from "@/lib/api";
 import { z } from "zod";
 import { getGroupConversation } from "@/lib/data";
 import { enforceRateLimit } from "@/lib/rate-limit";
@@ -9,7 +9,7 @@ import { areUsersBlocked } from "@/lib/user-safety";
 export const runtime = "nodejs";
 
 const createMessageSchema = z.object({
-  content: z.string().min(1).max(2500),
+  content: z.string().trim().min(1).max(2500),
 });
 
 export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
@@ -97,7 +97,11 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
   }
 
   try {
-    const json = await request.json();
+    const json = await readJsonBody(request, {
+      maxBytes: 16 * 1024,
+      invalidJsonMessage: "Invalid request data",
+      invalidJsonCode: "GROUP_MESSAGE_INVALID_JSON"
+    });
     const { content } = createMessageSchema.parse(json);
 
     const message = await prisma.groupMessage.create({
@@ -126,10 +130,15 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
 
     return Response.json({ message });
   } catch (error) {
+    if (error instanceof Error && error.name === "ApiRequestError") {
+      return toApiErrorResponse(error);
+    }
     if (error instanceof z.ZodError) {
       return apiError("Invalid request data", 400);
     }
-    console.error("Send message error:", error);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Send message error:", error);
+    }
     return apiError("Failed to send message", 500);
   }
 }

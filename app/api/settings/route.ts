@@ -1,7 +1,8 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { apiError } from "@/lib/api";
+import { apiError, readJsonBody, toApiErrorResponse } from "@/lib/api";
 import { z } from "zod";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -32,11 +33,27 @@ export async function PUT(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return apiError("Unauthorized", 401);
 
+  const rateLimitResponse = await enforceRateLimit({
+    scope: "settings-update",
+    request,
+    userId: session.user.id,
+    limit: 30,
+    windowMs: 10 * 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   let body: unknown;
   try {
-    body = await request.json();
-  } catch {
-    return apiError("Invalid JSON", 400);
+    body = await readJsonBody(request, {
+      maxBytes: 4 * 1024,
+      invalidJsonMessage: "Invalid JSON.",
+      invalidJsonCode: "SETTINGS_INVALID_JSON"
+    });
+  } catch (error) {
+    return toApiErrorResponse(error);
   }
 
   const parsed = updateSchema.safeParse(body);

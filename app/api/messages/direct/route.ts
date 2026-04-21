@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { auth } from "@/lib/auth";
-import { apiError } from "@/lib/api";
+import { apiError, readJsonBody, toApiErrorResponse } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { getFriendIds } from "@/lib/data";
 import { buildDirectPairKey } from "@/lib/friendships";
@@ -35,7 +35,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const json = await request.json();
+    const json = await readJsonBody(request, {
+      maxBytes: 8 * 1024,
+      invalidJsonMessage: "Invalid request data.",
+      invalidJsonCode: "DIRECT_MESSAGE_INVALID_JSON"
+    });
     const { friendId } = openDirectSchema.parse(json);
     requestedFriendId = friendId;
 
@@ -92,6 +96,9 @@ export async function POST(request: Request) {
 
     return Response.json({ groupId: group.id, created: true });
   } catch (error) {
+    if (error instanceof Error && error.name === "ApiRequestError") {
+      return toApiErrorResponse(error);
+    }
     if (error instanceof z.ZodError) {
       return apiError("Invalid request data.", 400);
     }
@@ -114,7 +121,9 @@ export async function POST(request: Request) {
       }
     }
 
-    console.error("Open direct conversation error:", error);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Open direct conversation error:", error);
+    }
     return apiError("Failed to open direct message.", 500);
   }
 }

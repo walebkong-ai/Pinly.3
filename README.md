@@ -82,6 +82,13 @@ npm run dev
 7. If you want to test uploads locally, add real `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_STORAGE_BUCKET` values. Pinly now uploads directly to Supabase Storage in every environment, and the server upload path requires the service role key.
 8. If you only need the seeded demo content and legacy media repair locally, leaving `PINLY_DEMO_*` blank now falls back to bundled `/demo-media/...` assets. New uploads still require Supabase.
 
+## iOS Native Shell
+Pinly's iOS app is the existing Next.js product wrapped in a Capacitor shell. It does not rely on `next export`; the committed `native-shell/` directory is only a fallback page for incomplete native setup, while real iOS builds load the app from `CAPACITOR_SERVER_URL`.
+
+Use `.env.capacitor.example` as the starting point for native-only env overrides, then follow [IOS_SETUP.md](./IOS_SETUP.md) for the exact iOS setup flow, required local files, sync commands, and the difference between repo issues and local Xcode/CoreSimulator issues.
+
+For simulator-first local work, `npm run dev:native` keeps Pinly on `http://127.0.0.1:3001` so the Capacitor shell can target a stable local origin instead of chasing whichever port `next dev` happens to choose.
+
 ## Demo accounts
 After seeding, sign in with any of these and password `password123`:
 - `avery@pinly.demo`
@@ -119,10 +126,13 @@ The deployed demo no longer depends on running the destructive seed script in pr
 ## Useful commands
 ```bash
 npm run dev
+npm run dev:native
 npm run build
 npm run type-check
 npm run test
 npm run e2e
+npm run ios:doctor
+npm run ios:sync
 npm run media:audit:legacy
 npm run media:migrate:legacy -- --limit=10
 npm run prisma:push
@@ -156,6 +166,7 @@ python3 tools/check_env.py
 - Final go-live runbook and manual QA flows live in [GO_LIVE.md](./GO_LIVE.md)
 - First live deployment command order and failure-mode playbook live in [FIRST_DEPLOY_EXECUTION_PLAN.md](./FIRST_DEPLOY_EXECUTION_PLAN.md)
 - Google OAuth callback URL: `/api/auth/callback/google` (set both local and production origins in Google Cloud)
+- Native iOS setup, sync, and troubleshooting steps live in [IOS_SETUP.md](./IOS_SETUP.md)
 
 ## Future improvements
 - Add a client-side upload path for larger videos

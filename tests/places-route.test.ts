@@ -28,7 +28,19 @@ describe("place search route", () => {
     vi.restoreAllMocks();
   });
 
+  test("requires authentication", async () => {
+    const { GET } = await import("@/app/api/places/search/route");
+    const response = await GET(new Request("http://localhost/api/places/search?q=paris"));
+
+    expect(response.status).toBe(401);
+  });
+
   test("normalizes place search results", async () => {
+    authMock.mockResolvedValue({
+      user: {
+        id: "viewer_1"
+      }
+    });
     vi.spyOn(global, "fetch").mockResolvedValue(
       new Response(
         JSON.stringify([

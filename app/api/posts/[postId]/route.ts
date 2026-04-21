@@ -1,10 +1,11 @@
 import { auth } from "@/lib/auth";
 import { getFriendIds, getVisiblePostById } from "@/lib/data";
-import { apiError, apiValidationError } from "@/lib/api";
+import { apiError, apiValidationError, readJsonBody, toApiErrorResponse } from "@/lib/api";
 import { normalizeCountryForStorage } from "@/lib/country-flags";
 import { editPostSchema } from "@/lib/validation";
 import { prisma } from "@/lib/prisma";
 import { deleteSupabaseStorageObjects } from "@/lib/supabase-storage";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 type Context = {
   params: Promise<{ postId: string }>;
@@ -58,11 +59,28 @@ export async function PATCH(request: Request, context: Context) {
     return apiError("Forbidden", 403);
   }
 
+  const rateLimitResponse = await enforceRateLimit({
+    scope: "posts-update",
+    request,
+    userId: session.user.id,
+    key: postId,
+    limit: 30,
+    windowMs: 10 * 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   let body: unknown;
   try {
-    body = await request.json();
-  } catch {
-    return apiError("Invalid JSON payload.", 400, { code: "PATCH_INVALID_JSON" });
+    body = await readJsonBody(request, {
+      maxBytes: 24 * 1024,
+      invalidJsonCode: "PATCH_INVALID_JSON",
+      invalidJsonMessage: "Invalid JSON payload."
+    });
+  } catch (error) {
+    return toApiErrorResponse(error);
   }
 
   const parsed = editPostSchema.safeParse(body);
@@ -149,6 +167,19 @@ export async function DELETE(request: Request, context: Context) {
 
   const { postId } = await context.params;
 
+  const rateLimitResponse = await enforceRateLimit({
+    scope: "posts-delete",
+    request,
+    userId: session.user.id,
+    key: postId,
+    limit: 20,
+    windowMs: 10 * 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const post = await prisma.post.findUnique({
     where: { id: postId },
     select: { userId: true, mediaUrl: true, thumbnailUrl: true }
@@ -166,7 +197,11 @@ export async function DELETE(request: Request, context: Context) {
     where: { id: postId }
   });
 
-  await deleteSupabaseStorageObjects([post.mediaUrl, post.thumbnailUrl]).catch(console.error);
+  await deleteSupabaseStorageObjects([post.mediaUrl, post.thumbnailUrl]).catch((error) => {
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Post media cleanup failed:", error);
+    }
+  });
 
   return Response.json({ success: true });
 }

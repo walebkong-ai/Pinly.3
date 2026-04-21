@@ -1,29 +1,15 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import {
+  normalizeProfileImageUrl,
   normalizeRenderableProfileImageUrl,
-  normalizeRenderableStoredMediaUrl
+  normalizeRenderableStoredMediaUrl,
+  normalizeStoredMediaUrl
 } from "@/lib/media-url";
 
-const loggedResolvedUrls = new Set<string>();
-
-function logResolvedUrl(kind: "media" | "avatar", rawValue: string | null | undefined, resolvedValue: string | null) {
-  if (typeof window === "undefined" || process.env.NODE_ENV === "test") {
-    return;
-  }
-
-  const logKey = `${kind}:${rawValue ?? "null"}:${resolvedValue ?? "null"}`;
-
-  if (loggedResolvedUrls.has(logKey)) {
-    return;
-  }
-
-  loggedResolvedUrls.add(logKey);
-  console.info("[media-utils] Resolved render URL", {
-    kind,
-    rawValue: rawValue ?? null,
-    resolvedValue
-  });
+function buildProtectedMediaUrl(source: string) {
+  const searchParams = new URLSearchParams({ src: source });
+  return `/api/media?${searchParams.toString()}`;
 }
 
 export function cn(...inputs: ClassValue[]) {
@@ -54,12 +40,14 @@ export function parseCitySlug(slug: string) {
 
 export function getMediaProxyUrl(url: string | null | undefined): string {
   const resolvedUrl = normalizeRenderableStoredMediaUrl(url) ?? "";
-  logResolvedUrl("media", url, resolvedUrl || null);
-  return resolvedUrl;
+  return normalizeStoredMediaUrl(resolvedUrl) && resolvedUrl.startsWith("https://")
+    ? buildProtectedMediaUrl(resolvedUrl)
+    : resolvedUrl;
 }
 
 export function getProfileImageUrl(url: string | null | undefined): string {
   const resolvedUrl = normalizeRenderableProfileImageUrl(url) ?? "";
-  logResolvedUrl("avatar", url, resolvedUrl || null);
-  return resolvedUrl;
+  return normalizeProfileImageUrl(resolvedUrl) && resolvedUrl.startsWith("https://")
+    ? buildProtectedMediaUrl(resolvedUrl)
+    : resolvedUrl;
 }

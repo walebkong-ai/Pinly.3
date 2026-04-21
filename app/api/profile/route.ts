@@ -1,11 +1,12 @@
 import { auth, unstable_update } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { apiError, apiValidationError } from "@/lib/api";
+import { apiError, apiValidationError, readJsonBody, toApiErrorResponse } from "@/lib/api";
 import { getPrismaErrorCode } from "@/lib/prisma-errors";
 import { z } from "zod";
 import { normalizedUsernameSchema } from "@/lib/validation";
 import { normalizeProfileImageUrl } from "@/lib/media-url";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { isOwnedUploadedFileUrl } from "@/lib/storage";
 
 const updateProfileSchema = z.object({
   username: normalizedUsernameSchema.optional(),
@@ -35,9 +36,13 @@ export async function PATCH(request: Request) {
 
   let body: unknown;
   try {
-    body = await request.json();
-  } catch {
-    return apiError("Invalid JSON payload", 400);
+    body = await readJsonBody(request, {
+      maxBytes: 8 * 1024,
+      invalidJsonCode: "PROFILE_INVALID_JSON",
+      invalidJsonMessage: "Invalid JSON payload."
+    });
+  } catch (error) {
+    return toApiErrorResponse(error);
   }
 
   const parsed = updateProfileSchema.safeParse(body);
@@ -92,6 +97,12 @@ export async function PATCH(request: Request) {
         });
       }
 
+      if (!isOwnedUploadedFileUrl(normalizedAvatarUrl, session.user.id)) {
+        return apiError("Avatar uploads must come from your own Pinly upload.", 403, {
+          code: "PROFILE_AVATAR_URL_FORBIDDEN"
+        });
+      }
+
       updateData.avatarUrl = normalizedAvatarUrl;
     }
   }
@@ -119,7 +130,9 @@ export async function PATCH(request: Request) {
         }
       });
     } catch (error) {
-      console.error("Failed to refresh auth session after profile update:", error);
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Failed to refresh auth session after profile update:", error);
+      }
     }
 
     return Response.json({

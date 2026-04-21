@@ -4,7 +4,7 @@ import { getRelationshipDetails } from "@/lib/relationships";
 import { createNotificationSafely } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { friendRequestSchema, normalizeUsername } from "@/lib/validation";
-import { apiError, apiValidationError } from "@/lib/api";
+import { apiError, apiValidationError, readJsonBody, toApiErrorResponse } from "@/lib/api";
 import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -31,9 +31,13 @@ export async function POST(request: Request) {
   let body: unknown;
 
   try {
-    body = await request.json();
-  } catch {
-    return apiError("Invalid JSON payload.", 400, { code: "FRIEND_REQUEST_INVALID_JSON" });
+    body = await readJsonBody(request, {
+      maxBytes: 4 * 1024,
+      invalidJsonCode: "FRIEND_REQUEST_INVALID_JSON",
+      invalidJsonMessage: "Invalid JSON payload."
+    });
+  } catch (error) {
+    return toApiErrorResponse(error);
   }
 
   const parsed = friendRequestSchema.safeParse(body);

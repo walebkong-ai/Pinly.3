@@ -65,7 +65,9 @@ export async function authorizeCredentials(prisma: AuthPrisma, credentials: unkn
       });
     }
   } catch (error) {
-    console.error("Database connection error during authorization:", error);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Database connection error during authorization:", error);
+    }
     return null;
   }
 
@@ -82,7 +84,9 @@ export async function authorizeCredentials(prisma: AuthPrisma, credentials: unkn
         where: { email: parsed.data.email.toLowerCase() }
       });
     } catch (error) {
-      console.error("Database connection error during demo authorization:", error);
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Database connection error during demo authorization:", error);
+      }
       return null;
     }
 

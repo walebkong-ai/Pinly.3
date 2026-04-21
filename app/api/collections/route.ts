@@ -1,8 +1,9 @@
 import { auth } from "@/lib/auth";
-import { apiError, apiValidationError } from "@/lib/api";
+import { apiError, apiValidationError, readJsonBody, toApiErrorResponse } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { collectionSchema } from "@/lib/validation";
 import type { CollectionSummary } from "@/types/app";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -46,12 +47,28 @@ export async function POST(request: Request) {
     return apiError("Unauthorized", 401);
   }
 
+  const rateLimitResponse = await enforceRateLimit({
+    scope: "collections-create",
+    request,
+    userId: session.user.id,
+    limit: 20,
+    windowMs: 10 * 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   let body: unknown;
 
   try {
-    body = await request.json();
-  } catch {
-    return apiError("Invalid JSON payload.", 400, { code: "COLLECTION_INVALID_JSON" });
+    body = await readJsonBody(request, {
+      maxBytes: 8 * 1024,
+      invalidJsonCode: "COLLECTION_INVALID_JSON",
+      invalidJsonMessage: "Invalid JSON payload."
+    });
+  } catch (error) {
+    return toApiErrorResponse(error);
   }
 
   const parsed = collectionSchema.safeParse(body);

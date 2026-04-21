@@ -7,7 +7,7 @@ import {
 } from "@/lib/legal";
 import { prisma } from "@/lib/prisma";
 import { normalizeUsername, signUpSchema } from "@/lib/validation";
-import { apiError, apiValidationError } from "@/lib/api";
+import { apiError, apiValidationError, readJsonBody, toApiErrorResponse } from "@/lib/api";
 import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -27,9 +27,13 @@ export async function POST(request: Request) {
   let body: unknown;
 
   try {
-    body = await request.json();
-  } catch {
-    return apiError("Invalid JSON payload.", 400, { code: "REGISTER_INVALID_JSON" });
+    body = await readJsonBody(request, {
+      maxBytes: 12 * 1024,
+      invalidJsonCode: "REGISTER_INVALID_JSON",
+      invalidJsonMessage: "Invalid JSON payload."
+    });
+  } catch (error) {
+    return toApiErrorResponse(error);
   }
 
   const parsed = signUpSchema.safeParse(body);
@@ -50,7 +54,9 @@ export async function POST(request: Request) {
       }
     });
   } catch (error) {
-    console.error("Database error during registration:", error);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Database error during registration:", error);
+    }
     return apiError("Database connection failed. Please try again later.", 500);
   }
 
@@ -114,7 +120,9 @@ export async function POST(request: Request) {
       }
     }
   } catch (error) {
-    console.error("Database error creating user:", error);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Database error creating user:", error);
+    }
     return apiError("Database connection failed. Please try again later.", 500);
   }
 

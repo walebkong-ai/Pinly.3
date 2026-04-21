@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:native": "next dev --hostname 127.0.0.1 --port 3001",
     "build": "prisma generate && next build",
     "start": "next start",
     "start:e2e": "next start --hostname 127.0.0.1 --port 3000",
@@ -20,6 +21,10 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:push": "prisma db push",
     "prisma:seed": "tsx prisma/seed.ts",
+    "ios:doctor": "node scripts/ios-doctor.mjs",
+    "ios:sync": "node scripts/ios-sync.mjs",
+    "ios:sync:fallback": "node scripts/ios-sync.mjs --allow-fallback-shell",
+    "ios:open": "npm run ios:sync && npx cap open ios",
     "cap:sync": "npx cap sync",
     "cap:ios": "npx cap open ios",
     "cap:android": "npx cap open android"

@@ -1,11 +1,12 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { mapQuerySchema, postSchema } from "@/lib/validation";
-import { apiError, apiValidationError } from "@/lib/api";
+import { apiError, apiValidationError, readJsonBody, toApiErrorResponse } from "@/lib/api";
 import { normalizeCountryForStorage } from "@/lib/country-flags";
 import { getFriendIds, getMapData } from "@/lib/data";
 import { normalizeStoredMediaUrl } from "@/lib/media-url";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { isOwnedUploadedFileUrl } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
@@ -88,9 +89,13 @@ export async function POST(request: Request) {
   let body: unknown;
 
   try {
-    body = await request.json();
-  } catch {
-    return apiError("Invalid JSON payload.", 400, { code: "POST_INVALID_JSON" });
+    body = await readJsonBody(request, {
+      maxBytes: 24 * 1024,
+      invalidJsonCode: "POST_INVALID_JSON",
+      invalidJsonMessage: "Invalid JSON payload."
+    });
+  } catch (error) {
+    return toApiErrorResponse(error);
   }
 
   const parsed = postSchema.safeParse(body);
@@ -112,9 +117,21 @@ export async function POST(request: Request) {
       });
     }
 
+    if (!isOwnedUploadedFileUrl(mediaUrl, session.user.id)) {
+      return apiError("Media must come from your own Pinly upload.", 403, {
+        code: "POST_MEDIA_URL_FORBIDDEN"
+      });
+    }
+
     if (parsed.data.thumbnailUrl && !thumbnailUrl) {
       return apiError("Thumbnail media must come from a trusted Pinly upload.", 400, {
         code: "POST_THUMBNAIL_URL_INVALID"
+      });
+    }
+
+    if (thumbnailUrl && !isOwnedUploadedFileUrl(thumbnailUrl, session.user.id)) {
+      return apiError("Thumbnail media must come from your own Pinly upload.", 403, {
+        code: "POST_THUMBNAIL_URL_FORBIDDEN"
       });
     }
 

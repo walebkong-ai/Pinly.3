@@ -3,10 +3,10 @@ import { StorageConfigError, assertStorageConfiguration, getMaxUploadSizeBytes, 
 import { apiError } from "@/lib/api";
 import { normalizeStoredMediaUrl } from "@/lib/media-url";
 import { enforceRateLimit } from "@/lib/rate-limit";
-import { getSupabaseRuntimeDiagnostics } from "@/lib/supabase-storage";
 import type { NextRequest } from "next/server";
 
 export const runtime = "nodejs";
+const MULTIPART_OVERHEAD_BYTES = 256 * 1024;
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -29,6 +29,40 @@ export async function POST(request: NextRequest) {
   }
 
   let formData: FormData;
+  let maxSize = 0;
+
+  try {
+    assertStorageConfiguration();
+    maxSize = getMaxUploadSizeBytes();
+  } catch (error) {
+    if (error instanceof StorageConfigError) {
+      return apiError("Upload storage is misconfigured.", 500, {
+        code: "UPLOAD_STORAGE_MISCONFIGURED",
+        details: error.message
+      });
+    }
+
+    return apiError("Upload storage is unavailable.", 500, {
+      code: "UPLOAD_STORAGE_UNAVAILABLE"
+    });
+  }
+
+  const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
+
+  if (!contentType.startsWith("multipart/form-data")) {
+    return apiError("Uploads must use multipart/form-data.", 415, {
+      code: "UPLOAD_UNSUPPORTED_MEDIA_TYPE"
+    });
+  }
+
+  const contentLength = Number(request.headers.get("content-length") ?? "");
+
+  if (Number.isFinite(contentLength) && contentLength > maxSize + MULTIPART_OVERHEAD_BYTES) {
+    return apiError("File is too large.", 413, {
+      code: "UPLOAD_TOO_LARGE",
+      details: `Upload limit is ${Math.round(maxSize / (1024 * 1024))} MB.`
+    });
+  }
 
   try {
     formData = await request.formData();
@@ -45,34 +79,9 @@ export async function POST(request: NextRequest) {
     return apiError("No file uploaded.", 400, { code: "UPLOAD_MISSING_FILE" });
   }
 
-  let maxSize = 0;
-  const supabaseDiagnostics = getSupabaseRuntimeDiagnostics();
-
-  console.info("[uploads] Validating Supabase runtime before upload", {
-    NEXT_PUBLIC_SUPABASE_URL: supabaseDiagnostics.nextPublicSupabaseUrl,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: supabaseDiagnostics.nextPublicSupabaseAnonKey,
-    hasNextPublicSupabaseUrl: supabaseDiagnostics.hasNextPublicSupabaseUrl,
-    hasNextPublicSupabaseAnonKey: supabaseDiagnostics.hasNextPublicSupabaseAnonKey,
-    hasServerSupabaseUrl: supabaseDiagnostics.hasServerSupabaseUrl,
-    hasServerSupabaseAnonKey: supabaseDiagnostics.hasServerSupabaseAnonKey,
-    hasSupabaseServiceRoleKey: supabaseDiagnostics.hasSupabaseServiceRoleKey,
-    storageBucket: supabaseDiagnostics.storageBucket,
-    uploadKeySource: supabaseDiagnostics.uploadKeySource
-  });
-
-  try {
-    assertStorageConfiguration();
-    maxSize = getMaxUploadSizeBytes();
-  } catch (error) {
-    if (error instanceof Error && error.name === "StorageConfigError") {
-      return apiError("Upload storage is misconfigured.", 500, {
-        code: "UPLOAD_STORAGE_MISCONFIGURED",
-        details: error.message
-      });
-    }
-
-    return apiError("Upload storage is unavailable.", 500, {
-      code: "UPLOAD_STORAGE_UNAVAILABLE"
+  if (file.size <= 0) {
+    return apiError("Uploaded files cannot be empty.", 400, {
+      code: "UPLOAD_EMPTY_FILE"
     });
   }
 
@@ -88,12 +97,6 @@ export async function POST(request: NextRequest) {
     const savedMediaUrl = await saveUploadedFile(file, { ownerId: token.id });
     const mediaUrl = normalizeStoredMediaUrl(savedMediaUrl);
 
-    console.info("[uploads] Supabase upload returned media URL", {
-      mediaType,
-      savedMediaUrl,
-      normalizedMediaUrl: mediaUrl
-    });
-
     if (!mediaUrl) {
       throw new Error("Upload storage returned a non-Supabase media URL.");
     }
@@ -104,18 +107,18 @@ export async function POST(request: NextRequest) {
       thumbnailUrl: null
     });
   } catch (error) {
-    console.error(error);
-
     if (
       error instanceof Error &&
-      (error.message === "Unsupported file type" || error.message === "Unsupported file extension")
+      (error.message === "Unsupported file type" ||
+        error.message === "Unsupported file extension" ||
+        error.message === "Unsupported file signature")
     ) {
-      return apiError("Only images and videos are supported.", 415, {
+      return apiError("Only image uploads are supported.", 415, {
         code: "UPLOAD_UNSUPPORTED_FILE_TYPE"
       });
     }
 
-    if (error instanceof Error && error.name === "StorageConfigError") {
+    if (error instanceof StorageConfigError) {
       return apiError("Upload storage is misconfigured.", 500, {
         code: "UPLOAD_STORAGE_MISCONFIGURED",
         details: error.message

@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { getVisiblePostById } from "@/lib/data";
 import { prisma } from "@/lib/prisma";
-import { apiError } from "@/lib/api";
+import { apiError, readJsonBody, toApiErrorResponse } from "@/lib/api";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import {
   buildPostReportDedupeKey,
@@ -47,9 +47,13 @@ export async function POST(request: Request, { params }: Context) {
 
   let body: unknown;
   try {
-    body = await request.json();
-  } catch {
-    return apiError("Invalid report payload.", 400);
+    body = await readJsonBody(request, {
+      maxBytes: 8 * 1024,
+      invalidJsonMessage: "Invalid report payload.",
+      invalidJsonCode: "POST_REPORT_INVALID_JSON"
+    });
+  } catch (error) {
+    return toApiErrorResponse(error);
   }
 
   const parsed = reportPayloadSchema.safeParse(body);
@@ -73,7 +77,9 @@ export async function POST(request: Request, { params }: Context) {
       return Response.json({ success: true, duplicate: true });
     }
 
-    console.error("Error reporting post:", error);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Error reporting post:", error);
+    }
     return apiError("Could not submit report.", 500);
   }
 

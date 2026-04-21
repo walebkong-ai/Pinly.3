@@ -77,6 +77,9 @@ type DemoResetPrisma = DemoProvisionPrisma & {
   rateLimitEvent: {
     deleteMany: (...args: any[]) => Promise<unknown>;
   };
+  rateLimitBucket: {
+    deleteMany: (...args: any[]) => Promise<unknown>;
+  };
   passwordResetToken: {
     deleteMany: (...args: any[]) => Promise<unknown>;
   };
@@ -276,6 +279,7 @@ export async function ensureDemoDataset(prisma: DemoProvisionPrisma) {
 
 export async function resetDemoDataset(prisma: DemoResetPrisma) {
   await prisma.rateLimitEvent.deleteMany();
+  await prisma.rateLimitBucket.deleteMany();
   await prisma.passwordResetToken.deleteMany();
   await prisma.group.deleteMany();
   await prisma.friendRequest.deleteMany();

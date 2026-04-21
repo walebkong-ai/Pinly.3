@@ -12,7 +12,7 @@ const EMBEDDED_IMAGE_DATA_URL_PATTERN =
 const warnedMediaResolutions = new Set<string>();
 
 function warnMediaResolution(kind: "post-media" | "avatar", rawValue: string | null | undefined, resolvedValue: string | null) {
-  if (process.env.NODE_ENV === "test") {
+  if (process.env.NODE_ENV !== "development") {
     return;
   }
 

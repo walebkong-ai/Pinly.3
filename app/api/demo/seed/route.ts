@@ -6,27 +6,31 @@ import { ensureDemoDataset } from "@/lib/demo-data";
  * POST /api/demo/seed
  *
  * Ensures demo users and posts exist in the database.
- * Protected by the DEMO_SEED_SECRET env var — if not set, the endpoint
- * is open (suitable for review/staging). In production, set the secret
- * and pass it in the `x-demo-seed-secret` header.
+ * Protected by the DEMO_SEED_SECRET env var. In production, the endpoint
+ * is disabled unless the secret is configured and supplied via the
+ * `x-demo-seed-secret` header.
  */
 export async function POST(request: Request) {
   const secret = process.env.DEMO_SEED_SECRET;
 
-  if (secret) {
-    const provided = request.headers.get("x-demo-seed-secret");
+  if (!secret) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
-    if (provided !== secret) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  const provided = request.headers.get("x-demo-seed-secret");
+
+  if (provided !== secret) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     await ensureDemoDataset(prisma);
     return NextResponse.json({ ok: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    console.error("Demo seed failed:", message);
+    if (process.env.NODE_ENV !== "production") {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      console.error("Demo seed failed:", message);
+    }
     return NextResponse.json({ error: "Seed failed" }, { status: 500 });
   }
 }

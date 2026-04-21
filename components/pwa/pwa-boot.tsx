@@ -3,20 +3,8 @@
 import { useEffect } from "react";
 import { isNativePlatform } from "@/lib/native-platform";
 
-const PINLY_SERVICE_WORKER_VERSION = "pinly-sw-2026-03-23-media-fix-1";
+const PINLY_SERVICE_WORKER_VERSION = "pinly-sw-2026-03-24-security-hardening-1";
 const PINLY_SERVICE_WORKER_VERSION_STORAGE_KEY = "pinly:service-worker-version";
-
-function maskPublicKey(value: string | undefined) {
-  if (!value) {
-    return null;
-  }
-
-  if (value.length <= 12) {
-    return `${value.slice(0, 2)}...${value.slice(-2)}`;
-  }
-
-  return `${value.slice(0, 8)}...${value.slice(-6)}`;
-}
 
 async function clearBrowserCaches() {
   if (typeof window === "undefined" || !("caches" in window)) {
@@ -35,30 +23,6 @@ async function unregisterExistingServiceWorkers() {
 }
 
 export function PwaBoot() {
-  useEffect(() => {
-    if (process.env.NODE_ENV === "test") {
-      return;
-    }
-
-    const nextPublicSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-    const nextPublicSupabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
-
-    console.info("[runtime] Supabase public runtime configuration", {
-      platform: isNativePlatform() ? "native" : "web",
-      NEXT_PUBLIC_SUPABASE_URL: nextPublicSupabaseUrl || null,
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: maskPublicKey(nextPublicSupabaseAnonKey),
-      hasNextPublicSupabaseUrl: Boolean(nextPublicSupabaseUrl),
-      hasNextPublicSupabaseAnonKey: Boolean(nextPublicSupabaseAnonKey)
-    });
-
-    if (!nextPublicSupabaseUrl || !nextPublicSupabaseAnonKey) {
-      console.error("[runtime] Missing NEXT_PUBLIC Supabase configuration", {
-        hasNextPublicSupabaseUrl: Boolean(nextPublicSupabaseUrl),
-        hasNextPublicSupabaseAnonKey: Boolean(nextPublicSupabaseAnonKey)
-      });
-    }
-  }, []);
-
   useEffect(() => {
     if (isNativePlatform() || !("serviceWorker" in navigator) || process.env.NODE_ENV === "test") {
       return;
@@ -83,13 +47,8 @@ export function PwaBoot() {
           clearBrowserCaches(),
           unregisterExistingServiceWorkers()
         ]);
-
-        console.info("[pwa] Cleared stale offline state before registering service worker", {
-          previousVersion,
-          nextVersion: PINLY_SERVICE_WORKER_VERSION,
-          clearedCaches,
-          unregisteredWorkers
-        });
+        void clearedCaches;
+        void unregisteredWorkers;
       }
 
       const registration = await navigator.serviceWorker.register(
@@ -120,9 +79,7 @@ export function PwaBoot() {
 
     navigator.serviceWorker.addEventListener("controllerchange", handleControllerChange);
 
-    void bootServiceWorker().catch((error) => {
-      console.error("[pwa] Service worker registration failed", error);
-    });
+    void bootServiceWorker().catch(() => {});
 
     return () => {
       navigator.serviceWorker.removeEventListener("controllerchange", handleControllerChange);

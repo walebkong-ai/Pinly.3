@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { z } from "zod";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { readJsonBody, toApiErrorResponse } from "@/lib/api";
 
 export const runtime = "nodejs";
 
@@ -23,7 +24,13 @@ export async function POST(req: Request) {
       return rateLimitResponse;
     }
 
-    const parsed = forgotPasswordSchema.safeParse(await req.json());
+    const parsed = forgotPasswordSchema.safeParse(
+      await readJsonBody(req, {
+        maxBytes: 4 * 1024,
+        invalidJsonMessage: "Invalid email",
+        invalidJsonCode: "FORGOT_PASSWORD_INVALID_JSON"
+      })
+    );
 
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
@@ -69,7 +76,12 @@ export async function POST(req: Request) {
         : {})
     });
   } catch (error) {
-    console.error("Forgot password error:", error);
+    if (error instanceof Error && error.name === "ApiRequestError") {
+      return toApiErrorResponse(error);
+    }
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Forgot password error:", error);
+    }
     return NextResponse.json({ error: "An unexpected error occurred." }, { status: 500 });
   }
 }

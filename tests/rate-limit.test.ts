@@ -46,20 +46,17 @@ describe("rate limit enforcement", () => {
       RATE_LIMIT_DRIVER: "database"
     };
 
-    const count = vi.fn().mockResolvedValue(1);
-    const findFirst = vi.fn().mockResolvedValue({
-      createdAt: new Date(Date.now() - 2_000)
+    const upsert = vi.fn().mockResolvedValue({
+      hitCount: 2,
+      expiresAt: new Date(Date.now() + 58_000)
     });
-    const create = vi.fn();
     const deleteMany = vi.fn().mockResolvedValue({ count: 0 });
 
     vi.spyOn(Math, "random").mockReturnValue(1);
     vi.doMock("@/lib/prisma", () => ({
       prisma: {
-        rateLimitEvent: {
-          count,
-          findFirst,
-          create,
+        rateLimitBucket: {
+          upsert,
           deleteMany
         }
       }
@@ -77,10 +74,10 @@ describe("rate limit enforcement", () => {
     });
 
     expect(blockedResponse?.status).toBe(429);
-    expect(create).not.toHaveBeenCalled();
+    expect(upsert).toHaveBeenCalled();
   });
 
-  test("falls back to the in-memory limiter when the database schema is not ready", async () => {
+  test("returns 503 instead of weakening limits when the database schema is not ready in production", async () => {
     process.env = {
       ...originalEnv,
       NODE_ENV: "production",
@@ -91,10 +88,80 @@ describe("rate limit enforcement", () => {
     vi.spyOn(Math, "random").mockReturnValue(1);
     vi.doMock("@/lib/prisma", () => ({
       prisma: {
-        rateLimitEvent: {
-          count: vi.fn().mockRejectedValue({ code: "P2021" }),
-          findFirst: vi.fn(),
-          create: vi.fn(),
+        rateLimitBucket: {
+          upsert: vi.fn().mockRejectedValue({ code: "P2021" }),
+          deleteMany: vi.fn()
+        }
+      }
+    }));
+    vi.doMock("@/lib/prisma-errors", () => ({
+      isPrismaSchemaNotReadyError: (error: unknown) =>
+        Boolean(error && typeof error === "object" && "code" in error && (error as { code: string }).code === "P2021")
+    }));
+
+    const request = new Request("http://pinly.test/api/test", {
+      headers: {
+        "x-forwarded-for": "203.0.113.42"
+      }
+    });
+    const { enforceRateLimit } = await import("@/lib/rate-limit");
+
+    const unavailableResponse = await enforceRateLimit({
+      scope: "schema-fallback",
+      request,
+      limit: 1,
+      windowMs: 60_000
+    });
+
+    expect(unavailableResponse?.status).toBe(503);
+  });
+
+  test("returns 503 instead of silently weakening protection when the database backend fails in production", async () => {
+    process.env = {
+      ...originalEnv,
+      NODE_ENV: "production",
+      RATE_LIMIT_DRIVER: "database"
+    };
+
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(Math, "random").mockReturnValue(1);
+    vi.doMock("@/lib/prisma", () => ({
+      prisma: {
+        rateLimitBucket: {
+          upsert: vi.fn().mockRejectedValue(new Error("database offline")),
+          deleteMany: vi.fn()
+        }
+      }
+    }));
+    vi.doMock("@/lib/prisma-errors", () => ({
+      isPrismaSchemaNotReadyError: () => false
+    }));
+
+    const { enforceRateLimit } = await import("@/lib/rate-limit");
+    const unavailableResponse = await enforceRateLimit({
+      scope: "database-failure",
+      request: new Request("http://pinly.test/api/test"),
+      limit: 3,
+      windowMs: 60_000
+    });
+
+    expect(unavailableResponse?.status).toBe(503);
+    expect(unavailableResponse?.headers.get("Retry-After")).toBe("60");
+  });
+
+  test("falls back to the in-memory limiter outside production when the rate limit table is not ready", async () => {
+    process.env = {
+      ...originalEnv,
+      NODE_ENV: "development",
+      RATE_LIMIT_DRIVER: "database"
+    };
+
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(Math, "random").mockReturnValue(1);
+    vi.doMock("@/lib/prisma", () => ({
+      prisma: {
+        rateLimitBucket: {
+          upsert: vi.fn().mockRejectedValue({ code: "P2021" }),
           deleteMany: vi.fn()
         }
       }
@@ -115,7 +182,7 @@ describe("rate limit enforcement", () => {
 
     expect(
       await enforceRateLimit({
-        scope: "schema-fallback",
+        scope: "schema-fallback-dev",
         request,
         limit: 1,
         windowMs: 60_000
@@ -123,47 +190,12 @@ describe("rate limit enforcement", () => {
     ).toBeNull();
 
     const blockedResponse = await enforceRateLimit({
-      scope: "schema-fallback",
+      scope: "schema-fallback-dev",
       request,
       limit: 1,
       windowMs: 60_000
     });
 
     expect(blockedResponse?.status).toBe(429);
-  });
-
-  test("returns 503 instead of silently weakening protection when the database backend fails in production", async () => {
-    process.env = {
-      ...originalEnv,
-      NODE_ENV: "production",
-      RATE_LIMIT_DRIVER: "database"
-    };
-
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    vi.spyOn(Math, "random").mockReturnValue(1);
-    vi.doMock("@/lib/prisma", () => ({
-      prisma: {
-        rateLimitEvent: {
-          count: vi.fn().mockRejectedValue(new Error("database offline")),
-          findFirst: vi.fn(),
-          create: vi.fn(),
-          deleteMany: vi.fn()
-        }
-      }
-    }));
-    vi.doMock("@/lib/prisma-errors", () => ({
-      isPrismaSchemaNotReadyError: () => false
-    }));
-
-    const { enforceRateLimit } = await import("@/lib/rate-limit");
-    const unavailableResponse = await enforceRateLimit({
-      scope: "database-failure",
-      request: new Request("http://pinly.test/api/test"),
-      limit: 3,
-      windowMs: 60_000
-    });
-
-    expect(unavailableResponse?.status).toBe(503);
-    expect(unavailableResponse?.headers.get("Retry-After")).toBe("60");
   });
 });

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Pinly Native Shell</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --pinly-bg: #fcecda;
+      --pinly-ink: #184938;
+      --pinly-accent: #2f7c56;
+      --pinly-border: rgba(24, 73, 56, 0.14);
+      --pinly-card: rgba(255, 252, 248, 0.82);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.7), transparent 38%),
+        linear-gradient(180deg, #fff7ef 0%, var(--pinly-bg) 100%);
+      color: var(--pinly-ink);
+    }
+
+    main {
+      width: min(100%, 44rem);
+      margin: 0 auto;
+      min-height: 100vh;
+      padding: max(2rem, env(safe-area-inset-top)) 1.25rem max(2rem, env(safe-area-inset-bottom));
+      display: grid;
+      align-content: center;
+      gap: 1rem;
+    }
+
+    .card {
+      background: var(--pinly-card);
+      border: 1px solid var(--pinly-border);
+      border-radius: 1.5rem;
+      padding: 1.25rem;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 18px 40px rgba(26, 55, 44, 0.08);
+    }
+
+    h1,
+    h2,
+    p,
+    ol,
+    ul {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 6vw, 2.8rem);
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+    }
+
+    h2 {
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--pinly-accent);
+      margin-bottom: 0.75rem;
+    }
+
+    p,
+    li {
+      line-height: 1.55;
+      font-size: 0.98rem;
+    }
+
+    ol,
+    ul {
+      padding-left: 1.15rem;
+      display: grid;
+      gap: 0.5rem;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      background: rgba(24, 73, 56, 0.08);
+      border-radius: 0.45rem;
+      padding: 0.14rem 0.35rem;
+      font-size: 0.9em;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      gap: 0.45rem;
+      padding: 0.45rem 0.7rem;
+      border-radius: 999px;
+      background: rgba(47, 124, 86, 0.1);
+      color: var(--pinly-accent);
+      font-weight: 600;
+      font-size: 0.92rem;
+    }
+
+    .grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .lead {
+      font-size: 1.05rem;
+      color: rgba(24, 73, 56, 0.82);
+    }
+
+    .muted {
+      color: rgba(24, 73, 56, 0.72);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="grid">
+      <span class="eyebrow">Pinly iOS fallback shell</span>
+      <h1>Native setup is incomplete.</h1>
+      <p class="lead">
+        This screen means the Capacitor shell synced successfully, but it does not yet know
+        which live Pinly app origin to load.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>What Pinly expects</h2>
+      <p class="muted">
+        Pinly's iOS app is the existing Next.js product wrapped in Capacitor. The real app
+        should load from <code>CAPACITOR_SERVER_URL</code>, not from this page.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Finish Local Setup</h2>
+      <ol>
+        <li>Copy <code>.env.capacitor.example</code> to <code>.env.capacitor</code>.</li>
+        <li>Set <code>CAPACITOR_SERVER_URL</code> to your local, LAN, or deployed Pinly origin.</li>
+        <li>Run <code>npm run ios:doctor</code> to validate native prerequisites.</li>
+        <li>Run <code>npm run ios:sync</code> to re-sync the iOS shell.</li>
+        <li>Open Xcode with <code>npm run ios:open</code> or <code>npx cap open ios</code>.</li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <h2>Optional Firebase Push</h2>
+      <p class="muted">
+        Native push delivery remains unavailable until you add
+        <code>ios/App/App/GoogleService-Info.plist</code> locally and sync again.
+      </p>
+    </section>
+  </main>
+</body>
+</html>

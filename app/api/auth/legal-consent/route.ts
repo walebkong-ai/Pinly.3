@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { apiError, apiValidationError } from "@/lib/api";
+import { apiError, apiValidationError, readJsonBody, toApiErrorResponse } from "@/lib/api";
 import {
   createPendingLegalConsentToken,
   getPendingLegalConsentCookieOptions,
@@ -27,9 +27,13 @@ export async function POST(request: Request) {
   let body: unknown;
 
   try {
-    body = await request.json();
-  } catch {
-    return apiError("Invalid JSON payload.", 400, { code: "LEGAL_CONSENT_INVALID_JSON" });
+    body = await readJsonBody(request, {
+      maxBytes: 4 * 1024,
+      invalidJsonCode: "LEGAL_CONSENT_INVALID_JSON",
+      invalidJsonMessage: "Invalid JSON payload."
+    });
+  } catch (error) {
+    return toApiErrorResponse(error);
   }
 
   const parsed = legalConsentSchema.safeParse(body);

@@ -368,6 +368,20 @@ model RateLimitEvent {
   @@index([expiresAt])
 }
 
+model RateLimitBucket {
+  id            String   @id @default(cuid())
+  scope         String
+  bucketKeyHash String
+  windowStart   DateTime
+  hitCount      Int      @default(1)
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([scope, bucketKeyHash, windowStart])
+  @@index([expiresAt])
+}
+
 model Block {
   id        String   @id @default(cuid())
   blockerId String

@@ -107,7 +107,59 @@ function getMarkerPostIds(marker: MapMarker): string[] {
   return [];
 }
 
-export function MapCanvas({
+function areFocusedCoordinatesEqual(
+  left: { latitude: number; longitude: number; key: string } | null,
+  right: { latitude: number; longitude: number; key: string } | null
+) {
+  if (left === right) {
+    return true;
+  }
+
+  if (!left || !right) {
+    return false;
+  }
+
+  return left.key === right.key && left.latitude === right.latitude && left.longitude === right.longitude;
+}
+
+function areInitialViewStatesEqual(
+  left:
+    | {
+        longitude: number;
+        latitude: number;
+        zoom: number;
+        pitch?: number;
+        bearing?: number;
+      }
+    | undefined,
+  right:
+    | {
+        longitude: number;
+        latitude: number;
+        zoom: number;
+        pitch?: number;
+        bearing?: number;
+      }
+    | undefined
+) {
+  if (left === right) {
+    return true;
+  }
+
+  if (!left || !right) {
+    return false;
+  }
+
+  return (
+    left.longitude === right.longitude &&
+    left.latitude === right.latitude &&
+    left.zoom === right.zoom &&
+    left.pitch === right.pitch &&
+    left.bearing === right.bearing
+  );
+}
+
+function MapCanvasComponent({
   expandedPostId,
   focusedCoordinates,
   initialViewState,
@@ -376,19 +428,26 @@ export function MapCanvas({
     [collectionOverlays]
   );
 
-  function getMarkerCollectionState(marker: MapMarker): { colorOverride: string | null; dimmed: boolean } {
-    if (collectionOverlays.length === 0) {
-      return { colorOverride: null, dimmed: false };
+  const markerCollectionStateById = useMemo(() => {
+    const nextState = new globalThis.Map<string, { colorOverride: string | null; dimmed: boolean }>();
+
+    for (const marker of orderedMarkers) {
+      if (collectionOverlays.length === 0) {
+        nextState.set(marker.id, { colorOverride: null, dimmed: false });
+        continue;
+      }
+
+      const postIds = getMarkerPostIds(marker);
+      const matchedPostId = postIds.find((postId) => collectionColorByPostId.has(postId));
+
+      nextState.set(marker.id, {
+        colorOverride: matchedPostId ? collectionColorByPostId.get(matchedPostId) ?? null : null,
+        dimmed: !matchedPostId
+      });
     }
 
-    const postIds = getMarkerPostIds(marker);
-    const matchedColor = postIds.find((postId) => collectionColorByPostId.has(postId));
-
-    return {
-      colorOverride: matchedColor ? collectionColorByPostId.get(matchedColor) ?? null : null,
-      dimmed: !matchedColor
-    };
-  }
+    return nextState;
+  }, [collectionColorByPostId, collectionOverlays.length, orderedMarkers]);
 
   return (
     <div
@@ -447,7 +506,10 @@ export function MapCanvas({
         ))}
 
         {unselectedMarkers.map((marker) => {
-          const { colorOverride, dimmed } = getMarkerCollectionState(marker);
+          const { colorOverride, dimmed } = markerCollectionStateById.get(marker.id) ?? {
+            colorOverride: null,
+            dimmed: false
+          };
           return (
             <MapMarkerNode
               key={marker.id}
@@ -461,7 +523,10 @@ export function MapCanvas({
           );
         })}
         {selectedMarker ? (() => {
-          const { colorOverride } = getMarkerCollectionState(selectedMarker);
+          const { colorOverride } = markerCollectionStateById.get(selectedMarker.id) ?? {
+            colorOverride: null,
+            dimmed: false
+          };
           return (
             <MapMarkerNode
               key={selectedMarker.id}
@@ -499,3 +564,26 @@ export function MapCanvas({
     </div>
   );
 }
+
+export const MapCanvas = memo(MapCanvasComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.markers === nextProps.markers &&
+    prevProps.mapMode === nextProps.mapMode &&
+    prevProps.mapStyle === nextProps.mapStyle &&
+    prevProps.expandedPostId === nextProps.expandedPostId &&
+    prevProps.selectedLocationMarkerId === nextProps.selectedLocationMarkerId &&
+    prevProps.userLocation === nextProps.userLocation &&
+    prevProps.collectionOverlays === nextProps.collectionOverlays &&
+    prevProps.collectionOverlayFitBoundsTarget === nextProps.collectionOverlayFitBoundsTarget &&
+    areInitialViewStatesEqual(prevProps.initialViewState, nextProps.initialViewState) &&
+    areFocusedCoordinatesEqual(prevProps.focusedCoordinates, nextProps.focusedCoordinates) &&
+    prevProps.onExpandPost === nextProps.onExpandPost &&
+    prevProps.onFocusedCoordinatesApplied === nextProps.onFocusedCoordinatesApplied &&
+    prevProps.onOpenLocationCluster === nextProps.onOpenLocationCluster &&
+    prevProps.onMapError === nextProps.onMapError &&
+    prevProps.onViewportChange === nextProps.onViewportChange
+  );
+});
+
+MapCanvasComponent.displayName = "MapCanvas";
+MapCanvas.displayName = "MapCanvas";

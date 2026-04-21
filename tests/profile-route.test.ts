@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { TEST_AVATAR_URL } from "@/tests/fixtures/media";
+import { TEST_SUPABASE_BASE_URL } from "@/tests/fixtures/media";
 
 const authMock = vi.fn();
 const unstableUpdateMock = vi.fn();
@@ -23,6 +23,8 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 describe("profile route", () => {
+  const ownedAvatarUrl = `${TEST_SUPABASE_BASE_URL}/user_1/avatar.jpg`;
+
   beforeEach(() => {
     authMock.mockReset();
     unstableUpdateMock.mockReset();
@@ -54,7 +56,7 @@ describe("profile route", () => {
     updateMock.mockResolvedValue({
       id: "user_1",
       username: "new_name",
-      avatarUrl: TEST_AVATAR_URL
+      avatarUrl: ownedAvatarUrl
     });
 
     const { PATCH } = await import("@/app/api/profile/route");
@@ -64,7 +66,7 @@ describe("profile route", () => {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           username: "  New_Name  ",
-          avatarUrl: TEST_AVATAR_URL
+          avatarUrl: ownedAvatarUrl
         })
       })
     );
@@ -74,7 +76,7 @@ describe("profile route", () => {
       success: true,
       user: {
         username: "new_name",
-        avatarUrl: TEST_AVATAR_URL
+        avatarUrl: ownedAvatarUrl
       }
     });
     expect(findFirstMock).toHaveBeenCalledWith({
@@ -88,7 +90,7 @@ describe("profile route", () => {
       where: { id: "user_1" },
       data: {
         username: "new_name",
-        avatarUrl: TEST_AVATAR_URL
+        avatarUrl: ownedAvatarUrl
       },
       select: {
         id: true,
@@ -99,7 +101,7 @@ describe("profile route", () => {
     expect(unstableUpdateMock).toHaveBeenCalledWith({
       user: {
         username: "new_name",
-        avatarUrl: TEST_AVATAR_URL
+        avatarUrl: ownedAvatarUrl
       }
     });
   });

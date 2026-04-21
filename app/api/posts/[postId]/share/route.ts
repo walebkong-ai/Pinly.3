@@ -1,10 +1,11 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { apiError } from "@/lib/api";
+import { apiError, readJsonBody, toApiErrorResponse } from "@/lib/api";
 import { z } from "zod";
 import { getFriendIds, getVisiblePostById } from "@/lib/data";
 import { buildDirectPairKey } from "@/lib/friendships";
 import { createNotificationSafely } from "@/lib/notifications";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -26,8 +27,25 @@ export async function POST(request: Request, props: { params: Promise<{ postId: 
   const userId = session.user.id;
   const postId = params.postId;
 
+  const rateLimitResponse = await enforceRateLimit({
+    scope: "posts-share",
+    request,
+    userId,
+    key: postId,
+    limit: 30,
+    windowMs: 10 * 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
-    const json = await request.json();
+    const json = await readJsonBody(request, {
+      maxBytes: 12 * 1024,
+      invalidJsonMessage: "Invalid request data. Provide valid share targets.",
+      invalidJsonCode: "POST_SHARE_INVALID_JSON"
+    });
     const parsed = sharePostSchema.parse(json);
     const groupIds = Array.from(new Set(parsed.groupIds));
     const userIds = Array.from(new Set(parsed.userIds));
@@ -149,10 +167,15 @@ export async function POST(request: Request, props: { params: Promise<{ postId: 
 
     return Response.json({ success: true, message: "Post shared successfully." });
   } catch (error) {
+    if (error instanceof Error && error.name === "ApiRequestError") {
+      return toApiErrorResponse(error);
+    }
     if (error instanceof z.ZodError) {
       return apiError("Invalid request data. Provide valid share targets.", 400);
     }
-    console.error("Share post error:", error);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Share post error:", error);
+    }
     return apiError("Failed to share post.", 500);
   }
 }

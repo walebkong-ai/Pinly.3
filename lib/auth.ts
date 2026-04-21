@@ -26,7 +26,7 @@ if (googleConfigured) {
   );
 }
 
-async function syncTokenWithCurrentUser(token: Record<string, unknown>) {
+async function syncTokenWithCurrentUser(token: any): Promise<any> {
   const tokenUserId =
     typeof token.id === "string" ? token.id : typeof token.sub === "string" ? token.sub : null;
 
@@ -59,7 +59,9 @@ async function syncTokenWithCurrentUser(token: Record<string, unknown>) {
 
     return token;
   } catch (error) {
-    console.error("Failed to verify auth session against the database:", error);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Failed to verify auth session against the database:", error);
+    }
     return token;
   }
 }
@@ -68,6 +70,7 @@ export const authConfig = {
   secret: process.env.AUTH_SECRET,
   trustHost: true,
   debug: process.env.NODE_ENV === "development",
+  useSecureCookies: process.env.NODE_ENV === "production",
   session: {
     strategy: "jwt" as const
   },
@@ -104,7 +107,9 @@ export const authConfig = {
           return "/sign-up?legal=required";
         }
 
-        console.error(error);
+        if (process.env.NODE_ENV !== "production") {
+          console.error(error);
+        }
         return false;
       }
     },

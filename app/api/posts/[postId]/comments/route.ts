@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { getVisiblePostById } from "@/lib/data";
 import { createNotificationSafely } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
-import { apiError } from "@/lib/api";
+import { apiError, readJsonBody, toApiErrorResponse } from "@/lib/api";
 import { z } from "zod";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { getBlockedUserIdsForViewer } from "@/lib/user-safety";
@@ -10,7 +10,7 @@ import { getBlockedUserIdsForViewer } from "@/lib/user-safety";
 export const runtime = "nodejs";
 
 const commentSchema = z.object({
-  content: z.string().min(1).max(1000),
+  content: z.string().trim().min(1).max(1000),
   parentId: z.string().cuid().optional()
 });
 
@@ -110,9 +110,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ pos
 
   let body: unknown;
   try {
-    body = await request.json();
-  } catch {
-    return apiError("Invalid JSON", 400);
+    body = await readJsonBody(request, {
+      maxBytes: 12 * 1024,
+      invalidJsonMessage: "Invalid JSON",
+      invalidJsonCode: "COMMENT_INVALID_JSON"
+    });
+  } catch (error) {
+    return toApiErrorResponse(error);
   }
 
   const parsed = commentSchema.safeParse(body);

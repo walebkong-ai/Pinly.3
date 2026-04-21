@@ -2,19 +2,13 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const {
   uploadMock,
-  getSupabaseClientPublicBaseUrlMock,
   getSupabasePublicBaseUrlMock,
-  getSupabasePublicAnonKeyMock,
-  getSupabaseRuntimeDiagnosticsMock,
   getSupabaseUploadKeyMock,
   getSupabaseStorageBucketMock,
   createSupabaseUploadClientMock
 } = vi.hoisted(() => ({
   uploadMock: vi.fn(),
-  getSupabaseClientPublicBaseUrlMock: vi.fn(),
   getSupabasePublicBaseUrlMock: vi.fn(),
-  getSupabasePublicAnonKeyMock: vi.fn(),
-  getSupabaseRuntimeDiagnosticsMock: vi.fn(),
   getSupabaseUploadKeyMock: vi.fn(),
   getSupabaseStorageBucketMock: vi.fn(),
   createSupabaseUploadClientMock: vi.fn()
@@ -23,10 +17,7 @@ const {
 vi.mock("@/lib/supabase-storage", () => ({
   buildSupabasePublicMediaUrl: vi.fn((objectPath: string, bucket: string) => `https://demo.supabase.co/storage/v1/object/public/${bucket}/${objectPath}`),
   createSupabaseUploadClient: createSupabaseUploadClientMock,
-  getSupabaseClientPublicBaseUrl: getSupabaseClientPublicBaseUrlMock,
   getSupabasePublicBaseUrl: getSupabasePublicBaseUrlMock,
-  getSupabasePublicAnonKey: getSupabasePublicAnonKeyMock,
-  getSupabaseRuntimeDiagnostics: getSupabaseRuntimeDiagnosticsMock,
   getSupabaseUploadKey: getSupabaseUploadKeyMock,
   getSupabaseStorageBucket: getSupabaseStorageBucketMock,
   SupabaseMediaConfigError: class SupabaseMediaConfigError extends Error {
@@ -48,14 +39,12 @@ import {
 
 describe("storage configuration", () => {
   const originalEnv = { ...process.env };
+  const pngBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);
 
   beforeEach(() => {
     process.env = { ...originalEnv };
     uploadMock.mockReset();
-    getSupabaseClientPublicBaseUrlMock.mockReset();
     getSupabasePublicBaseUrlMock.mockReset();
-    getSupabasePublicAnonKeyMock.mockReset();
-    getSupabaseRuntimeDiagnosticsMock.mockReset();
     getSupabaseUploadKeyMock.mockReset();
     getSupabaseStorageBucketMock.mockReset();
     createSupabaseUploadClientMock.mockReset();
@@ -65,23 +54,10 @@ describe("storage configuration", () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = "https://demo.supabase.co";
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "public-anon-key";
 
-    getSupabaseClientPublicBaseUrlMock.mockReturnValue("https://demo.supabase.co");
     getSupabasePublicBaseUrlMock.mockReturnValue("https://demo.supabase.co");
-    getSupabasePublicAnonKeyMock.mockReturnValue("public-anon-key");
-    getSupabaseRuntimeDiagnosticsMock.mockReturnValue({
-      nextPublicSupabaseUrl: "https://demo.supabase.co",
-      nextPublicSupabaseAnonKey: "public-a...on-key",
-      hasNextPublicSupabaseUrl: true,
-      hasNextPublicSupabaseAnonKey: true,
-      hasServerSupabaseUrl: true,
-      hasServerSupabaseAnonKey: false,
-      hasSupabaseServiceRoleKey: true,
-      storageBucket: "media",
-      uploadKeySource: "service_role"
-    });
     getSupabaseUploadKeyMock.mockReturnValue("upload-key");
     getSupabaseStorageBucketMock.mockReturnValue("media");
-    uploadMock.mockResolvedValue({ error: null });
+    uploadMock.mockResolvedValue({ data: { path: "user_1/mock.png" }, error: null });
     createSupabaseUploadClientMock.mockReturnValue({
       storage: {
         from: vi.fn().mockReturnValue({
@@ -101,7 +77,7 @@ describe("storage configuration", () => {
   });
 
   test("uploads files to Supabase public storage", async () => {
-    const file = new File([new Uint8Array([1, 2, 3, 4])], "photo.png", { type: "image/png" });
+    const file = new File([pngBytes], "photo.png", { type: "image/png" });
     const savedUrl = await saveUploadedFile(file, { ownerId: "user_1" });
 
     expect(savedUrl).toMatch(/^https:\/\/demo\.supabase\.co\/storage\/v1\/object\/public\/media\/user_1\/.+\.png$/);
@@ -117,8 +93,6 @@ describe("storage configuration", () => {
 
   test("validates the Supabase storage configuration", () => {
     expect(() => assertStorageConfiguration()).not.toThrow();
-    expect(getSupabaseClientPublicBaseUrlMock).toHaveBeenCalled();
-    expect(getSupabasePublicAnonKeyMock).toHaveBeenCalled();
     expect(getSupabasePublicBaseUrlMock).toHaveBeenCalled();
     expect(getSupabaseUploadKeyMock).toHaveBeenCalled();
     expect(getSupabaseStorageBucketMock).toHaveBeenCalled();
@@ -140,5 +114,11 @@ describe("storage configuration", () => {
     } as File;
 
     expect(() => inferMediaType(fakeFile)).toThrow("Unsupported file type");
+  });
+
+  test("rejects files whose content does not match the declared image type", async () => {
+    const file = new File([new Uint8Array([1, 2, 3, 4])], "photo.png", { type: "image/png" });
+
+    await expect(saveUploadedFile(file, { ownerId: "user_1" })).rejects.toThrow("Unsupported file signature");
   });
 });

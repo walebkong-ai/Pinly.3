@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { auth } from "@/lib/auth";
-import { apiError } from "@/lib/api";
+import { apiError, readJsonBody, toApiErrorResponse } from "@/lib/api";
 import {
   AccountDeletionNotFoundError,
   DemoAccountDeletionNotAllowedError,
@@ -36,11 +36,13 @@ export async function POST(request: Request) {
   let body: unknown;
 
   try {
-    body = await request.json();
-  } catch {
-    return apiError("Invalid JSON payload.", 400, {
-      code: "ACCOUNT_DELETE_INVALID_JSON"
+    body = await readJsonBody(request, {
+      maxBytes: 4 * 1024,
+      invalidJsonCode: "ACCOUNT_DELETE_INVALID_JSON",
+      invalidJsonMessage: "Invalid JSON payload."
     });
+  } catch (error) {
+    return toApiErrorResponse(error);
   }
 
   const parsed = accountDeletionSchema.safeParse(body);
@@ -69,7 +71,9 @@ export async function POST(request: Request) {
       return apiError("Unauthorized", 401);
     }
 
-    console.error("Account deletion failed:", error);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Account deletion failed:", error);
+    }
 
     return apiError("Could not delete account.", 500, {
       code: "ACCOUNT_DELETE_FAILED"

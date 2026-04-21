@@ -1,8 +1,9 @@
 import { auth } from "@/lib/auth";
-import { apiError, apiValidationError } from "@/lib/api";
+import { apiError, apiValidationError, readJsonBody, toApiErrorResponse } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { collectionAssignmentSchema } from "@/lib/validation";
 import { Prisma } from "@prisma/client";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -13,12 +14,30 @@ export async function PUT(request: Request, { params }: { params: Promise<{ post
     return apiError("Unauthorized", 401);
   }
 
+  const { postId } = await params;
+  const rateLimitResponse = await enforceRateLimit({
+    scope: "post-collections-update",
+    request,
+    userId: session.user.id,
+    key: postId,
+    limit: 30,
+    windowMs: 10 * 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   let body: unknown;
 
   try {
-    body = await request.json();
-  } catch {
-    return apiError("Invalid JSON payload.", 400, { code: "POST_COLLECTIONS_INVALID_JSON" });
+    body = await readJsonBody(request, {
+      maxBytes: 12 * 1024,
+      invalidJsonCode: "POST_COLLECTIONS_INVALID_JSON",
+      invalidJsonMessage: "Invalid JSON payload."
+    });
+  } catch (error) {
+    return toApiErrorResponse(error);
   }
 
   const parsed = collectionAssignmentSchema.safeParse(body);
@@ -27,7 +46,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ post
     return apiValidationError(parsed.error);
   }
 
-  const { postId } = await params;
   const post = await prisma.post.findUnique({
     where: { id: postId },
     select: { userId: true }

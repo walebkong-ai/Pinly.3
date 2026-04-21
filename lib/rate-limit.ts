@@ -20,7 +20,7 @@ type RateLimitOptions = {
 type RateLimitBackend = "database" | "memory";
 
 const rateLimitBuckets = new Map<string, RateLimitBucket>();
-let hasLoggedDevelopmentFallback = false;
+let hasLoggedNonProductionFallback = false;
 
 function getClientIp(request: Request) {
   const forwardedFor = request.headers.get("x-forwarded-for");
@@ -158,12 +158,13 @@ async function enforceDatabaseRateLimit({
   key
 }: RateLimitOptions) {
   const now = new Date();
-  const windowStart = new Date(now.getTime() - windowMs);
+  const windowStart = new Date(Math.floor(now.getTime() / windowMs) * windowMs);
+  const expiresAt = new Date(windowStart.getTime() + windowMs);
   const bucketKeyHash = buildDatabaseBucketKeyHash({ request, userId, key });
 
   try {
     if (Math.random() < 0.05) {
-      await prisma.rateLimitEvent.deleteMany({
+      await prisma.rateLimitBucket.deleteMany({
         where: {
           expiresAt: {
             lte: now
@@ -172,68 +173,64 @@ async function enforceDatabaseRateLimit({
       });
     }
 
-    const existingCount = await prisma.rateLimitEvent.count({
+    const bucket = await prisma.rateLimitBucket.upsert({
       where: {
+        scope_bucketKeyHash_windowStart: {
+          scope,
+          bucketKeyHash,
+          windowStart
+        }
+      },
+      create: {
         scope,
         bucketKeyHash,
-        createdAt: {
-          gte: windowStart
-        }
+        windowStart,
+        hitCount: 1,
+        expiresAt
+      },
+      update: {
+        hitCount: {
+          increment: 1
+        },
+        expiresAt
+      },
+      select: {
+        hitCount: true,
+        expiresAt: true
       }
     });
 
-    if (existingCount >= limit) {
-      const oldestRequest = await prisma.rateLimitEvent.findFirst({
-        where: {
-          scope,
-          bucketKeyHash,
-          createdAt: {
-            gte: windowStart
-          }
-        },
-        orderBy: {
-          createdAt: "asc"
-        },
-        select: {
-          createdAt: true
-        }
-      });
-      const retryAfterSeconds = oldestRequest
-        ? Math.max(1, Math.ceil((oldestRequest.createdAt.getTime() + windowMs - now.getTime()) / 1000))
-        : Math.max(1, Math.ceil(windowMs / 1000));
+    if (bucket.hitCount > limit) {
+      const retryAfterSeconds = Math.max(1, Math.ceil((bucket.expiresAt.getTime() - now.getTime()) / 1000));
 
       return createRateLimitExceededResponse(retryAfterSeconds);
     }
 
-    await prisma.rateLimitEvent.create({
-      data: {
-        scope,
-        bucketKeyHash,
-        expiresAt: new Date(now.getTime() + windowMs)
-      }
-    });
-
     return null;
   } catch (error) {
     if (isPrismaSchemaNotReadyError(error)) {
-      if (!hasLoggedDevelopmentFallback) {
-        console.warn(
-          "Rate limit database table is not ready yet. Falling back to the in-memory limiter until migrations are applied."
-        );
-        hasLoggedDevelopmentFallback = true;
-      }
+      if (process.env.NODE_ENV !== "production") {
+        if (!hasLoggedNonProductionFallback) {
+          console.warn(
+            "Rate limit database table is not ready yet. Falling back to the in-memory limiter outside production until migrations are applied."
+          );
+          hasLoggedNonProductionFallback = true;
+        }
 
-      return enforceMemoryRateLimit({
-        scope,
-        request,
-        limit,
-        windowMs,
-        userId,
-        key
-      });
+        return enforceMemoryRateLimit({
+          scope,
+          request,
+          limit,
+          windowMs,
+          userId,
+          key
+        });
+      }
     }
 
-    console.error("Rate limit backend error:", error);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Rate limit backend error:", error);
+    }
     return createRateLimitUnavailableResponse();
   }
 }

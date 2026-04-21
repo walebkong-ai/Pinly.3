@@ -2,6 +2,35 @@ const serviceWorkerUrl = new URL(self.location.href);
 const SERVICE_WORKER_VERSION = serviceWorkerUrl.searchParams.get("v") || "pinly-sw";
 const CACHE_PREFIX = "pinly-runtime";
 const CACHE_NAME = `${CACHE_PREFIX}-${SERVICE_WORKER_VERSION}`;
+const STATIC_ASSET_PATHS = new Set([
+  "/manifest.webmanifest",
+  "/logo.png",
+  "/pinly-globe-icon.svg"
+]);
+const STATIC_ASSET_PREFIXES = ["/_next/static/", "/demo-media/"];
+
+function isCacheableStaticAsset(request, url) {
+  if (request.method !== "GET") {
+    return false;
+  }
+
+  if (url.origin !== self.location.origin) {
+    return false;
+  }
+
+  if (request.headers.has("authorization")) {
+    return false;
+  }
+
+  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/uploads/")) {
+    return false;
+  }
+
+  return (
+    STATIC_ASSET_PATHS.has(url.pathname) ||
+    STATIC_ASSET_PREFIXES.some((prefix) => url.pathname.startsWith(prefix))
+  );
+}
 
 async function clearOutdatedCaches() {
   const cacheNames = await caches.keys();
@@ -45,21 +74,36 @@ self.addEventListener("fetch", (event) => {
   const request = event.request;
   const url = new URL(request.url);
 
-  if (request.method !== "GET") {
-    return;
-  }
-
-  if (url.origin !== self.location.origin) {
-    return;
-  }
-
-  if (request.mode !== "navigate") {
+  if (!isCacheableStaticAsset(request, url)) {
     return;
   }
 
   event.respondWith(
-    fetch(request).catch(() => {
-      return new Response("You are offline.", {
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+      const cachedResponse = await cache.match(request);
+
+      if (cachedResponse) {
+        void fetch(request)
+          .then((response) => {
+            if (response.ok) {
+              return cache.put(request, response.clone());
+            }
+          })
+          .catch(() => {});
+
+        return cachedResponse;
+      }
+
+      const response = await fetch(request);
+
+      if (response.ok) {
+        await cache.put(request, response.clone());
+      }
+
+      return response;
+    })().catch(() => {
+      return new Response("Static asset unavailable while offline.", {
         status: 503,
         headers: {
           "Cache-Control": "no-store",

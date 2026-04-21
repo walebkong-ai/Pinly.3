@@ -322,7 +322,9 @@ export async function deleteAccount(
     await deleteMediaObjectsFn(deletionResult.mediaUrls);
   } catch (error) {
     mediaDeletionFailed = true;
-    console.error("Supabase media cleanup failed after account deletion:", error);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Supabase media cleanup failed after account deletion:", error);
+    }
   }
 
   return {

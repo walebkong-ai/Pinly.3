@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
-import { apiError } from "@/lib/api";
+import { apiError, readJsonBody, toApiErrorResponse } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 type Context = {
   params: Promise<{ postId: string }>;
@@ -15,11 +16,29 @@ export async function PATCH(request: Request, context: Context) {
     return apiError("Unauthorized", 401);
   }
 
+  const { postId } = await context.params;
+  const rateLimitResponse = await enforceRateLimit({
+    scope: "posts-archive",
+    request,
+    userId: session.user.id,
+    key: postId,
+    limit: 30,
+    windowMs: 10 * 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   let body: unknown;
   try {
-    body = await request.json();
-  } catch {
-    return apiError("Invalid JSON payload.", 400, { code: "ARCHIVE_INVALID_JSON" });
+    body = await readJsonBody(request, {
+      maxBytes: 4 * 1024,
+      invalidJsonCode: "ARCHIVE_INVALID_JSON",
+      invalidJsonMessage: "Invalid JSON payload."
+    });
+  } catch (error) {
+    return toApiErrorResponse(error);
   }
 
   if (
@@ -32,7 +51,6 @@ export async function PATCH(request: Request, context: Context) {
     });
   }
 
-  const { postId } = await context.params;
   const archived = (body as { archived: boolean }).archived;
 
   const post = await prisma.post.findUnique({

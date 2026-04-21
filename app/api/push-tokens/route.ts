@@ -1,7 +1,8 @@
 import { auth } from "@/lib/auth";
-import { apiError, apiValidationError } from "@/lib/api";
+import { apiError, apiValidationError, readJsonBody, toApiErrorResponse } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { pushTokenSchema } from "@/lib/validation";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -12,12 +13,28 @@ export async function POST(request: Request) {
     return apiError("Unauthorized", 401);
   }
 
+  const rateLimitResponse = await enforceRateLimit({
+    scope: "push-tokens-create",
+    request,
+    userId: session.user.id,
+    limit: 40,
+    windowMs: 10 * 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   let body: unknown;
 
   try {
-    body = await request.json();
-  } catch {
-    return apiError("Invalid JSON payload.", 400, { code: "PUSH_TOKEN_INVALID_JSON" });
+    body = await readJsonBody(request, {
+      maxBytes: 8 * 1024,
+      invalidJsonCode: "PUSH_TOKEN_INVALID_JSON",
+      invalidJsonMessage: "Invalid JSON payload."
+    });
+  } catch (error) {
+    return toApiErrorResponse(error);
   }
 
   const parsed = pushTokenSchema.safeParse(body);
@@ -57,6 +74,18 @@ export async function DELETE(request: Request) {
 
   if (!session?.user?.id) {
     return apiError("Unauthorized", 401);
+  }
+
+  const rateLimitResponse = await enforceRateLimit({
+    scope: "push-tokens-delete",
+    request,
+    userId: session.user.id,
+    limit: 40,
+    windowMs: 10 * 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
   }
 
   const token = new URL(request.url).searchParams.get("token");

@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { z } from "zod";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { readJsonBody, toApiErrorResponse } from "@/lib/api";
 
 export const runtime = "nodejs";
 
@@ -25,7 +26,13 @@ export async function POST(req: Request) {
       return rateLimitResponse;
     }
 
-    const parsed = resetPasswordSchema.safeParse(await req.json());
+    const parsed = resetPasswordSchema.safeParse(
+      await readJsonBody(req, {
+        maxBytes: 8 * 1024,
+        invalidJsonMessage: "Missing or invalid token",
+        invalidJsonCode: "RESET_PASSWORD_INVALID_JSON"
+      })
+    );
 
     if (!parsed.success) {
       const newPasswordError = parsed.error.flatten().fieldErrors.newPassword?.[0];
@@ -74,7 +81,12 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ message: "Password updated successfully." });
   } catch (error) {
-    console.error("Reset password error:", error);
+    if (error instanceof Error && error.name === "ApiRequestError") {
+      return toApiErrorResponse(error);
+    }
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Reset password error:", error);
+    }
     return NextResponse.json({ error: "An unexpected error occurred." }, { status: 500 });
   }
 }

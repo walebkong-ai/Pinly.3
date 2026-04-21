@@ -30,6 +30,7 @@ export const MediaView = memo(function MediaView({
   const previewUrl =
     proxyThumb && proxyThumb !== proxyUrl && !failedThumbnailUrls.has(proxyThumb) ? proxyThumb : "";
   const [loaded, setLoaded] = useState(false);
+  const [previewLoaded, setPreviewLoaded] = useState(() => !previewUrl);
   const [failed, setFailed] = useState(() => (proxyUrl ? failedMediaUrls.has(proxyUrl) : false));
   const [showHeart, setShowHeart] = useState(false);
   const lastTapRef = useRef(0);
@@ -38,6 +39,7 @@ export const MediaView = memo(function MediaView({
 
   useEffect(() => {
     setLoaded(false);
+    setPreviewLoaded(!previewUrl);
     setFailed(proxyUrl ? failedMediaUrls.has(proxyUrl) : false);
     lastTapRef.current = 0;
     setShowHeart(false);
@@ -46,22 +48,7 @@ export const MediaView = memo(function MediaView({
       window.clearTimeout(hideHeartTimeoutRef.current);
       hideHeartTimeoutRef.current = null;
     }
-  }, [mediaType, postId, proxyThumb, proxyUrl]);
-
-  useEffect(() => {
-    if (process.env.NODE_ENV === "test") {
-      return;
-    }
-
-    console.info("[media-view] Resolved media URL", {
-      postId: postId ?? null,
-      mediaType,
-      rawMediaUrl: mediaUrl,
-      rawThumbnailUrl: thumbnailUrl ?? null,
-      resolvedMediaUrl: proxyUrl || null,
-      resolvedThumbnailUrl: proxyThumb || null
-    });
-  }, [mediaType, mediaUrl, postId, proxyThumb, proxyUrl, thumbnailUrl]);
+  }, [mediaType, postId, previewUrl, proxyThumb, proxyUrl]);
 
   useEffect(() => {
     return () => {
@@ -117,19 +104,18 @@ export const MediaView = memo(function MediaView({
           playsInline
           poster={proxyThumb || undefined}
           preload={videoPreload}
+          onLoadedData={() => setLoaded(true)}
           onError={() => {
             failedMediaUrls.add(proxyUrl);
-            console.error("[media-view] Video failed to load", {
-              postId: postId ?? null,
-              mediaType,
-              resolvedMediaUrl: proxyUrl || null,
-              resolvedThumbnailUrl: proxyThumb || null
-            });
             setFailed(true);
+            setLoaded(true);
           }}
         >
           <source src={proxyUrl} />
         </video>
+        {!loaded && !failed ? (
+          <div className="pinly-skeleton absolute inset-0" />
+        ) : null}
         {failed ? (
           <div className="absolute inset-0 flex items-center justify-center bg-[var(--surface-soft)]">
             <div className="flex flex-col items-center gap-2 text-center text-[var(--foreground)]/56">
@@ -167,23 +153,22 @@ export const MediaView = memo(function MediaView({
     <div className={cn("relative h-full w-full overflow-hidden rounded-[1.5rem] bg-black/5", className)} {...interactiveProps}>
       {previewUrl ? (
         <Image
-          key={previewUrl}
           src={previewUrl}
           alt=""
           fill
           sizes={imageSizes}
           className={cn(
-            "object-cover transition-[opacity,transform,filter] duration-500 ease-out",
-            loaded ? "scale-[1.04] opacity-0 blur-md" : "scale-100 opacity-100 blur-0"
+            "object-cover transition-[opacity,transform,filter] duration-300 ease-out",
+            loaded ? "scale-[1.02] opacity-0 blur-sm" : previewLoaded ? "scale-100 opacity-100 blur-0" : "scale-[1.01] opacity-0 blur-sm"
           )}
+          onLoad={() => setPreviewLoaded(true)}
           onError={() => {
             failedThumbnailUrls.add(previewUrl);
-            setLoaded(true);
+            setPreviewLoaded(true);
           }}
         />
       ) : null}
       <Image
-        key={proxyUrl}
         src={proxyUrl}
         alt=""
         fill
@@ -193,22 +178,24 @@ export const MediaView = memo(function MediaView({
         onLoad={() => setLoaded(true)}
         onError={() => {
           failedMediaUrls.add(proxyUrl);
-          console.error("[media-view] Image failed to load", {
-            postId: postId ?? null,
-            mediaType,
-            resolvedMediaUrl: proxyUrl || null,
-            resolvedThumbnailUrl: proxyThumb || null
-          });
           setFailed(true);
           setLoaded(true);
         }}
         className={cn(
-          "object-cover transition-[opacity,transform,filter] duration-500 ease-out will-change-[opacity,transform,filter]",
-          loaded ? "scale-100 opacity-100 blur-0" : previewUrl ? "scale-[1.01] opacity-0 blur-sm" : "scale-[1.02] opacity-0 blur-md"
+          "object-cover transition-[opacity,transform,filter] duration-300 ease-out will-change-[opacity,transform,filter]",
+          loaded ? "scale-100 opacity-100 blur-0" : previewLoaded ? "scale-[1.005] opacity-0 blur-[2px]" : "scale-[1.015] opacity-0 blur-sm"
         )}
       />
-      {!loaded && !previewUrl ? (
-        <div className="absolute inset-0 animate-pulse bg-[linear-gradient(135deg,rgba(15,116,108,0.08),rgba(252,236,218,0.55),rgba(15,116,108,0.12))]" />
+      {!loaded ? (
+        <div
+          className={cn(
+            "pointer-events-none absolute inset-0 transition-opacity duration-200 ease-out",
+            previewLoaded ? "opacity-0" : "opacity-100"
+          )}
+          aria-hidden="true"
+        >
+          <div className="pinly-skeleton absolute inset-0 rounded-[inherit]" />
+        </div>
       ) : null}
       {showHeart && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/10">

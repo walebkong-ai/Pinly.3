@@ -22,7 +22,7 @@ function buildPushFunctionUrl() {
     return explicitUrl;
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const supabaseUrl = process.env.SUPABASE_URL?.trim() || process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 
   if (!supabaseUrl) {
     return null;
@@ -55,6 +55,8 @@ export async function sendNotificationToPushFunction(payload: NotificationWebhoo
       cache: "no-store"
     });
   } catch (error) {
-    console.error("Push webhook delivery skipped:", error);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Push webhook delivery skipped:", error);
+    }
   }
 }

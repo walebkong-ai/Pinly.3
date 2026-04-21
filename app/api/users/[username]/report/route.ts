@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { normalizeUsername } from "@/lib/validation";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { readJsonBody, toApiErrorResponse } from "@/lib/api";
 import {
   buildUserReportDedupeKey,
   isUniqueConstraintError,
@@ -36,7 +37,11 @@ export async function POST(
 
     let body: unknown;
     try {
-      body = await request.json();
+      body = await readJsonBody(request, {
+        maxBytes: 8 * 1024,
+        invalidJsonMessage: "Invalid report payload",
+        invalidJsonCode: "USER_REPORT_INVALID_JSON"
+      });
     } catch {
       return NextResponse.json({ error: "Invalid report payload" }, { status: 400 });
     }
@@ -81,7 +86,12 @@ export async function POST(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error reporting user:", error);
+    if (error instanceof Error && error.name === "ApiRequestError") {
+      return toApiErrorResponse(error);
+    }
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Error reporting user:", error);
+    }
     return NextResponse.json(
       { error: "Could not submit report" },
       { status: 500 }

@@ -1,12 +1,10 @@
 import {
   buildSupabasePublicMediaUrl,
-  getSupabaseClientPublicBaseUrl,
-  getSupabasePublicAnonKey,
   createSupabaseUploadClient,
   getSupabasePublicBaseUrl,
-  getSupabaseRuntimeDiagnostics,
   getSupabaseUploadKey,
-  getSupabaseStorageBucket
+  getSupabaseStorageBucket,
+  isOwnedSupabaseObjectUrl
 } from "@/lib/supabase-storage";
 import crypto from "node:crypto";
 
@@ -20,10 +18,7 @@ const uploadMimeTypes = new Map<
   ["image/jpeg", { mediaType: "IMAGE", extensions: ["jpg", "jpeg"] }],
   ["image/png", { mediaType: "IMAGE", extensions: ["png"] }],
   ["image/webp", { mediaType: "IMAGE", extensions: ["webp"] }],
-  ["image/gif", { mediaType: "IMAGE", extensions: ["gif"] }],
-  ["video/mp4", { mediaType: "VIDEO", extensions: ["mp4"] }],
-  ["video/webm", { mediaType: "VIDEO", extensions: ["webm"] }],
-  ["video/quicktime", { mediaType: "VIDEO", extensions: ["mov", "qt"] }]
+  ["image/gif", { mediaType: "IMAGE", extensions: ["gif"] }]
 ]);
 
 export type StorageDriver = "supabase";
@@ -33,10 +28,6 @@ export class StorageConfigError extends Error {
     super(message);
     this.name = "StorageConfigError";
   }
-}
-
-function shouldLogStorageDiagnostics() {
-  return process.env.NODE_ENV !== "test";
 }
 
 function normalizeUploadExtension(file: File) {
@@ -67,8 +58,6 @@ export function getStorageDriver(): StorageDriver {
 
 export function assertStorageConfiguration() {
   try {
-    getSupabaseClientPublicBaseUrl();
-    getSupabasePublicAnonKey();
     getSupabasePublicBaseUrl();
     getSupabaseUploadKey();
     getSupabaseStorageBucket();
@@ -79,6 +68,10 @@ export function assertStorageConfiguration() {
 
 export function isOwnedLocalUploadUrl(uploadUrl: string, ownerId: string) {
   return false;
+}
+
+export function isOwnedUploadedFileUrl(uploadUrl: string, ownerId: string) {
+  return isOwnedSupabaseObjectUrl(uploadUrl, ownerId);
 }
 
 export function resolveLocalUploadPath(uploadUrl: string) {
@@ -105,6 +98,32 @@ export function inferMediaType(file: File) {
   return definition.mediaType;
 }
 
+function hasSignature(bytes: Uint8Array, signature: number[], offset = 0) {
+  return signature.every((value, index) => bytes[offset + index] === value);
+}
+
+function isValidImageSignature(file: File, bytes: Uint8Array) {
+  const mimeType = file.type.toLowerCase();
+
+  if (mimeType === "image/jpeg") {
+    return hasSignature(bytes, [0xff, 0xd8, 0xff]);
+  }
+
+  if (mimeType === "image/png") {
+    return hasSignature(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  }
+
+  if (mimeType === "image/gif") {
+    return hasSignature(bytes, [0x47, 0x49, 0x46, 0x38, 0x37, 0x61]) || hasSignature(bytes, [0x47, 0x49, 0x46, 0x38, 0x39, 0x61]);
+  }
+
+  if (mimeType === "image/webp") {
+    return hasSignature(bytes, [0x52, 0x49, 0x46, 0x46]) && hasSignature(bytes, [0x57, 0x45, 0x42, 0x50], 8);
+  }
+
+  return false;
+}
+
 export async function saveFileToSupabase(file: File, options?: { ownerId?: string }) {
   assertStorageConfiguration();
 
@@ -113,46 +132,30 @@ export async function saveFileToSupabase(file: File, options?: { ownerId?: strin
   const extension = normalizeUploadExtension(file);
   const ownerSegment = options?.ownerId ? normalizeLocalPathSegment(options.ownerId) : "shared";
   const filename = `${ownerSegment}/${crypto.randomUUID()}.${extension}`;
+  const path = filename;
+  const fileType = file.type || "application/octet-stream";
   const bucket = getSupabaseStorageBucket();
-  const diagnostics = getSupabaseRuntimeDiagnostics();
-
-  if (shouldLogStorageDiagnostics()) {
-    console.info("[storage] Initializing Supabase upload client", {
-      NEXT_PUBLIC_SUPABASE_URL: diagnostics.nextPublicSupabaseUrl,
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: diagnostics.nextPublicSupabaseAnonKey,
-      hasSupabaseServiceRoleKey: diagnostics.hasSupabaseServiceRoleKey,
-      uploadKeySource: diagnostics.uploadKeySource,
-      bucket
-    });
-  }
 
   const supabase = createSupabaseUploadClient();
-
-  if (shouldLogStorageDiagnostics()) {
-    console.info("[storage] Supabase upload client initialized", {
-      bucket,
-      uploadKeySource: diagnostics.uploadKeySource
-    });
-  }
 
   const arrayBuffer = await file.arrayBuffer();
   const uint8Array = new Uint8Array(arrayBuffer);
 
-  const { error } = await supabase.storage.from(bucket).upload(filename, uint8Array, {
-    contentType: file.type || "application/octet-stream",
+  if (!isValidImageSignature(file, uint8Array)) {
+    throw new Error("Unsupported file signature");
+  }
+
+  const { data, error } = await supabase.storage.from(bucket).upload(path, uint8Array, {
+    contentType: fileType,
     upsert: false
   });
 
   if (error) {
-    if (shouldLogStorageDiagnostics()) {
-      console.error("[storage] Supabase upload failed", {
-        bucket,
-        filename,
-        message: error.message,
-        statusCode: "statusCode" in error ? error.statusCode : null
-      });
-    }
     throw new Error(`Supabase storage upload failed: ${error.message}`);
+  }
+
+  if (!data?.path) {
+    throw new Error("Supabase storage upload failed: Missing object path.");
   }
 
   return buildSupabasePublicMediaUrl(filename, bucket);

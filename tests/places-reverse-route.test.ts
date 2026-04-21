@@ -1,6 +1,21 @@
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+
+const authMock = vi.fn();
+
+vi.mock("@/lib/auth", () => ({
+  auth: authMock
+}));
 
 describe("place reverse route", () => {
+  beforeEach(() => {
+    authMock.mockReset();
+    authMock.mockResolvedValue({
+      user: {
+        id: "viewer_1"
+      }
+    });
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
   });

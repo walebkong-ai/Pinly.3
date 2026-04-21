@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { apiError } from "@/lib/api";
+import { apiError, readJsonBody, toApiErrorResponse } from "@/lib/api";
 import { z } from "zod";
 import { getFriendIds, getMessageGroups } from "@/lib/data";
 import { enforceRateLimit } from "@/lib/rate-limit";
@@ -8,7 +8,7 @@ import { enforceRateLimit } from "@/lib/rate-limit";
 export const runtime = "nodejs";
 
 const createGroupSchema = z.object({
-  name: z.string().min(1).max(50),
+  name: z.string().trim().min(1).max(50),
   memberIds: z.array(z.string().cuid()).min(1),
 });
 
@@ -46,7 +46,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const json = await request.json();
+    const json = await readJsonBody(request, {
+      maxBytes: 12 * 1024,
+      invalidJsonMessage: "Invalid request data",
+      invalidJsonCode: "GROUP_CREATE_INVALID_JSON"
+    });
     const { name, memberIds } = createGroupSchema.parse(json);
     const requestedMemberIds = Array.from(new Set(memberIds)).filter((memberId) => memberId !== userId);
     const friendIds = await getFriendIds(userId);
@@ -87,10 +91,15 @@ export async function POST(request: Request) {
 
     return Response.json({ group });
   } catch (error) {
+    if (error instanceof Error && error.name === "ApiRequestError") {
+      return toApiErrorResponse(error);
+    }
     if (error instanceof z.ZodError) {
       return apiError("Invalid request data", 400);
     }
-    console.error("Group creation error:", error);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Group creation error:", error);
+    }
     return apiError("Failed to create group", 500);
   }
 }

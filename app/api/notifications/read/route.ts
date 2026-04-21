@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { auth } from "@/lib/auth";
-import { apiError, apiValidationError } from "@/lib/api";
+import { apiError, apiValidationError, readJsonBody, toApiErrorResponse } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { isPrismaSchemaNotReadyError } from "@/lib/prisma-errors";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 const markNotificationsReadSchema = z
   .object({
@@ -22,12 +23,28 @@ export async function POST(request: Request) {
     return apiError("Unauthorized", 401);
   }
 
+  const rateLimitResponse = await enforceRateLimit({
+    scope: "notifications-read",
+    request,
+    userId: session.user.id,
+    limit: 60,
+    windowMs: 10 * 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   let body: unknown;
 
   try {
-    body = await request.json();
-  } catch {
-    return apiError("Invalid JSON payload.", 400, { code: "NOTIFICATIONS_READ_INVALID_JSON" });
+    body = await readJsonBody(request, {
+      maxBytes: 12 * 1024,
+      invalidJsonCode: "NOTIFICATIONS_READ_INVALID_JSON",
+      invalidJsonMessage: "Invalid JSON payload."
+    });
+  } catch (error) {
+    return toApiErrorResponse(error);
   }
 
   const parsed = markNotificationsReadSchema.safeParse(body);

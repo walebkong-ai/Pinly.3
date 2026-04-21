@@ -1,3 +1,4 @@
+import { auth } from "@/lib/auth";
 import { apiError, apiValidationError } from "@/lib/api";
 import { normalizeCountryForStorage } from "@/lib/country-flags";
 import { z } from "zod";
@@ -11,9 +12,16 @@ const reverseSearchSchema = z.object({
 });
 
 export async function GET(request: Request) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return apiError("Unauthorized", 401);
+  }
+
   const rateLimitResponse = await enforceRateLimit({
     scope: "places-reverse",
     request,
+    userId: session.user.id,
     limit: 60,
     windowMs: 60 * 1000
   });

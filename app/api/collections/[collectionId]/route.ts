@@ -1,7 +1,8 @@
 import { auth } from "@/lib/auth";
-import { apiError, apiValidationError } from "@/lib/api";
+import { apiError, apiValidationError, readJsonBody, toApiErrorResponse } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { collectionUpdateSchema } from "@/lib/validation";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -13,12 +14,28 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
   }
 
   const { collectionId } = await params;
+  const rateLimitResponse = await enforceRateLimit({
+    scope: "collections-update",
+    request,
+    userId: session.user.id,
+    key: collectionId,
+    limit: 30,
+    windowMs: 10 * 60 * 1000
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
 
   let body: unknown;
   try {
-    body = await request.json();
-  } catch {
-    return apiError("Invalid JSON payload.", 400);
+    body = await readJsonBody(request, {
+      maxBytes: 8 * 1024,
+      invalidJsonMessage: "Invalid JSON payload.",
+      invalidJsonCode: "COLLECTION_UPDATE_INVALID_JSON"
+    });
+  } catch (error) {
+    return toApiErrorResponse(error);
   }
 
   const parsed = collectionUpdateSchema.safeParse(body);

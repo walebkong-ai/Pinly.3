@@ -3,6 +3,34 @@ import type { MapCategory } from "@/types/app";
 
 export const usernameRegex = /^[a-z0-9_-]{3,20}$/;
 export const usernameValidationMessage = "Use 3-20 lowercase letters, numbers, underscores, or hyphens";
+const controlCharacterPattern = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
+
+function createTextField(
+  {
+    min,
+    max,
+    allowNewlines = false
+  }: {
+    min: number;
+    max: number;
+    allowNewlines?: boolean;
+  },
+  message?: string
+) {
+  return z
+    .string()
+    .trim()
+    .min(min, message)
+    .max(max, message)
+    .refine((value) => !controlCharacterPattern.test(value), {
+      message: message ?? "Contains unsupported control characters."
+    })
+    .refine((value) => allowNewlines || !/[\r\n]/.test(value), {
+      message: message ?? "Must be a single line of text."
+    });
+}
+
+const emailSchema = z.string().trim().toLowerCase().email().max(254);
 
 export function normalizeUsername(value: string) {
   return value.trim().toLowerCase();
@@ -38,9 +66,9 @@ const csvArray = <T extends z.ZodTypeAny>(itemSchema: T) =>
   );
 
 export const signUpSchema = z.object({
-  name: z.string().min(2).max(50),
+  name: createTextField({ min: 2, max: 50 }),
   username: usernameSchema,
-  email: z.string().email(),
+  email: emailSchema,
   password: z.string().min(8, "Password must be at least 8 characters.").max(100),
   acceptLegal: requiredLegalAcceptanceSchema,
   inviteToken: z.string().optional()
@@ -51,7 +79,7 @@ export const legalConsentSchema = z.object({
 });
 
 export const signInSchema = z.object({
-  email: z.string().email(),
+  email: emailSchema,
   password: z.string().min(8, "Password must be at least 8 characters.").max(100)
 });
 
@@ -76,13 +104,13 @@ export const uploadUrlSchema = z.object({
 });
 
 export const postSchema = z.object({
-  mediaType: z.enum(["IMAGE", "VIDEO"]),
+  mediaType: z.enum(["IMAGE"]),
   mediaUrl: z.string().min(1),
   thumbnailUrl: z.string().optional().nullable(),
-  caption: z.string().min(3).max(600),
-  placeName: z.string().min(2).max(120),
-  city: z.string().min(2).max(80),
-  country: z.string().min(2).max(80),
+  caption: createTextField({ min: 3, max: 600, allowNewlines: true }),
+  placeName: createTextField({ min: 2, max: 120 }),
+  city: createTextField({ min: 2, max: 80 }),
+  country: createTextField({ min: 2, max: 80 }),
   latitude: z.coerce.number().min(-90).max(90),
   longitude: z.coerce.number().min(-180).max(180),
   visitedAt: z.string().datetime(),
@@ -91,10 +119,10 @@ export const postSchema = z.object({
 });
 
 export const editPostSchema = z.object({
-  caption: z.string().min(3).max(600),
-  placeName: z.string().min(2).max(120),
-  city: z.string().min(2).max(80),
-  country: z.string().min(2).max(80),
+  caption: createTextField({ min: 3, max: 600, allowNewlines: true }),
+  placeName: createTextField({ min: 2, max: 120 }),
+  city: createTextField({ min: 2, max: 80 }),
+  country: createTextField({ min: 2, max: 80 }),
   latitude: z.coerce.number().min(-90).max(90),
   longitude: z.coerce.number().min(-180).max(180),
   visitedAt: z.string().datetime(),
@@ -124,13 +152,13 @@ export type CollectionVisibilityValue = (typeof COLLECTION_VISIBILITY_VALUES)[nu
 const collectionVisibilityField = z.enum(COLLECTION_VISIBILITY_VALUES).optional();
 
 export const collectionSchema = z.object({
-  name: z.string().trim().min(2).max(60),
+  name: createTextField({ min: 2, max: 60 }),
   color: collectionColorField,
   visibility: collectionVisibilityField
 });
 
 export const collectionUpdateSchema = z.object({
-  name: z.string().trim().min(2).max(60).optional(),
+  name: createTextField({ min: 2, max: 60 }).optional(),
   color: collectionColorField,
   visibility: collectionVisibilityField
 });
@@ -140,9 +168,9 @@ export const collectionAssignmentSchema = z.object({
 });
 
 export const wantToGoPlaceSchema = z.object({
-  placeName: z.string().min(2).max(120),
-  city: z.string().min(2).max(80),
-  country: z.string().min(2).max(80),
+  placeName: createTextField({ min: 2, max: 120 }),
+  city: createTextField({ min: 2, max: 80 }),
+  country: createTextField({ min: 2, max: 80 }),
   latitude: z.coerce.number().min(-90).max(90),
   longitude: z.coerce.number().min(-180).max(180)
 });
@@ -165,12 +193,12 @@ export const mapQuerySchema = z.object({
 });
 
 export const cityQuerySchema = z.object({
-  city: z.string().min(2).max(80),
-  country: z.string().optional(),
+  city: createTextField({ min: 2, max: 80 }),
+  country: createTextField({ min: 2, max: 80 }).optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(24)
 });
 
 export const placeSearchSchema = z.object({
-  q: z.string().min(2).max(120)
+  q: createTextField({ min: 2, max: 120 })
 });

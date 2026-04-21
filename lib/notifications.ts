@@ -114,7 +114,9 @@ export async function createNotificationSafely(input: CreateNotificationInput) {
   try {
     return await createNotification(input);
   } catch (error) {
-    console.error("Notification delivery skipped:", error);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Notification delivery skipped:", error);
+    }
     return null;
   }
 }

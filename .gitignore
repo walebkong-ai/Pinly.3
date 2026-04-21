@@ -6,7 +6,8 @@ node_modules
 coverage
 dist
 out/*
-!out/index.html
+native-shell/*
+!native-shell/index.html
 playwright-report
 test-results
 prisma/dev.db
@@ -16,6 +17,8 @@ tsconfig.tsbuildinfo
 
 # Capacitor native build artifacts
 ios/App/Pods/
+ios/App/App/GoogleService-Info.plist
 android/.gradle/
+android/app/google-services.json
 android/app/build/
 android/build/

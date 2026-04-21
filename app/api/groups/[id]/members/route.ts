@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { apiError } from "@/lib/api";
+import { apiError, readJsonBody, toApiErrorResponse } from "@/lib/api";
 import { z } from "zod";
 import { getFriendIds } from "@/lib/data";
 import { enforceRateLimit } from "@/lib/rate-limit";
@@ -35,7 +35,18 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
     return rateLimitResponse;
   }
 
-  const parsed = addMembersSchema.safeParse(await request.json());
+  let body: unknown;
+  try {
+    body = await readJsonBody(request, {
+      maxBytes: 8 * 1024,
+      invalidJsonMessage: "Invalid member data.",
+      invalidJsonCode: "GROUP_MEMBERS_INVALID_JSON"
+    });
+  } catch (error) {
+    return toApiErrorResponse(error);
+  }
+
+  const parsed = addMembersSchema.safeParse(body);
   if (!parsed.success) {
     return apiError("Invalid member data.", 400);
   }

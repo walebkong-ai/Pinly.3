@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { TEST_IMAGE_URL } from "@/tests/fixtures/media";
+import { TEST_SUPABASE_BASE_URL } from "@/tests/fixtures/media";
 
 const authMock = vi.fn();
 const getFriendIdsMock = vi.fn();
@@ -32,6 +32,8 @@ vi.mock("@/lib/prisma", () => ({
 describe("posts route", () => {
   const viewerId = "ck12345678901234567890123";
   const friendId = "ck99999999999999999999999";
+  const ownedImageUrl = `${TEST_SUPABASE_BASE_URL}/${viewerId}/example.jpg`;
+  const ownedThumbnailUrl = `${TEST_SUPABASE_BASE_URL}/${viewerId}/example-thumb.jpg`;
 
   beforeEach(() => {
     authMock.mockReset();
@@ -72,7 +74,7 @@ describe("posts route", () => {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           mediaType: "IMAGE",
-          mediaUrl: TEST_IMAGE_URL,
+          mediaUrl: ownedImageUrl,
           thumbnailUrl: null,
           caption: "A full day in the city.",
           placeName: "Old Port",
@@ -110,7 +112,7 @@ describe("posts route", () => {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           mediaType: "IMAGE",
-          mediaUrl: TEST_IMAGE_URL,
+          mediaUrl: ownedImageUrl,
           thumbnailUrl: null,
           caption: "A full day in the city.",
           placeName: "Old Port",
@@ -143,7 +145,7 @@ describe("posts route", () => {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           mediaType: "IMAGE",
-          mediaUrl: TEST_IMAGE_URL,
+          mediaUrl: ownedImageUrl,
           thumbnailUrl: null,
           caption: "Harbor morning.",
           placeName: "North Shore",
@@ -184,8 +186,8 @@ describe("posts route", () => {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           mediaType: "IMAGE",
-          mediaUrl: TEST_IMAGE_URL,
-          thumbnailUrl: null,
+          mediaUrl: ownedImageUrl,
+          thumbnailUrl: ownedThumbnailUrl,
           caption: "A full day in the city.",
           placeName: "Old Port",
           city: "Montreal",
@@ -231,7 +233,7 @@ describe("posts route", () => {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           mediaType: "IMAGE",
-          mediaUrl: TEST_IMAGE_URL,
+          mediaUrl: ownedImageUrl,
           thumbnailUrl: null,
           caption: "A full day in the city.",
           placeName: "Old Port",
@@ -275,6 +277,63 @@ describe("posts route", () => {
     );
 
     expect(response.status).toBe(400);
+    expect(postCreateMock).not.toHaveBeenCalled();
+  });
+
+  test("POST rejects media URLs from another user's upload namespace", async () => {
+    getFriendIdsMock.mockResolvedValue([]);
+    postCollectionFindManyMock.mockResolvedValue([]);
+
+    const { POST } = await import("@/app/api/posts/route");
+    const response = await POST(
+      new Request("http://localhost/api/posts", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          mediaType: "IMAGE",
+          mediaUrl: `${TEST_SUPABASE_BASE_URL}/someone-else/example.jpg`,
+          thumbnailUrl: null,
+          caption: "A full day in the city.",
+          placeName: "Old Port",
+          city: "Montreal",
+          country: "Canada",
+          latitude: 45.5,
+          longitude: -73.55,
+          visitedAt: new Date().toISOString(),
+          taggedUserIds: []
+        })
+      })
+    );
+
+    expect(response.status).toBe(403);
+    expect(postCreateMock).not.toHaveBeenCalled();
+  });
+
+  test("POST rejects unauthenticated requests", async () => {
+    authMock.mockResolvedValue(null);
+
+    const { POST } = await import("@/app/api/posts/route");
+    const response = await POST(
+      new Request("http://localhost/api/posts", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          mediaType: "IMAGE",
+          mediaUrl: ownedImageUrl,
+          thumbnailUrl: null,
+          caption: "A full day in the city.",
+          placeName: "Old Port",
+          city: "Montreal",
+          country: "Canada",
+          latitude: 45.5,
+          longitude: -73.55,
+          visitedAt: new Date().toISOString(),
+          taggedUserIds: []
+        })
+      })
+    );
+
+    expect(response.status).toBe(401);
     expect(postCreateMock).not.toHaveBeenCalled();
   });
 });
