@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Clock3, Layers3, MapPin } from "lucide-react";
+import { ArrowRight, Clock3, Layers3, MapPin } from "lucide-react";
 import { MediaView } from "@/components/post/media-view";
 import { LocationCountryText } from "@/components/ui/country-flag";
 import { buildPostLocationMapHref } from "@/lib/map-post-navigation";
@@ -123,9 +123,10 @@ export function OnThisDaySection({ groups }: { groups: OnThisDayMemoryGroup[] })
               <div className="flex items-center gap-2">
                 <Link
                   href={`/posts/${group.leadPost.id}`}
-                  className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full bg-[var(--foreground)] px-4 py-2.5 text-sm font-medium text-[var(--background)] transition hover:opacity-92"
+                  className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full bg-[var(--foreground)] px-4 py-2.5 text-sm font-semibold text-[var(--surface-soft)] shadow-sm transition hover:opacity-92 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/45"
                 >
-                  Open memory
+                  <span className="whitespace-nowrap text-[var(--surface-soft)]">Open memory</span>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-[var(--surface-soft)]" aria-hidden="true" />
                 </Link>
                 <Link
                   href={buildPostLocationMapHref(group.leadPost)}
