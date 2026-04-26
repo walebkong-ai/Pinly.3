@@ -198,4 +198,54 @@ describe("rate limit enforcement", () => {
 
     expect(blockedResponse?.status).toBe(429);
   });
+
+  test("falls back to the in-memory limiter outside production when the database backend is unavailable", async () => {
+    process.env = {
+      ...originalEnv,
+      NODE_ENV: "development",
+      RATE_LIMIT_DRIVER: "database"
+    };
+
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(Math, "random").mockReturnValue(1);
+    vi.doMock("@/lib/prisma", () => ({
+      prisma: {
+        rateLimitBucket: {
+          upsert: vi.fn().mockRejectedValue(new Error("database offline")),
+          deleteMany: vi.fn()
+        }
+      }
+    }));
+    vi.doMock("@/lib/prisma-errors", () => ({
+      isPrismaSchemaNotReadyError: () => false
+    }));
+
+    const request = new Request("http://pinly.test/api/test", {
+      headers: {
+        "x-forwarded-for": "203.0.113.42"
+      }
+    });
+    const { enforceRateLimit, resetRateLimitBuckets } = await import("@/lib/rate-limit");
+
+    resetRateLimitBuckets();
+
+    expect(
+      await enforceRateLimit({
+        scope: "backend-fallback-dev",
+        request,
+        limit: 1,
+        windowMs: 60_000
+      })
+    ).toBeNull();
+
+    const blockedResponse = await enforceRateLimit({
+      scope: "backend-fallback-dev",
+      request,
+      limit: 1,
+      windowMs: 60_000
+    });
+
+    expect(blockedResponse?.status).toBe(429);
+  });
 });

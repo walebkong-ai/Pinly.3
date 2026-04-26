@@ -11,16 +11,19 @@ import { ensureDemoDataset } from "@/lib/demo-data";
  * `x-demo-seed-secret` header.
  */
 export async function POST(request: Request) {
-  const secret = process.env.DEMO_SEED_SECRET;
+  const secret = process.env.DEMO_SEED_SECRET?.trim();
+  const isProduction = process.env.NODE_ENV === "production";
 
-  if (!secret) {
+  if (!secret && isProduction) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const provided = request.headers.get("x-demo-seed-secret");
+  if (secret) {
+    const provided = request.headers.get("x-demo-seed-secret");
 
-  if (provided !== secret) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (provided !== secret) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   try {

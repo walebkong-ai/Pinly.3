@@ -3,10 +3,57 @@
 import { memo, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Heart, ImageOff } from "lucide-react";
-import { cn, getMediaProxyUrl } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { resolveMediaViewUrls } from "@/lib/post-media";
 
-const failedMediaUrls = new Set<string>();
-const failedThumbnailUrls = new Set<string>();
+const warnedMediaIssues = new Set<string>();
+
+function warnMediaIssue({
+  kind,
+  mediaType,
+  mediaUrl,
+  postId,
+  primarySource,
+  primaryUrl,
+  thumbnailUrl
+}: {
+  kind: "primary-missing" | "primary-failed" | "thumbnail-failed";
+  mediaType: "IMAGE" | "VIDEO";
+  mediaUrl: string;
+  thumbnailUrl?: string | null;
+  postId?: string;
+  primarySource: "media" | "thumbnail" | null;
+  primaryUrl: string;
+}) {
+  if (process.env.NODE_ENV !== "development") {
+    return;
+  }
+
+  const warningKey = JSON.stringify({
+    kind,
+    mediaType,
+    mediaUrl,
+    thumbnailUrl,
+    postId,
+    primarySource,
+    primaryUrl
+  });
+
+  if (warnedMediaIssues.has(warningKey)) {
+    return;
+  }
+
+  warnedMediaIssues.add(warningKey);
+  console.warn("[media-view] Post media could not render cleanly", {
+    kind,
+    mediaType,
+    postId: postId ?? null,
+    mediaUrl,
+    thumbnailUrl: thumbnailUrl ?? null,
+    primarySource,
+    primaryUrl: primaryUrl || null
+  });
+}
 
 export const MediaView = memo(function MediaView({
   mediaType,
@@ -25,22 +72,26 @@ export const MediaView = memo(function MediaView({
   showVideoControls?: boolean;
   priority?: boolean;
 }) {
-  const proxyUrl = getMediaProxyUrl(mediaUrl);
-  const proxyThumb = getMediaProxyUrl(thumbnailUrl);
-  const previewUrl =
-    proxyThumb && proxyThumb !== proxyUrl && !failedThumbnailUrls.has(proxyThumb) ? proxyThumb : "";
+  const { posterUrl, previewUrl, primarySource, primaryUrl } = resolveMediaViewUrls({
+    mediaType,
+    mediaUrl,
+    thumbnailUrl
+  });
   const [loaded, setLoaded] = useState(false);
+  const [previewFailed, setPreviewFailed] = useState(false);
   const [previewLoaded, setPreviewLoaded] = useState(() => !previewUrl);
-  const [failed, setFailed] = useState(() => (proxyUrl ? failedMediaUrls.has(proxyUrl) : false));
+  const [failed, setFailed] = useState(false);
   const [showHeart, setShowHeart] = useState(false);
   const lastTapRef = useRef(0);
   const hideHeartTimeoutRef = useRef<number | null>(null);
   const imageSizes = "(max-width: 768px) 100vw, 50vw";
+  const effectivePreviewUrl = !previewFailed && previewUrl ? previewUrl : "";
 
   useEffect(() => {
     setLoaded(false);
+    setPreviewFailed(false);
     setPreviewLoaded(!previewUrl);
-    setFailed(proxyUrl ? failedMediaUrls.has(proxyUrl) : false);
+    setFailed(false);
     lastTapRef.current = 0;
     setShowHeart(false);
 
@@ -48,7 +99,21 @@ export const MediaView = memo(function MediaView({
       window.clearTimeout(hideHeartTimeoutRef.current);
       hideHeartTimeoutRef.current = null;
     }
-  }, [mediaType, postId, previewUrl, proxyThumb, proxyUrl]);
+  }, [mediaType, postId, previewUrl, primaryUrl]);
+
+  useEffect(() => {
+    if (!primaryUrl) {
+      warnMediaIssue({
+        kind: "primary-missing",
+        mediaType,
+        mediaUrl,
+        thumbnailUrl,
+        postId,
+        primarySource,
+        primaryUrl
+      });
+    }
+  }, [mediaType, mediaUrl, postId, primarySource, primaryUrl, thumbnailUrl]);
 
   useEffect(() => {
     return () => {
@@ -85,7 +150,7 @@ export const MediaView = memo(function MediaView({
   const videoPreload = showVideoControls ? "metadata" : "none";
 
   if (mediaType === "VIDEO") {
-    if (!proxyUrl) {
+    if (!primaryUrl) {
       return (
         <div className={cn("relative flex h-full w-full items-center justify-center rounded-[1.5rem] bg-[var(--surface-soft)]", className)}>
           <div className="flex flex-col items-center gap-2 text-center text-[var(--foreground)]/56">
@@ -102,16 +167,24 @@ export const MediaView = memo(function MediaView({
           className="h-full w-full object-cover"
           controls={showVideoControls}
           playsInline
-          poster={proxyThumb || undefined}
+          poster={posterUrl || undefined}
           preload={videoPreload}
           onLoadedData={() => setLoaded(true)}
           onError={() => {
-            failedMediaUrls.add(proxyUrl);
+            warnMediaIssue({
+              kind: "primary-failed",
+              mediaType,
+              mediaUrl,
+              thumbnailUrl,
+              postId,
+              primarySource,
+              primaryUrl
+            });
             setFailed(true);
             setLoaded(true);
           }}
         >
-          <source src={proxyUrl} />
+          <source src={primaryUrl} />
         </video>
         {!loaded && !failed ? (
           <div className="pinly-skeleton absolute inset-0" />
@@ -133,7 +206,7 @@ export const MediaView = memo(function MediaView({
     );
   }
 
-  if (!proxyUrl || failed) {
+  if (!primaryUrl || failed) {
     return (
       <div className={cn("relative flex h-full w-full items-center justify-center rounded-[1.5rem] bg-[var(--surface-soft)]", className)} {...interactiveProps}>
         <div className="flex flex-col items-center gap-2 text-center text-[var(--foreground)]/56">
@@ -151,9 +224,9 @@ export const MediaView = memo(function MediaView({
 
   return (
     <div className={cn("relative h-full w-full overflow-hidden rounded-[1.5rem] bg-black/5", className)} {...interactiveProps}>
-      {previewUrl ? (
+      {effectivePreviewUrl ? (
         <Image
-          src={previewUrl}
+          src={effectivePreviewUrl}
           alt=""
           fill
           sizes={imageSizes}
@@ -163,13 +236,22 @@ export const MediaView = memo(function MediaView({
           )}
           onLoad={() => setPreviewLoaded(true)}
           onError={() => {
-            failedThumbnailUrls.add(previewUrl);
+            warnMediaIssue({
+              kind: "thumbnail-failed",
+              mediaType,
+              mediaUrl,
+              thumbnailUrl,
+              postId,
+              primarySource,
+              primaryUrl
+            });
+            setPreviewFailed(true);
             setPreviewLoaded(true);
           }}
         />
       ) : null}
       <Image
-        src={proxyUrl}
+        src={primaryUrl}
         alt=""
         fill
         sizes={imageSizes}
@@ -177,7 +259,15 @@ export const MediaView = memo(function MediaView({
         fetchPriority={priority ? "high" : undefined}
         onLoad={() => setLoaded(true)}
         onError={() => {
-          failedMediaUrls.add(proxyUrl);
+          warnMediaIssue({
+            kind: "primary-failed",
+            mediaType,
+            mediaUrl,
+            thumbnailUrl,
+            postId,
+            primarySource,
+            primaryUrl
+          });
           setFailed(true);
           setLoaded(true);
         }}

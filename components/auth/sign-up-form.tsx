@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getProviders, signIn } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,8 +30,8 @@ export function SignUpForm() {
   const googleConsentRequired = searchParams.get("legal") === "required";
 
   const [loading, setLoading] = useState(false);
-  const googleUiEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true";
-  const [googleEnabled, setGoogleEnabled] = useState(googleUiEnabled);
+  const [appleEnabled, setAppleEnabled] = useState(false);
+  const [googleEnabled, setGoogleEnabled] = useState(false);
 
   const {
     register,
@@ -56,14 +56,17 @@ export function SignUpForm() {
 
     async function loadProviders() {
       try {
-        const providers = await getProviders();
+        const response = await fetch("/api/auth/providers", { cache: "no-store" });
+        const providers = response.ok ? await response.json() : null;
 
         if (!ignore) {
-          setGoogleEnabled(googleUiEnabled || Boolean(providers?.google));
+          setAppleEnabled(Boolean(providers?.apple));
+          setGoogleEnabled(Boolean(providers?.google));
         }
       } catch {
         if (!ignore) {
-          setGoogleEnabled(googleUiEnabled);
+          setAppleEnabled(false);
+          setGoogleEnabled(false);
         }
       }
     }
@@ -73,7 +76,7 @@ export function SignUpForm() {
     return () => {
       ignore = true;
     };
-  }, [googleUiEnabled]);
+  }, []);
 
   async function recordLegalAcceptance(errorMessage: string) {
     try {
@@ -158,7 +161,7 @@ export function SignUpForm() {
     router.refresh();
   }
 
-  async function prepareGoogleSignUp() {
+  async function prepareSocialSignUp(providerName: string) {
     const accepted = await trigger("acceptLegal");
 
     if (!accepted) {
@@ -166,45 +169,49 @@ export function SignUpForm() {
       return false;
     }
 
-    return recordLegalAcceptance("Could not start Google sign up.");
+    return recordLegalAcceptance(`Could not start ${providerName} sign up.`);
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {googleConsentRequired ? (
         <div className="rounded-2xl border bg-[var(--surface-soft)] px-4 py-3 text-sm leading-6 text-[var(--foreground)]/68">
-          Accept the Terms of Service and Privacy Policy below before continuing with Google.
+          Accept the Terms of Service and Privacy Policy below before continuing with social sign up.
         </div>
       ) : null}
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-        <div className="grid gap-4 sm:grid-cols-2">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 sm:space-y-4" noValidate>
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
           <div>
-            <Input {...register("name")} placeholder="Full name" />
+            <Input className="min-h-[2.75rem] sm:min-h-[var(--pinly-control-height)]" {...register("name")} placeholder="Full name" />
             {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>}
           </div>
           <div>
-            <Input 
+            <Input
+              className="min-h-[2.75rem] sm:min-h-[var(--pinly-control-height)]"
               {...register("username", {
-                onChange: (e) => { e.target.value = e.target.value.toLowerCase(); }
+                onChange: (e) => {
+                  e.target.value = e.target.value.toLowerCase();
+                }
               })}
-              placeholder="username" 
+              placeholder="username"
             />
             {errors.username && <p className="mt-1 text-xs text-red-500">{errors.username.message}</p>}
           </div>
         </div>
         <div>
-          <Input {...register("email")} type="email" placeholder="Email" />
+          <Input className="min-h-[2.75rem] sm:min-h-[var(--pinly-control-height)]" {...register("email")} type="email" placeholder="Email" />
           {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
         </div>
         <div>
           <Input
+            className="min-h-[2.75rem] sm:min-h-[var(--pinly-control-height)]"
             {...register("password")}
             type="password"
             placeholder="Password (8+ characters)"
           />
           {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
         </div>
-        <div className="rounded-2xl border bg-[var(--surface-soft)] px-4 py-3">
+        <div className="rounded-2xl border bg-[var(--surface-soft)] px-3.5 py-2.5 sm:px-4 sm:py-3">
           <label className="flex items-start gap-3 text-sm leading-6 text-[var(--foreground)]/72">
             <input
               type="checkbox"
@@ -225,25 +232,38 @@ export function SignUpForm() {
           </label>
           {errors.acceptLegal && <p className="mt-2 text-xs text-red-500">{errors.acceptLegal.message}</p>}
         </div>
-        <Button type="submit" className="w-full" disabled={loading}>
+        <Button type="submit" className="min-h-[2.75rem] w-full sm:min-h-[var(--pinly-control-height)]" disabled={loading}>
           {loading ? "Creating account..." : "Create account"}
         </Button>
         <p className="text-center text-xs text-[var(--foreground)]/48">
           After sign-up, you&apos;ll land on your map with a quick first-run guide.
         </p>
       </form>
-      {googleEnabled && (
+      {(appleEnabled || googleEnabled) && (
         <>
-          <div className="flex items-center gap-3 text-xs uppercase tracking-[0.12em] text-[var(--foreground)]/45">
+          <div className="flex items-center gap-2.5 text-[11px] uppercase tracking-[0.14em] text-[var(--foreground)]/45 sm:gap-3 sm:text-xs sm:tracking-[0.12em]">
             <span className="h-px flex-1 bg-[var(--foreground)]/12" />
             or
             <span className="h-px flex-1 bg-[var(--foreground)]/12" />
           </div>
-          <GoogleAuthButton
-            mode="signup"
-            callbackUrl={inviteToken ? `/invite/${inviteToken}` : "/map"}
-            beforeAuth={prepareGoogleSignUp}
-          />
+          <div className="space-y-2">
+            {appleEnabled ? (
+              <GoogleAuthButton
+                mode="signup"
+                provider="apple"
+                callbackUrl={inviteToken ? `/invite/${inviteToken}` : "/map"}
+                beforeAuth={() => prepareSocialSignUp("Apple")}
+              />
+            ) : null}
+            {googleEnabled ? (
+              <GoogleAuthButton
+                mode="signup"
+                provider="google"
+                callbackUrl={inviteToken ? `/invite/${inviteToken}` : "/map"}
+                beforeAuth={() => prepareSocialSignUp("Google")}
+              />
+            ) : null}
+          </div>
         </>
       )}
     </div>

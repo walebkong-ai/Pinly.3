@@ -62,7 +62,7 @@ export function OnThisDaySection({ groups }: { groups: OnThisDayMemoryGroup[] })
         {groups.map((group) => (
           <article
             key={group.id}
-            className="w-[17.25rem] shrink-0 snap-start overflow-hidden rounded-[1.5rem] border bg-[var(--surface-soft)]"
+            className="w-[min(100%,19rem)] shrink-0 snap-start overflow-hidden rounded-[1.5rem] border bg-[var(--surface-soft)]"
           >
             <div className="relative aspect-[4/3] overflow-hidden">
               <MediaView

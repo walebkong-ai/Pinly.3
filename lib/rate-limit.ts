@@ -43,7 +43,7 @@ function resolveRateLimitBackend(): RateLimitBackend {
     return configuredBackend;
   }
 
-  return process.env.NODE_ENV === "test" ? "memory" : "database";
+  return process.env.NODE_ENV === "production" ? "database" : "memory";
 }
 
 function buildActorKey(request: Request, userId?: string | null) {
@@ -97,6 +97,24 @@ function createRateLimitUnavailableResponse() {
       }
     }
   );
+}
+
+function fallbackToMemoryRateLimit(options: RateLimitOptions, reason: "schema" | "backend", error: unknown) {
+  if (!hasLoggedNonProductionFallback) {
+    const message =
+      reason === "schema"
+        ? "Rate limit database table is not ready yet. Falling back to the in-memory limiter outside production until migrations are applied."
+        : "Rate limit database backend is unavailable. Falling back to the in-memory limiter outside production so local development can continue.";
+
+    console.warn(message);
+    hasLoggedNonProductionFallback = true;
+  }
+
+  if (process.env.NODE_ENV !== "production" && reason === "backend") {
+    console.error("Rate limit backend error:", error);
+  }
+
+  return enforceMemoryRateLimit(options);
 }
 
 function buildMemoryBucketKey({ scope, request, userId, key }: RateLimitOptions) {
@@ -210,26 +228,34 @@ async function enforceDatabaseRateLimit({
   } catch (error) {
     if (isPrismaSchemaNotReadyError(error)) {
       if (process.env.NODE_ENV !== "production") {
-        if (!hasLoggedNonProductionFallback) {
-          console.warn(
-            "Rate limit database table is not ready yet. Falling back to the in-memory limiter outside production until migrations are applied."
-          );
-          hasLoggedNonProductionFallback = true;
-        }
+        return fallbackToMemoryRateLimit(
+          {
+            scope,
+            request,
+            limit,
+            windowMs,
+            userId,
+            key
+          },
+          "schema",
+          error
+        );
+      }
+    }
 
-        return enforceMemoryRateLimit({
+    if (process.env.NODE_ENV !== "production") {
+      return fallbackToMemoryRateLimit(
+        {
           scope,
           request,
           limit,
           windowMs,
           userId,
           key
-        });
-      }
-    }
-
-    if (process.env.NODE_ENV !== "production") {
-      console.error("Rate limit backend error:", error);
+        },
+        "backend",
+        error
+      );
     }
     return createRateLimitUnavailableResponse();
   }

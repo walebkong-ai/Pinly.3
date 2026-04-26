@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { compare, hash } from "bcryptjs";
+import { CredentialsSignin } from "next-auth";
 import { ensureDemoDataset, type DemoProvisionPrisma } from "@/lib/demo-data";
+import { logLocalAuthDebug, logLocalAuthError } from "@/lib/auth-debug";
 import { isDemoCredentials } from "@/lib/demo-config";
 import type { LegalAcceptanceRecord } from "@/lib/legal";
 import { normalizeProfileImageUrl } from "@/lib/media-url";
@@ -32,6 +34,10 @@ export class LegalAcceptanceRequiredError extends Error {
   }
 }
 
+export class AuthUnavailableError extends CredentialsSignin {
+  code = "auth_unavailable";
+}
+
 function toPayload(user: UserRecord): AuthUserPayload {
   return {
     id: user.id,
@@ -48,49 +54,67 @@ export async function authorizeCredentials(prisma: AuthPrisma, credentials: unkn
   const parsed = signInSchema.safeParse(credentials);
 
   if (!parsed.success) {
+    logLocalAuthDebug("authorize.validation_failed");
     return null;
   }
 
-  const wantsDemoAccess = isDemoCredentials(parsed.data.email, parsed.data.password);
+  const normalizedEmail = parsed.data.email.trim().toLowerCase();
+  const wantsDemoAccess = isDemoCredentials(normalizedEmail, parsed.data.password);
+  logLocalAuthDebug("authorize.attempt", {
+    email: normalizedEmail,
+    wantsDemoAccess
+  });
   let user;
   try {
     user = await prisma.user.findUnique({
-      where: { email: parsed.data.email.toLowerCase() }
+      where: { email: normalizedEmail }
     });
 
     if (!user && wantsDemoAccess) {
       await ensureDemoDataset(prisma);
       user = await prisma.user.findUnique({
-        where: { email: parsed.data.email.toLowerCase() }
+        where: { email: normalizedEmail }
       });
     }
   } catch (error) {
-    if (process.env.NODE_ENV !== "production") {
-      console.error("Database connection error during authorization:", error);
-    }
-    return null;
+    logLocalAuthError("authorize.lookup_failed", error, {
+      email: normalizedEmail,
+      wantsDemoAccess
+    });
+    throw new AuthUnavailableError();
   }
 
   if (!user) {
+    logLocalAuthDebug("authorize.user_missing", {
+      email: normalizedEmail,
+      wantsDemoAccess
+    });
     return null;
   }
 
   let passwordsMatch = await compare(parsed.data.password, user.passwordHash);
 
   if (!passwordsMatch && wantsDemoAccess) {
+    const currentUserId = user.id;
+
     try {
       await ensureDemoDataset(prisma);
       user = await prisma.user.findUnique({
-        where: { email: parsed.data.email.toLowerCase() }
+        where: { email: normalizedEmail }
       });
     } catch (error) {
-      if (process.env.NODE_ENV !== "production") {
-        console.error("Database connection error during demo authorization:", error);
-      }
-      return null;
+      logLocalAuthError("authorize.demo_repair_failed", error, {
+        email: normalizedEmail,
+        userId: currentUserId,
+        wantsDemoAccess
+      });
+      throw new AuthUnavailableError();
     }
 
     if (!user) {
+      logLocalAuthDebug("authorize.demo_user_missing_after_repair", {
+        email: normalizedEmail
+      });
       return null;
     }
 
@@ -98,13 +122,24 @@ export async function authorizeCredentials(prisma: AuthPrisma, credentials: unkn
   }
 
   if (!passwordsMatch) {
+    logLocalAuthDebug("authorize.password_mismatch", {
+      email: normalizedEmail,
+      userId: user.id,
+      wantsDemoAccess
+    });
     return null;
   }
 
-  return toPayload(user);
+  const payload = toPayload(user);
+  logLocalAuthDebug("authorize.success", {
+    email: payload.email,
+    userId: payload.id,
+    wantsDemoAccess
+  });
+  return payload;
 }
 
-export async function ensureGoogleUser(
+export async function ensureSocialAuthUser(
   prisma: AuthPrisma,
   {
     email,
@@ -164,3 +199,5 @@ export async function ensureGoogleUser(
 
   return toPayload(updated);
 }
+
+export const ensureGoogleUser = ensureSocialAuthUser;

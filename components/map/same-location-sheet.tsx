@@ -23,7 +23,7 @@ export function SameLocationSheet({
   const closeTriggeredRef = useRef(false);
   const layerStyle = {
     "--pinly-layer-gap": "0.5rem",
-    "--pinly-sheet-top-gap": "5rem",
+    "--pinly-sheet-top-gap": "4.75rem",
     "--pinly-sheet-scroll-gap": "1rem"
   } as CSSProperties;
 
@@ -74,7 +74,7 @@ export function SameLocationSheet({
   return (
     <OverlayPortal>
       <div
-        className="pinly-bottom-layer pointer-events-none fixed inset-0 z-[995] isolate flex items-end justify-center px-[var(--pinly-page-gutter)] pt-14 sm:px-3 sm:pt-3"
+        className="pinly-bottom-layer pointer-events-none fixed inset-0 z-[995] isolate flex items-end justify-center px-[var(--pinly-page-gutter)] sm:px-3"
         style={layerStyle}
       >
         <div
@@ -86,13 +86,13 @@ export function SameLocationSheet({
         />
 
         <div
-          className="pinly-bottom-surface pointer-events-auto relative z-[1] isolate flex w-full max-w-[var(--pinly-content-max)] flex-col overflow-hidden rounded-[1.75rem] border bg-[var(--card)] shadow-2xl shadow-black/20 sm:max-h-[calc(var(--app-viewport-height)-5rem)]"
+          className="pinly-bottom-surface pointer-events-auto relative z-[1] isolate flex w-full max-w-[var(--pinly-content-max)] flex-col overflow-hidden rounded-[1.75rem] border bg-[var(--card)] shadow-2xl shadow-black/20"
           onPointerDown={(event) => event.stopPropagation()}
           onPointerUp={(event) => event.stopPropagation()}
           onClick={(event) => event.stopPropagation()}
         >
-          <div className="sticky top-0 z-[2] border-b border-[var(--foreground)]/8 bg-[var(--card)]/96 px-4 pb-3.5 pt-3 backdrop-blur-xl sm:px-5">
-            <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[var(--foreground)]/14" />
+          <div className="sticky top-0 z-[2] border-b border-[var(--foreground)]/8 bg-[var(--card)]/96 px-3.5 pb-3 pt-2.5 backdrop-blur-xl sm:px-5">
+            <div className="mx-auto mb-2.5 h-1.5 w-12 rounded-full bg-[var(--foreground)]/14" />
             <div className="flex items-center justify-between gap-3">
               <Button
                 variant="ghost"
@@ -113,7 +113,7 @@ export function SameLocationSheet({
               </Button>
             </div>
 
-            <div className="mt-4 min-w-0">
+            <div className="mt-3.5 min-w-0">
               <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--foreground)]/45">Same pin</p>
               <h2 className="mt-1 font-[var(--font-serif)] text-[1.5rem] leading-tight text-[var(--foreground)] sm:text-2xl">
                 {marker.placeName}
@@ -123,7 +123,7 @@ export function SameLocationSheet({
                 country={marker.country}
                 className="mt-2 min-w-0 max-w-full text-sm text-[var(--foreground)]/64"
               />
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--foreground)]/62">
+              <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs text-[var(--foreground)]/62">
                 <span className="inline-flex items-center gap-2 rounded-full border bg-[var(--surface-soft)] px-3 py-1.5">
                   <Layers3 className="h-3.5 w-3.5 shrink-0 text-[var(--map-accent)]" />
                   <span>
@@ -138,7 +138,7 @@ export function SameLocationSheet({
             </div>
 
             {marker.visitors.length > 0 ? (
-              <div className="mt-4 flex items-center gap-3">
+              <div className="mt-3.5 flex items-center gap-3">
                 <div className="flex -space-x-2">
                   {marker.visitors.map((visitor) => (
                     <ProfileLink key={visitor.id} username={visitor.username} className="rounded-full">
@@ -157,14 +157,14 @@ export function SameLocationSheet({
             ) : null}
           </div>
 
-          <div className="pinly-sheet-scroll space-y-3 overflow-y-auto overscroll-contain px-4 pt-4 sm:px-5">
+          <div className="pinly-sheet-scroll space-y-2.5 overflow-y-auto overscroll-contain px-3.5 pt-3.5 sm:space-y-3 sm:px-5 sm:pt-4">
             {marker.posts.map((post, index) => {
               const primaryCaption = post.caption.trim() || `Memory from ${post.placeName}`;
 
               return (
                 <div
                   key={post.id}
-                  className="rounded-[1.35rem] border bg-[var(--surface-strong)] p-3.5 shadow-[0_14px_30px_rgba(24,85,56,0.06)]"
+                  className="rounded-[1.35rem] border bg-[var(--surface-strong)] p-3 shadow-[0_14px_30px_rgba(24,85,56,0.06)] sm:p-3.5"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[var(--foreground)]/52">
                     <span className="inline-flex items-center rounded-full border bg-[var(--surface-soft)] px-2.5 py-1 font-medium uppercase tracking-[0.16em] text-[var(--foreground)]/56">

@@ -74,6 +74,32 @@ describe("password reset routes", () => {
     expect(storedToken).not.toBe(previewToken);
   });
 
+  test("forgot password falls back to the request origin when no auth base URL is configured", async () => {
+    process.env = {
+      ...originalEnv,
+      AUTH_DEBUG_RESET_LINKS: "true"
+    };
+    delete process.env.AUTH_URL;
+    delete process.env.NEXTAUTH_URL;
+    delete process.env.NEXT_PUBLIC_SITE_URL;
+
+    userFindUniqueMock.mockResolvedValue({ id: "user_1", email: "avery@pinly.demo" });
+
+    const { POST } = await import("@/app/api/auth/forgot-password/route");
+    const response = await POST(
+      new Request("http://127.0.0.1:3001/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: "avery@pinly.demo" })
+      })
+    );
+
+    expect(response.status).toBe(200);
+
+    const payload = await response.json();
+    expect(payload.previewResetLink).toContain("http://127.0.0.1:3001/reset-password?token=");
+  });
+
   test("reset password looks up hashed tokens and clears all outstanding tokens for the email", async () => {
     passwordResetFindFirstMock.mockResolvedValue({
       id: "token_1",

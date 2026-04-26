@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { createLegalAcceptanceRecord } from "@/lib/legal";
 import { DEFAULT_DEMO_USER_EMAIL, DEMO_PASSWORD } from "@/lib/demo-config";
 import {
+  AuthUnavailableError,
   authorizeCredentials,
   createUniqueUsername,
   ensureGoogleUser,
@@ -14,9 +15,23 @@ const { ensureDemoDatasetMock } = vi.hoisted(() => ({
   ensureDemoDatasetMock: vi.fn()
 }));
 
+const { CredentialsSigninMock } = vi.hoisted(() => {
+  class CredentialsSignin extends Error {}
+
+  return {
+    CredentialsSigninMock: CredentialsSignin
+  };
+});
+
 vi.mock("@/lib/demo-data", () => ({
   ensureDemoDataset: ensureDemoDatasetMock
 }));
+
+vi.mock("next-auth", () => ({
+  CredentialsSignin: CredentialsSigninMock
+}));
+
+import { CredentialsSignin } from "next-auth";
 
 describe("auth helpers", () => {
   beforeEach(() => {
@@ -151,6 +166,27 @@ describe("auth helpers", () => {
 
     expect(ensureDemoDatasetMock).not.toHaveBeenCalled();
     expect(user).toBeNull();
+  });
+
+  test("credentials authorize surfaces database outages separately from invalid credentials", async () => {
+    const prisma = {
+      user: {
+        findUnique: vi.fn().mockRejectedValue(new Error("database unavailable"))
+      }
+    };
+
+    await expect(
+      authorizeCredentials(prisma as never, {
+        email: DEFAULT_DEMO_USER_EMAIL,
+        password: DEMO_PASSWORD
+      })
+    ).rejects.toBeInstanceOf(AuthUnavailableError);
+
+    expect(ensureDemoDatasetMock).not.toHaveBeenCalled();
+  });
+
+  test("auth unavailable errors extend NextAuth credentials errors", () => {
+    expect(new AuthUnavailableError()).toBeInstanceOf(CredentialsSignin);
   });
 
   test("normalizes usernames from provider seeds", () => {

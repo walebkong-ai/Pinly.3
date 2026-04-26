@@ -33,7 +33,7 @@ export function BottomSheet({
       : "";
   const layerStyle = {
     "--pinly-layer-gap": "0.5rem",
-    "--pinly-sheet-top-gap": "5rem",
+    "--pinly-sheet-top-gap": "4.75rem",
     "--pinly-sheet-scroll-gap": "0.75rem"
   } as CSSProperties;
 
@@ -79,7 +79,7 @@ export function BottomSheet({
   return (
     <OverlayPortal>
       <div
-        className="pinly-bottom-layer pointer-events-none fixed inset-0 z-[990] isolate flex items-end justify-center px-[var(--pinly-page-gutter)] pt-14 sm:px-3 sm:pt-3"
+        className="pinly-bottom-layer pointer-events-none fixed inset-0 z-[990] isolate flex items-end justify-center px-[var(--pinly-page-gutter)] sm:px-3"
         style={layerStyle}
       >
         <div
@@ -91,13 +91,13 @@ export function BottomSheet({
         />
 
         <div
-          className="pinly-bottom-surface pointer-events-auto relative z-[1] isolate flex w-full max-w-[var(--pinly-content-max)] flex-col overflow-hidden rounded-[1.75rem] border bg-[var(--card)] shadow-2xl shadow-black/20 sm:max-h-[calc(var(--app-viewport-height)-5rem)]"
+          className="pinly-bottom-surface pointer-events-auto relative z-[1] isolate flex w-full max-w-[var(--pinly-content-max)] flex-col overflow-hidden rounded-[1.75rem] border bg-[var(--card)] shadow-2xl shadow-black/20"
           onPointerDown={(event) => event.stopPropagation()}
           onPointerUp={(event) => event.stopPropagation()}
           onClick={(event) => event.stopPropagation()}
         >
-          <div className="sticky top-0 z-[2] border-b border-[var(--foreground)]/8 bg-[var(--card)]/96 px-4 pb-3.5 pt-3 backdrop-blur-xl sm:px-5">
-            <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[var(--foreground)]/14" />
+          <div className="sticky top-0 z-[2] border-b border-[var(--foreground)]/8 bg-[var(--card)]/96 px-3.5 pb-3 pt-2.5 backdrop-blur-xl sm:px-5">
+            <div className="mx-auto mb-2.5 h-1.5 w-12 rounded-full bg-[var(--foreground)]/14" />
             <div className="flex items-center justify-between gap-3">
               {onBack ? (
                 <Button
@@ -124,7 +124,7 @@ export function BottomSheet({
           </div>
 
           <div className="pinly-sheet-scroll overflow-y-auto overscroll-contain px-3 pt-3 sm:px-4">
-            <div className="grid gap-4 md:grid-cols-[0.9fr_1.1fr]">
+            <div className="grid gap-3.5 md:grid-cols-[0.9fr_1.1fr] md:gap-4">
               <div className="relative isolate aspect-[4/3] overflow-hidden rounded-[1.5rem]">
                 <MediaView mediaType={post.mediaType} mediaUrl={post.mediaUrl} thumbnailUrl={post.thumbnailUrl} />
               </div>
@@ -142,7 +142,7 @@ export function BottomSheet({
                   </ProfileLink>
                 </div>
 
-                <div className="mt-5 space-y-4">
+                <div className="mt-4 space-y-3.5 sm:mt-5 sm:space-y-4">
                   <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--foreground)]/42">Expanded memory</p>
                   <p className="font-[var(--font-serif)] text-[1.5rem] leading-[1.12] text-[var(--foreground)] md:text-[2.15rem] md:leading-[1.1]">
                     {primaryCopy}
@@ -167,7 +167,7 @@ export function BottomSheet({
                   </div>
                 </div>
 
-                <div className="mt-auto flex flex-col gap-3 pt-6 sm:flex-row">
+                <div className="mt-auto flex flex-col gap-3 pt-5 sm:flex-row sm:pt-6">
                   <Link href={`/posts/${post.id}`} className="w-full sm:w-auto">
                     <Button className="w-full bg-[var(--map-accent)] text-[var(--foreground)] hover:opacity-95 focus:ring-[var(--map-accent)]">
                       Open full post

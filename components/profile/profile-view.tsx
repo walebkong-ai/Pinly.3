@@ -75,10 +75,10 @@ export function ProfileView({
   return (
     <div className="pinly-content-shell pinly-screen-stack animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
       <section className="glass-panel pinly-panel">
-        <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-5">
           {isOwnProfile ? (
             <div className="flex-1">
-              <p className="pinly-eyebrow mb-2">
+              <p className="pinly-eyebrow mb-1.5">
                 Your profile
               </p>
               <EditProfile
@@ -86,45 +86,45 @@ export function ProfileView({
                 initialUsername={profile.user.username}
                 initialAvatarUrl={profile.user.avatarUrl}
               />
-              <div className="mt-4 flex flex-wrap items-center gap-2">
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 <Link
                   href="/saved"
-                  className="inline-flex items-center gap-2 rounded-full border border-[rgba(255,95,162,0.2)] bg-[var(--social-accent-soft)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[rgba(255,95,162,0.16)]"
+                  className="inline-flex items-center gap-2 rounded-full border border-[rgba(255,95,162,0.2)] bg-[var(--social-accent-soft)] px-3.5 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[rgba(255,95,162,0.16)]"
                 >
                   <Bookmark className="h-4 w-4 text-[var(--social-accent)]" />
                   Saved
                 </Link>
                 <Link
                   href="/collections"
-                  className="inline-flex items-center gap-2 rounded-full border border-[rgba(56,182,201,0.18)] bg-[rgba(56,182,201,0.08)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[rgba(56,182,201,0.14)]"
+                  className="inline-flex items-center gap-2 rounded-full border border-[rgba(56,182,201,0.18)] bg-[rgba(56,182,201,0.08)] px-3.5 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[rgba(56,182,201,0.14)]"
                 >
                   <Folders className="h-4 w-4 text-[var(--map-accent)]" />
                   Collections
                 </Link>
                 <Link
                   href="/want-to-go"
-                  className="inline-flex items-center gap-2 rounded-full border border-[rgba(255,159,28,0.2)] bg-[var(--accent-soft)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[rgba(255,159,28,0.18)]"
+                  className="inline-flex items-center gap-2 rounded-full border border-[rgba(255,159,28,0.2)] bg-[var(--accent-soft)] px-3.5 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[rgba(255,159,28,0.18)]"
                 >
                   <MapPinned className="h-4 w-4 text-[var(--accent)]" />
                   Want to go
                 </Link>
                 <Link
                   href="/settings"
-                  className="inline-flex items-center gap-2 rounded-full border bg-[var(--surface-strong)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--muted)]"
+                  className="inline-flex items-center gap-2 rounded-full border bg-[var(--surface-strong)] px-3.5 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--muted)]"
                 >
                   <Settings2 className="h-4 w-4" />
                   Settings
                 </Link>
                 <Link
                   href="/archived"
-                  className="inline-flex items-center gap-2 rounded-full border bg-[var(--surface-strong)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--muted)]"
+                  className="inline-flex items-center gap-2 rounded-full border bg-[var(--surface-strong)] px-3.5 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--muted)]"
                 >
                   <Archive className="h-4 w-4" />
                   Archived
                 </Link>
-                <p className="text-xs text-[var(--foreground)]/55">Likes, comments, archived posts, and profile photo.</p>
+                <p className="text-[11px] text-[var(--foreground)]/55">Likes, comments, archived posts, and profile photo.</p>
               </div>
-              <InstallAppCard className="mt-4 max-w-xl" />
+              <InstallAppCard className="mt-3.5 max-w-xl" />
             </div>
           ) : (
             <div className="flex items-center gap-4 min-w-0">
@@ -152,23 +152,23 @@ export function ProfileView({
               </div>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-3 text-center sm:grid-cols-3">
-            <div className="rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-soft)] px-4 py-3">
+          <div className="grid grid-cols-3 gap-2.5 text-center sm:gap-3">
+            <div className="rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-soft)] px-2.5 py-2.5 sm:px-4 sm:py-3">
               <p className="text-2xl font-semibold">{profile.posts.length}</p>
-              <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">Posts</p>
+              <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--foreground)]/45 sm:text-xs">Posts</p>
             </div>
-            <div className="rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-soft)] px-4 py-3">
+            <div className="rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-soft)] px-2.5 py-2.5 sm:px-4 sm:py-3">
               <p className="text-2xl font-semibold">{profile.travelSummary.cityCount}</p>
-              <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">Cities</p>
+              <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--foreground)]/45 sm:text-xs">Cities</p>
             </div>
-            <div className="rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-soft)] px-4 py-3">
+            <div className="rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-soft)] px-2.5 py-2.5 sm:px-4 sm:py-3">
               <p className="text-2xl font-semibold">{profile.travelSummary.countryCount}</p>
-              <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">Countries</p>
+              <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--foreground)]/45 sm:text-xs">Countries</p>
             </div>
           </div>
         </div>
 
-        <div className="mt-6 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           {visiblePlaces.map((place) => (
             <span
               key={place.key}
@@ -193,8 +193,8 @@ export function ProfileView({
             A quick look at where they&apos;ve pinned memories lately, without turning the profile into a stats dashboard.
           </p>
 
-          <div className="mt-5 grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="rounded-[1.5rem] border bg-[var(--surface-soft)] p-4">
+          <div className="mt-4 grid gap-3 lg:grid-cols-[1.05fr_0.95fr] lg:gap-4">
+            <div className="rounded-[1.5rem] border bg-[var(--surface-soft)] p-3.5 sm:p-4">
               <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">Recent places</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {profile.travelSummary.recentPlaces.map((place) => (
@@ -208,7 +208,7 @@ export function ProfileView({
               </div>
             </div>
 
-            <div className="rounded-[1.5rem] border bg-[var(--surface-soft)] p-4">
+            <div className="rounded-[1.5rem] border bg-[var(--surface-soft)] p-3.5 sm:p-4">
               <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">
                 {profile.travelSummary.sharedPlaces.length > 0 ? "Overlap with you" : "Shared places"}
               </p>
@@ -231,9 +231,9 @@ export function ProfileView({
             </div>
           </div>
 
-          <div className="mt-5 rounded-[1.5rem] border bg-[var(--surface-soft)] p-4">
+          <div className="mt-4 rounded-[1.5rem] border bg-[var(--surface-soft)] p-3.5 sm:p-4">
             <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground)]/45">Recent memories</p>
-            <div className="mt-3 space-y-3">
+            <div className="mt-3 space-y-2.5">
               {profile.travelSummary.recentMemories.map((memory) => (
                 <Link
                   key={memory.id}
@@ -295,7 +295,7 @@ export function ProfileView({
               ))}
             </div>
           ) : (
-            <div className="mt-5 rounded-[1.5rem] border bg-[var(--surface-soft)] p-4">
+            <div className="mt-4 rounded-[1.5rem] border bg-[var(--surface-soft)] p-4">
               <p className="text-sm text-[var(--foreground)]/58">
                 No folders yet. Create a collection, then add posts from the create flow or the full post view.
               </p>

@@ -77,7 +77,7 @@ export function DirectionsSheet({
     [post, providerOrder]
   );
   const drawerStyle = {
-    "--pinly-sheet-top-gap": "6rem"
+    "--pinly-sheet-top-gap": "5.25rem"
   } as CSSProperties;
 
   return (
@@ -110,7 +110,7 @@ export function DirectionsSheet({
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-[210] bg-black/35 backdrop-blur-sm transition-opacity" />
         <Drawer.Content
-          className="pinly-mobile-drawer fixed inset-x-0 z-[210] mt-24 rounded-t-[2.25rem] bg-[var(--surface-strong)] after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]"
+          className="pinly-mobile-drawer fixed inset-x-0 z-[210] rounded-t-[2.25rem] bg-[var(--surface-strong)] after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]"
           style={drawerStyle}
         >
           <div className="mx-auto mt-4 h-1.5 w-12 rounded-full bg-[var(--foreground)]/15" />

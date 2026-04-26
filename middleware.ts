@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { logLocalAuthDebug } from "@/lib/auth-debug";
 
 const PUBLIC_PAGE_PATHS = new Set([
   "/",
@@ -32,8 +33,8 @@ function buildContentSecurityPolicy(nonce: string, isDevelopment: boolean) {
     "object-src 'none'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDevelopment ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://services.arcgisonline.com https://api.dicebear.com https://picsum.photos https://fastly.picsum.photos",
-    "media-src 'self' blob: data:",
+    "img-src 'self' data: blob: https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://services.arcgisonline.com https://api.dicebear.com https://picsum.photos https://fastly.picsum.photos https://*.public.blob.vercel-storage.com",
+    "media-src 'self' blob: data: https://interactive-examples.mdn.mozilla.net https://*.public.blob.vercel-storage.com https://*.supabase.co",
     "font-src 'self' data:",
     "connect-src 'self' https://api.maptiler.com https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://nominatim.openstreetmap.org https://services.arcgisonline.com https://*.supabase.co https://api.dicebear.com https://picsum.photos https://fastly.picsum.photos https://interactive-examples.mdn.mozilla.net",
     "worker-src 'self' blob:",
@@ -55,11 +56,20 @@ export default async function middleware(request: NextRequest) {
     secret: process.env.AUTH_SECRET,
     secureCookie: process.env.NODE_ENV === "production"
   });
+  const authCookieNames = request.cookies
+    .getAll()
+    .map((cookie) => cookie.name)
+    .filter((cookieName) => cookieName.includes("authjs") || cookieName.includes("next-auth"));
   const userId =
     typeof token?.id === "string" ? token.id : typeof token?.sub === "string" ? token.sub : null;
 
   if (requiresAuth && !userId) {
     if (isApiRoute) {
+      logLocalAuthDebug("middleware.reject_api", {
+        requestUrl: request.url,
+        pathname,
+        authCookieNames
+      });
       return NextResponse.json(
         {
           error: "Unauthorized"
@@ -71,7 +81,23 @@ export default async function middleware(request: NextRequest) {
     const signInUrl = new URL("/sign-in", nextUrl);
     const callbackUrl = `${pathname}${nextUrl.search}`;
     signInUrl.searchParams.set("callbackUrl", callbackUrl);
+    logLocalAuthDebug("middleware.redirect_sign_in", {
+      requestUrl: request.url,
+      pathname,
+      callbackUrl,
+      signInUrl: signInUrl.toString(),
+      authCookieNames
+    });
     return NextResponse.redirect(signInUrl);
+  }
+
+  if (requiresAuth) {
+    logLocalAuthDebug("middleware.allow", {
+      requestUrl: request.url,
+      pathname,
+      userId,
+      authCookieNames
+    });
   }
 
   const nonce = btoa(crypto.randomUUID()).replace(/=+$/g, "");

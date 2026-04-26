@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { BackButton } from "@/components/post/back-button";
 import { SettingsForm } from "@/components/settings-form";
 import { DeleteAccountCard } from "@/components/account/delete-account-card";
+import { ChangePasswordCard } from "@/components/account/change-password-card";
 import { isReservedDemoEmail } from "@/lib/demo-config";
 
 export default async function SettingsPage() {
@@ -39,6 +40,8 @@ export default async function SettingsPage() {
     redirect("/sign-in");
   }
 
+  const isDemoAccount = isReservedDemoEmail(user.email);
+
   return (
     <AppScreen>
       <div className="pinly-content-shell pinly-screen-stack animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
@@ -47,7 +50,7 @@ export default async function SettingsPage() {
           <p className="pinly-eyebrow">Settings</p>
           <h1 className="pinly-display-title">Profile settings</h1>
           <p className="pinly-body-copy">
-            Manage your profile photo and the interaction controls tied to your posts.
+            Manage your profile photo, password, and the interaction controls tied to your posts.
           </p>
         </section>
 
@@ -62,7 +65,11 @@ export default async function SettingsPage() {
         </section>
 
         <section className="glass-panel pinly-panel">
-          <DeleteAccountCard username={user.username} isDemoAccount={isReservedDemoEmail(user.email)} />
+          <ChangePasswordCard isDemoAccount={isDemoAccount} />
+        </section>
+
+        <section className="glass-panel pinly-panel">
+          <DeleteAccountCard username={user.username} isDemoAccount={isDemoAccount} />
         </section>
 
         <section className="glass-panel pinly-panel">

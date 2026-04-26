@@ -115,7 +115,7 @@ export const privacySections: LegalSection[] = [
     title: "Infrastructure and third parties",
     paragraphs: [
       "Pinly relies on infrastructure providers to run the app, including hosting, database, authentication, storage, and mapping or geocoding services.",
-      "If you use optional Google sign-in, Google provides that authentication step. Map and place lookup features may also call mapping and geocoding providers to return location data."
+      "If you use optional Apple or Google sign-in, that provider supplies the authentication step. Map and place lookup features may also call mapping and geocoding providers to return location data."
     ]
   },
   {

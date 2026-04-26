@@ -19,7 +19,7 @@ export function PushPermissionSheet({
   onOpenChange
 }: PushPermissionSheetProps) {
   const drawerStyle = {
-    "--pinly-sheet-top-gap": "6rem"
+    "--pinly-sheet-top-gap": "5.25rem"
   } as CSSProperties;
 
   return (
@@ -27,7 +27,7 @@ export function PushPermissionSheet({
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-[220] bg-black/38 backdrop-blur-sm transition-opacity" />
         <Drawer.Content
-          className="pinly-mobile-drawer fixed inset-x-0 z-[220] mt-24 rounded-t-[2.5rem] bg-[var(--surface-strong)] after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]"
+          className="pinly-mobile-drawer fixed inset-x-0 z-[220] rounded-t-[2.5rem] bg-[var(--surface-strong)] after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]"
           style={drawerStyle}
         >
           <div className="mx-auto flex w-full max-w-lg flex-col gap-5 px-5 pb-8 pt-4">
@@ -39,10 +39,10 @@ export function PushPermissionSheet({
               </div>
               <div>
                 <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground)]/42">Stay in the loop</p>
-                <h2 className="mt-1 font-[var(--font-serif)] text-2xl">Turn on real activity alerts</h2>
-                <p className="mt-2 text-sm leading-6 text-[var(--foreground)]/64">
+                <Drawer.Title className="mt-1 font-[var(--font-serif)] text-2xl">Turn on real activity alerts</Drawer.Title>
+                <Drawer.Description className="mt-2 text-sm leading-6 text-[var(--foreground)]/64">
                   Pinly can notify you when a memory gets liked, someone comments, or a friend request is accepted.
-                </p>
+                </Drawer.Description>
               </div>
             </div>
 

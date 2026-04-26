@@ -1,21 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { LoaderCircle } from "lucide-react";
+import { Apple, LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { normalizeAuthCallbackUrl, syncAuthCallbackUrlCookie } from "@/lib/auth-client";
 
 type GoogleAuthButtonProps = {
   mode: "signin" | "signup";
+  provider?: "apple" | "google";
   callbackUrl?: string;
   beforeAuth?: () => Promise<boolean>;
 };
 
-export function GoogleAuthButton({ mode, callbackUrl = "/map", beforeAuth }: GoogleAuthButtonProps) {
+export function GoogleAuthButton({ mode, provider = "google", callbackUrl = "/map", beforeAuth }: GoogleAuthButtonProps) {
   const [loading, setLoading] = useState(false);
+  const normalizedCallbackUrl = normalizeAuthCallbackUrl(callbackUrl);
+  const providerLabel = provider === "apple" ? "Apple" : "Google";
 
-  async function onGoogleAuth() {
+  async function onSocialAuth() {
     setLoading(true);
 
     try {
@@ -28,10 +32,11 @@ export function GoogleAuthButton({ mode, callbackUrl = "/map", beforeAuth }: Goo
         }
       }
 
-      await signIn("google", { callbackUrl });
+      syncAuthCallbackUrlCookie(normalizedCallbackUrl);
+      await signIn(provider, { callbackUrl: normalizedCallbackUrl });
     } catch {
       setLoading(false);
-      toast.error("Google sign in could not start. Please try again.");
+      toast.error(`${providerLabel} sign in could not start. Please try again.`);
       return;
     }
 
@@ -44,12 +49,18 @@ export function GoogleAuthButton({ mode, callbackUrl = "/map", beforeAuth }: Goo
       variant="secondary"
       className="w-full gap-2"
       onClick={() => {
-        void onGoogleAuth();
+        void onSocialAuth();
       }}
       disabled={loading}
     >
-      {loading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <span className="text-base">G</span>}
-      {mode === "signin" ? "Continue with Google" : "Sign up with Google"}
+      {loading ? (
+        <LoaderCircle className="h-4 w-4 animate-spin" />
+      ) : provider === "apple" ? (
+        <Apple className="h-4 w-4" />
+      ) : (
+        <span className="text-base">G</span>
+      )}
+      {mode === "signin" ? `Continue with ${providerLabel}` : `Sign up with ${providerLabel}`}
     </Button>
   );
 }

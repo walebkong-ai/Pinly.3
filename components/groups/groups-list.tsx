@@ -73,7 +73,7 @@ export function GroupsList({ initialGroups }: { initialGroups?: MessageGroupSumm
   return (
     <div className="pinly-content-shell pinly-screen-grid animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
       <section className="glass-panel pinly-panel w-full min-w-0">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3.5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="pinly-eyebrow">Messages</p>
             <h1 className="pinly-display-title">Your inbox</h1>
@@ -93,7 +93,7 @@ export function GroupsList({ initialGroups }: { initialGroups?: MessageGroupSumm
           </div>
         </div>
 
-        <div className="relative mt-4">
+        <div className="relative mt-3.5 sm:mt-4">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--foreground)]/40" />
           <Input
             value={query}
@@ -103,7 +103,7 @@ export function GroupsList({ initialGroups }: { initialGroups?: MessageGroupSumm
           />
         </div>
 
-        <div className="mt-4 space-y-3">
+        <div className="mt-3.5 space-y-2.5 sm:mt-4 sm:space-y-3">
           {loading ? (
             <div className="text-sm text-[var(--foreground)]/60">Loading conversations...</div>
           ) : groups.length === 0 ? (
@@ -122,13 +122,13 @@ export function GroupsList({ initialGroups }: { initialGroups?: MessageGroupSumm
                 tabIndex={0}
                 onClick={() => openConversation(group.id)}
                 onKeyDown={(event) => handleConversationKeyDown(event, group.id)}
-                className={`flex cursor-pointer items-start justify-between gap-3 rounded-[1.5rem] border p-3.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/40 hover:bg-[var(--surface-strong)] ${
+                className={`flex cursor-pointer items-start justify-between gap-3 rounded-[1.5rem] border p-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--map-accent)]/40 hover:bg-[var(--surface-strong)] sm:p-3.5 ${
                   group.hasUnread
                     ? "border-[rgba(56,182,201,0.22)] bg-[rgba(56,182,201,0.1)]"
                     : "bg-[var(--surface-soft)]"
                 }`}
               >
-                <div className="flex min-w-0 flex-1 items-center gap-3.5">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
                   {group.isDirect && group.directUser ? (
                     <ProfileLink username={group.directUser.username} disableProfileNavigation>
                       <Avatar

@@ -1,11 +1,16 @@
 import NextAuth, { type NextAuthConfig } from "next-auth";
+import Apple from "next-auth/providers/apple";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
+import { logLocalAuthDebug, logLocalAuthError, logLocalAuthLoggerError } from "@/lib/auth-debug";
+import { resolveAuthRedirectUrl } from "@/lib/auth-local";
 import { prisma } from "@/lib/prisma";
-import { authorizeCredentials, ensureGoogleUser, LegalAcceptanceRequiredError } from "@/lib/auth-helpers";
+import { authorizeCredentials, ensureSocialAuthUser, LegalAcceptanceRequiredError } from "@/lib/auth-helpers";
 import { readPendingLegalConsent } from "@/lib/legal";
 
 const googleConfigured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+const appleConfigured = Boolean(process.env.APPLE_CLIENT_ID && process.env.APPLE_CLIENT_SECRET);
+const googleAllowed = googleConfigured && (process.env.NODE_ENV !== "production" || appleConfigured);
 
 const providers: NextAuthConfig["providers"] = [
   Credentials({
@@ -17,7 +22,16 @@ const providers: NextAuthConfig["providers"] = [
   })
 ];
 
-if (googleConfigured) {
+if (appleConfigured) {
+  providers.push(
+    Apple({
+      clientId: process.env.APPLE_CLIENT_ID as string,
+      clientSecret: process.env.APPLE_CLIENT_SECRET as string
+    })
+  );
+}
+
+if (googleAllowed) {
   providers.push(
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
@@ -31,6 +45,7 @@ async function syncTokenWithCurrentUser(token: any): Promise<any> {
     typeof token.id === "string" ? token.id : typeof token.sub === "string" ? token.sub : null;
 
   if (!tokenUserId) {
+    logLocalAuthDebug("jwt.sync_skipped_missing_user");
     return null;
   }
 
@@ -47,6 +62,9 @@ async function syncTokenWithCurrentUser(token: any): Promise<any> {
     });
 
     if (!currentUser) {
+      logLocalAuthDebug("jwt.sync_missing_database_user", {
+        userId: tokenUserId
+      });
       return null;
     }
 
@@ -59,9 +77,9 @@ async function syncTokenWithCurrentUser(token: any): Promise<any> {
 
     return token;
   } catch (error) {
-    if (process.env.NODE_ENV !== "production") {
-      console.error("Failed to verify auth session against the database:", error);
-    }
+    logLocalAuthError("jwt.sync_failed", error, {
+      userId: tokenUserId
+    });
     return token;
   }
 }
@@ -70,6 +88,14 @@ export const authConfig = {
   secret: process.env.AUTH_SECRET,
   trustHost: true,
   debug: process.env.NODE_ENV === "development",
+  logger: {
+    error: (error: Error) => {
+      logLocalAuthLoggerError("authjs.error", error, {
+        requestUrl: process.env.AUTH_URL || process.env.NEXTAUTH_URL || undefined
+      });
+      console.error(error);
+    }
+  },
   useSecureCookies: process.env.NODE_ENV === "production",
   session: {
     strategy: "jwt" as const
@@ -79,8 +105,23 @@ export const authConfig = {
   },
   providers,
   callbacks: {
+    redirect: async ({ url, baseUrl }: { url: string; baseUrl: string }) => {
+      const redirectUrl = resolveAuthRedirectUrl(url, baseUrl);
+      logLocalAuthDebug("redirect.resolved", {
+        url,
+        baseUrl,
+        redirectUrl
+      });
+      return redirectUrl;
+    },
     signIn: async ({ user, account }: any) => {
-      if (account?.provider !== "google") {
+      logLocalAuthDebug("sign_in.callback", {
+        provider: account?.provider ?? null,
+        userId: user?.id ?? null,
+        email: user?.email ?? null
+      });
+
+      if (account?.provider !== "google" && account?.provider !== "apple") {
         return true;
       }
 
@@ -90,7 +131,7 @@ export const authConfig = {
 
       try {
         const legalAcceptance = await readPendingLegalConsent();
-        const ensuredUser = await ensureGoogleUser(prisma, {
+        const ensuredUser = await ensureSocialAuthUser(prisma, {
           email: user.email,
           name: user.name,
           avatarUrl: user.image ?? user.avatarUrl
@@ -101,15 +142,25 @@ export const authConfig = {
         user.avatarUrl = ensuredUser.avatarUrl;
         user.name = ensuredUser.name;
         user.email = ensuredUser.email;
+        logLocalAuthDebug("social.sign_in.success", {
+          provider: account.provider,
+          userId: ensuredUser.id,
+          email: ensuredUser.email
+        });
         return true;
       } catch (error) {
         if (error instanceof LegalAcceptanceRequiredError) {
+          logLocalAuthDebug("social.sign_in.legal_required", {
+            provider: account.provider,
+            email: user.email
+          });
           return "/sign-up?legal=required";
         }
 
-        if (process.env.NODE_ENV !== "production") {
-          console.error(error);
-        }
+        logLocalAuthError("social.sign_in.failed", error, {
+          provider: account?.provider ?? null,
+          email: user?.email ?? null
+        });
         return false;
       }
     },
@@ -132,10 +183,23 @@ export const authConfig = {
         }
       }
 
-      return syncTokenWithCurrentUser(token);
+      const nextToken = await syncTokenWithCurrentUser(token);
+      logLocalAuthDebug("jwt.issued", {
+        trigger: trigger ?? "default",
+        userId:
+          typeof nextToken?.id === "string"
+            ? nextToken.id
+            : typeof nextToken?.sub === "string"
+              ? nextToken.sub
+              : null,
+        email: typeof nextToken?.email === "string" ? nextToken.email : null,
+        hadUserPayload: Boolean(user)
+      });
+      return nextToken;
     },
     session: async ({ session, token }: any) => {
       if (typeof token?.id !== "string" && typeof token?.sub !== "string") {
+        logLocalAuthDebug("session.missing_token_user");
         return null;
       }
 
@@ -146,6 +210,10 @@ export const authConfig = {
         session.user.avatarUrl = token.avatarUrl ?? null;
       }
 
+      logLocalAuthDebug("session.ready", {
+        userId: session.user?.id ?? null,
+        username: session.user?.username ?? null
+      });
       return session;
     }
   }

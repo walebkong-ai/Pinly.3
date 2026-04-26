@@ -60,9 +60,9 @@ export function ShareSheet({
   const [requestingUserId, setRequestingUserId] = useState<string | null>(null);
   const peopleSearchAbortRef = useRef<AbortController | null>(null);
   const peopleSearchTimerRef = useRef<number | null>(null);
-const drawerStyle = {
-  "--pinly-sheet-top-gap": "6rem"
-} as CSSProperties;
+  const drawerStyle = {
+    "--pinly-sheet-top-gap": "5.25rem"
+  } as CSSProperties;
 
   useEffect(() => {
     return () => {
@@ -363,7 +363,7 @@ const drawerStyle = {
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm transition-opacity" />
         <Drawer.Content
-          className="pinly-mobile-drawer pinly-mobile-drawer--full fixed inset-x-0 z-[200] mt-24 flex flex-col rounded-t-[2.5rem] bg-[var(--surface-strong)] after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]"
+          className="pinly-mobile-drawer pinly-mobile-drawer--full fixed inset-x-0 z-[200] flex flex-col rounded-t-[2.5rem] bg-[var(--surface-strong)] after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]"
           style={drawerStyle}
         >
           <div className="mx-auto mt-4 h-1.5 w-12 shrink-0 rounded-full bg-[var(--foreground)]/15" />

@@ -85,7 +85,7 @@ export default async function PostDetailPage({ params }: Props) {
           </div>
 
           {/* Content */}
-          <div className="space-y-4 p-4">
+          <div className="space-y-3.5 p-3.5 sm:space-y-4 sm:p-4">
             {/* Author row */}
             <div className="flex items-start justify-between">
               <ProfileLink
@@ -123,7 +123,7 @@ export default async function PostDetailPage({ params }: Props) {
 
             <div className="space-y-2">
               <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--foreground)]/42">Memory</p>
-              <h1 className="font-[var(--font-serif)] text-[2rem] leading-[1.12] text-[var(--foreground)] md:text-[2.7rem] md:leading-[1.08]">
+              <h1 className="font-[var(--font-serif)] text-[1.72rem] leading-[1.12] text-[var(--foreground)] sm:text-[2rem] md:text-[2.7rem] md:leading-[1.08]">
                 {primaryCaption}
               </h1>
             </div>
@@ -180,7 +180,7 @@ export default async function PostDetailPage({ params }: Props) {
             {isOwnPost ? <ManagePostCollectionsCard postId={post.id} initialCollections={postCollections} /> : null}
 
             {/* Primary post actions */}
-            <div className="border-t pt-4">
+            <div className="border-t pt-3.5 sm:pt-4">
               <div className="flex flex-wrap items-center gap-1">
                 <LikeButton postId={post.id} initialLiked={liked} initialCount={likeCount} showCount={showLikeCounts} />
                 {commentsEnabled ? (
@@ -193,7 +193,7 @@ export default async function PostDetailPage({ params }: Props) {
                 <SaveButton postId={post.id} initialSaved={post.savedByViewer} />
                 <ShareSheet postId={post.id} />
               </div>
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-2.5 flex flex-wrap gap-2">
                 <WantToGoButton location={post} initialItemId={wantToGoItem?.id ?? null} triggerStyle="emphasis" />
                 <DirectionsSheet post={post} label="Directions" triggerStyle="emphasis" />
               </div>

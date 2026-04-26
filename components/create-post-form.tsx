@@ -38,7 +38,7 @@ const DynamicLocationPicker = dynamic(
   () => import("@/components/create/location-picker").then((mod) => mod.LocationPicker),
   {
     ssr: false,
-    loading: () => <div className="h-[320px] rounded-[1.75rem] border bg-[var(--surface-soft)]" />
+    loading: () => <div className="h-[272px] rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-soft)] sm:h-[288px]" />
   }
 );
 
@@ -593,27 +593,27 @@ export function CreatePostForm() {
   return (
     <div
       data-testid="create-post-form"
-      className="pinly-content-shell pinly-screen-stack animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out"
+      className="pinly-content-shell pinly-screen-stack pinly-create-form animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out"
     >
       {showFirstMemoryGuide ? (
-        <section className="glass-panel pinly-panel">
+        <section className="glass-panel pinly-form-panel">
           <p className="pinly-eyebrow">First memory</p>
           <h2 className="pinly-display-title">Start with one place you want to remember.</h2>
           <p className="pinly-body-copy">
             You only need three things to make your first Pinly post feel right: a photo, the place, and a short memory caption.
           </p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-soft)] p-4">
-              <p className="pinly-eyebrow">1. Upload</p>
-              <p className="mt-2 text-sm text-[var(--foreground)]/68">Choose one photo from the moment.</p>
+          <div className="mt-2.5 grid gap-2 sm:mt-3 sm:grid-cols-3 sm:gap-2.5">
+            <div className="pinly-form-card flex items-start gap-2.5 sm:block">
+              <p className="pinly-eyebrow shrink-0">1. Upload</p>
+              <p className="text-xs leading-5 text-[var(--foreground)]/68 sm:mt-1.5 sm:text-sm">Choose one photo from the moment.</p>
             </div>
-            <div className="rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-soft)] p-4">
-              <p className="pinly-eyebrow">2. Place it</p>
-              <p className="mt-2 text-sm text-[var(--foreground)]/68">Search for the place or tap the map exactly where it happened.</p>
+            <div className="pinly-form-card flex items-start gap-2.5 sm:block">
+              <p className="pinly-eyebrow shrink-0">2. Place it</p>
+              <p className="text-xs leading-5 text-[var(--foreground)]/68 sm:mt-1.5 sm:text-sm">Search or tap the map where it happened.</p>
             </div>
-            <div className="rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-soft)] p-4">
-              <p className="pinly-eyebrow">3. Publish</p>
-              <p className="mt-2 text-sm text-[var(--foreground)]/68">Add a caption and date, then pin it to your map.</p>
+            <div className="pinly-form-card flex items-start gap-2.5 sm:block">
+              <p className="pinly-eyebrow shrink-0">3. Publish</p>
+              <p className="text-xs leading-5 text-[var(--foreground)]/68 sm:mt-1.5 sm:text-sm">Add a caption and date, then pin it.</p>
             </div>
           </div>
         </section>
@@ -628,14 +628,14 @@ export function CreatePostForm() {
       ) : null}
 
       <div className="pinly-screen-grid--split">
-        <section className="glass-panel pinly-panel">
+        <section className="glass-panel pinly-form-panel">
           <p className="pinly-eyebrow">Step 1</p>
           <h1 className="pinly-display-title">Upload your moment</h1>
           <p className="pinly-body-copy">
             Add a photo from a place you intentionally want to remember. No background tracking, ever.
           </p>
           {uploadError ? (
-            <div className="mt-4 rounded-[1.5rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            <div className="mt-2.5 rounded-[var(--pinly-panel-radius)] border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 sm:mt-3 sm:px-3.5 sm:py-2.5">
               {uploadError}
             </div>
           ) : null}
@@ -665,7 +665,7 @@ export function CreatePostForm() {
           />
           {/* Upload / Preview area */}
           {uploading ? (
-            <div className="mt-6 flex h-64 w-full flex-col items-center justify-center rounded-[2rem] border border-dashed bg-[var(--surface-soft)]">
+            <div className="mt-3 flex h-[min(12.75rem,30vh)] w-full flex-col items-center justify-center rounded-[1.75rem] border border-dashed bg-[var(--surface-soft)] sm:mt-3.5 sm:h-[14rem]">
               <LoaderCircle className="h-8 w-8 animate-spin text-[var(--accent)]" />
               <p className="mt-3 text-sm text-[var(--foreground)]/55">
                 {pendingImageFile || editableImageFile ? "Uploading cropped photo..." : "Uploading…"}
@@ -678,24 +678,24 @@ export function CreatePostForm() {
               onSave={handleSaveEditedPhoto}
             />
           ) : uploadState ? (
-            <div className="relative mt-6 overflow-hidden rounded-[2rem]">
+            <div className="relative mt-3 overflow-hidden rounded-[1.75rem] sm:mt-3.5">
               {uploadState.mediaType === "VIDEO" ? (
                 <video
                   src={uploadPreviewUrl}
                   poster={uploadPreviewThumbnailUrl || undefined}
                   controls
                   playsInline
-                  className="max-h-72 w-full rounded-[2rem] object-cover"
+                  className="max-h-[min(15rem,35vh)] w-full rounded-[1.75rem] object-cover sm:max-h-[15.5rem]"
                 />
               ) : (
-                <div className="relative h-72 w-full rounded-[2rem] bg-[var(--surface-soft)]">
+                <div className="relative h-[min(15rem,35vh)] w-full rounded-[1.75rem] bg-[var(--surface-soft)] sm:h-[15.5rem]">
                   <RevealImage
                     src={uploadPreviewUrl}
                     alt="Upload preview"
                     fill
                     sizes="(max-width: 768px) 100vw, 50vw"
-                    wrapperClassName="h-full w-full rounded-[2rem]"
-                    className="rounded-[2rem] object-cover"
+                    wrapperClassName="h-full w-full rounded-[1.75rem]"
+                    className="rounded-[1.75rem] object-cover"
                   />
                 </div>
               )}
@@ -736,13 +736,13 @@ export function CreatePostForm() {
               </button>
             </div>
           ) : (
-            <div className="mt-6 flex h-64 w-full flex-col items-center justify-center rounded-[2rem] border border-dashed bg-[var(--surface-soft)] px-5 text-center">
+            <div className="mt-3 flex h-[min(12.75rem,30vh)] w-full flex-col items-center justify-center rounded-[1.75rem] border border-dashed bg-[var(--surface-soft)] px-4 text-center sm:mt-3.5 sm:h-[14rem] sm:px-5">
               <Upload className="h-8 w-8 text-[var(--accent)]" />
-              <p className="mt-4 font-medium">Choose a photo</p>
-              <p className="mt-2 max-w-xs text-sm text-[var(--foreground)]/55">
+              <p className="mt-2.5 font-medium">Choose a photo</p>
+              <p className="mt-1 max-w-xs text-sm text-[var(--foreground)]/55">
                 Use the camera for something fresh or pull from your library when the moment already happened.
               </p>
-              <div className="mt-5 flex w-full max-w-sm flex-col gap-2 sm:flex-row">
+              <div className="mt-3.5 flex w-full max-w-sm flex-col gap-1.5 sm:flex-row sm:gap-2">
                 <Button
                   type="button"
                   className="h-11 flex-1 gap-2"
@@ -769,33 +769,48 @@ export function CreatePostForm() {
           )}
         </section>
 
-        <section className="glass-panel pinly-panel">
+        <section className="glass-panel pinly-form-panel">
           <p className="pinly-eyebrow">Step 2</p>
           <h2 className="pinly-display-title">Choose the place</h2>
-          <div className="mt-4 space-y-4">
-            <div className="rounded-[var(--pinly-panel-radius-lg)] border bg-[var(--surface-soft)] p-4">
+          <div className="mt-2.5 pinly-form-stack sm:mt-3">
+            <div className="pinly-bottom-cta">
+              <p className="mb-1.5 text-[11px] leading-4 text-[var(--foreground)]/58">
+                Photo, place, and date are required before publishing.
+              </p>
+              <Button
+                type="button"
+                onClick={onSubmit}
+                className="min-h-11 w-full"
+                disabled={submitting || uploading || gettingLocation || resolvingLocation || !isOnline || !!pendingImageFile}
+              >
+                {submitting ? "Saving pin..." : "Publish memory"}
+              </Button>
+            </div>
+
+            <div className="pinly-form-card">
               <div className="flex items-center gap-2 text-sm font-medium text-[var(--foreground)]">
                 <Search className="h-4 w-4 text-[var(--map-accent)]" />
                 Search for a place
               </div>
-              <div className="relative mt-3">
+              <div className="relative mt-2.5">
                 <Input
                   value={locationQuery}
                   onChange={(event) => setLocationQuery(event.target.value)}
                   placeholder="Search cities, landmarks, neighborhoods"
                   disabled={!isOnline}
+                  className="pinly-create-control"
                 />
                 {searchingPlaces && <LoaderCircle className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[var(--map-accent)]" />}
               </div>
               {!!placeResults.length && (
-                <div className="mt-3 space-y-2">
+                <div className="mt-2.5 space-y-1.5">
                   {placeResults.map((place) => (
                     <button
                       key={place.id}
                       type="button"
                       onClick={() => applyPlaceResult(place)}
-                    className="block w-full rounded-[1.35rem] border bg-[var(--surface-strong)] px-4 py-3 text-left transition hover:bg-[var(--card-strong)]"
-                  >
+                      className="block w-full rounded-[1.125rem] border bg-[var(--surface-strong)] px-3 py-2 text-left transition hover:bg-[var(--card-strong)]"
+                    >
                       <p className="text-sm font-medium">{place.placeName}</p>
                       <p className="mt-1 text-xs text-[var(--foreground)]/55">{place.displayName}</p>
                     </button>
@@ -810,13 +825,13 @@ export function CreatePostForm() {
               )}
             </div>
 
-            <div className="rounded-[var(--pinly-panel-radius-lg)] border bg-[var(--surface-soft)] p-4">
+            <div className="pinly-form-card">
               <div className="flex items-center gap-2 text-sm font-medium text-[var(--foreground)]">
                 <Crosshair className="h-4 w-4 text-[var(--map-accent)]" />
                 Or tap the map to drop the memory exactly where it happened
               </div>
 
-              <div className="mt-3 flex flex-wrap items-center gap-2">
+              <div className="mt-2.5 flex flex-wrap items-center gap-2">
                 <Button
                   type="button"
                   variant="secondary"
@@ -833,9 +848,10 @@ export function CreatePostForm() {
                 </Button>
               </div>
 
-              <div className="mt-4 overflow-hidden rounded-[var(--pinly-panel-radius-lg)]">
+              <div className="mt-2.5 overflow-hidden rounded-[var(--pinly-panel-radius)]">
                 <DynamicLocationPicker
                   position={latitude !== null && longitude !== null ? { latitude, longitude } : null}
+                  className="h-[272px] rounded-[var(--pinly-panel-radius)] sm:h-[288px]"
                   onSelect={(coordinates) => handleCoordinateSelection(coordinates, "map")}
                 />
               </div>
@@ -843,7 +859,7 @@ export function CreatePostForm() {
               {(locationFeedback || hasFiniteCoordinates(latitude, longitude)) && (
                 <div
                   data-testid="create-selected-location"
-                  className={`mt-4 rounded-[var(--pinly-panel-radius)] border px-4 py-3 ${
+                  className={`mt-2.5 rounded-[var(--pinly-panel-radius)] border px-3 py-2 sm:px-3.5 sm:py-2.5 ${
                     locationFeedback?.tone === "error"
                       ? "border-rose-200 bg-rose-50/80"
                       : locationFeedback?.tone === "success"
@@ -854,16 +870,16 @@ export function CreatePostForm() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--foreground)]/45">Selected location</p>
-                      <p className="mt-1 truncate text-sm font-medium text-[var(--foreground)]">
+                      <p className="mt-0.5 truncate text-sm font-medium text-[var(--foreground)]">
                         {placeName.trim() || (hasFiniteCoordinates(latitude, longitude) ? "Pinned coordinates selected" : "No place selected yet")}
                       </p>
                       {city.trim() || country.trim() ? (
-                        <p className="mt-1 text-xs text-[var(--foreground)]/60">
+                        <p className="mt-0.5 text-xs text-[var(--foreground)]/60">
                           {[city.trim(), country.trim()].filter(Boolean).join(", ")}
                         </p>
                       ) : null}
                       {locationFeedback ? (
-                        <p className="mt-2 text-xs text-[var(--foreground)]/68">{locationFeedback.message}</p>
+                        <p className="mt-1.5 text-xs text-[var(--foreground)]/68">{locationFeedback.message}</p>
                       ) : null}
                     </div>
                     {hasFiniteCoordinates(latitude, longitude) ? (
@@ -876,106 +892,104 @@ export function CreatePostForm() {
               )}
             </div>
 
-          <Textarea
-            value={caption}
-            onChange={(event) => setCaption(event.target.value)}
-            placeholder="What made this place feel special?"
-            required
-          />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input
-              value={placeName}
-              onChange={(event) => {
-                setPlaceName(event.target.value);
-                if (locationFeedback?.tone === "error") {
-                  setLocationFeedback(null);
-                }
-              }}
-              placeholder="Place name"
+            <Textarea
+              value={caption}
+              onChange={(event) => setCaption(event.target.value)}
+              placeholder="What made this place feel special?"
+              className="pinly-create-control pinly-create-textarea"
               required
             />
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-[var(--foreground)]/65">Date visited</label>
-              <Input value={visitedAt} onChange={(event) => setVisitedAt(event.target.value)} type="date" required />
-            </div>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input
-              value={city}
-              onChange={(event) => {
-                setCity(event.target.value);
-                if (locationFeedback?.tone === "error") {
-                  setLocationFeedback(null);
-                }
-              }}
-              placeholder="City"
-              required
-            />
-            <Input
-              value={country}
-              onChange={(event) => {
-                setCountry(event.target.value);
-                if (locationFeedback?.tone === "error") {
-                  setLocationFeedback(null);
-                }
-              }}
-              placeholder="Country"
-              required
-            />
-          </div>
-
-          <VisitedWithPicker selectedFriendIds={taggedUserIds} onChange={setTaggedUserIds} />
-
-          <CollectionPicker selectedCollectionIds={collectionIds} onChange={setCollectionIds} />
-
-          <details className="rounded-[var(--pinly-panel-radius-lg)] border bg-[var(--surface-soft)] p-4 text-sm text-[var(--foreground)]/65">
-            <summary className="cursor-pointer font-medium text-[var(--foreground)]">Advanced coordinates</summary>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
               <Input
-                value={latitude ?? ""}
-                onChange={(event) => setLatitude(parseCoordinateInput(event.target.value))}
-                onBlur={() => {
-                  if (hasFiniteCoordinates(latitude, longitude)) {
-                    handleCoordinateSelection({ latitude: latitude!, longitude: longitude! }, "coordinates");
+                value={placeName}
+                onChange={(event) => {
+                  setPlaceName(event.target.value);
+                  if (locationFeedback?.tone === "error") {
+                    setLocationFeedback(null);
                   }
                 }}
-                type="number"
-                step="0.000001"
-                placeholder="Latitude"
+                placeholder="Place name"
+                className="pinly-create-control"
+                required
               />
+              <div>
+                <label className="mb-1 block text-xs font-medium text-[var(--foreground)]/65">Date visited</label>
+                <Input value={visitedAt} onChange={(event) => setVisitedAt(event.target.value)} type="date" className="pinly-create-control" required />
+              </div>
+            </div>
+            <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
               <Input
-                value={longitude ?? ""}
-                onChange={(event) => setLongitude(parseCoordinateInput(event.target.value))}
-                onBlur={() => {
-                  if (hasFiniteCoordinates(latitude, longitude)) {
-                    handleCoordinateSelection({ latitude: latitude!, longitude: longitude! }, "coordinates");
+                value={city}
+                onChange={(event) => {
+                  setCity(event.target.value);
+                  if (locationFeedback?.tone === "error") {
+                    setLocationFeedback(null);
                   }
                 }}
-                type="number"
-                step="0.000001"
-                placeholder="Longitude"
+                placeholder="City"
+                className="pinly-create-control"
+                required
+              />
+              <Input
+                value={country}
+                onChange={(event) => {
+                  setCountry(event.target.value);
+                  if (locationFeedback?.tone === "error") {
+                    setLocationFeedback(null);
+                  }
+                }}
+                placeholder="Country"
+                className="pinly-create-control"
+                required
               />
             </div>
-            <p className="mt-3 text-xs text-[var(--foreground)]/55">
-              Leaving either coordinate field refreshes the selected place details from the newest pin.
-            </p>
-          </details>
 
-          <div className="rounded-[var(--pinly-panel-radius-lg)] border bg-[var(--surface-soft)] p-4 text-sm text-[var(--foreground)]/65">
-            <div className="flex items-center gap-2 font-medium text-[var(--foreground)]">
-              <MapPin className="h-4 w-4 text-[var(--map-accent)]" />
-              Intentional place-based posting only
+            <VisitedWithPicker selectedFriendIds={taggedUserIds} onChange={setTaggedUserIds} />
+
+            <CollectionPicker selectedCollectionIds={collectionIds} onChange={setCollectionIds} />
+
+            <details className="pinly-form-card text-sm text-[var(--foreground)]/65">
+              <summary className="cursor-pointer font-medium text-[var(--foreground)]">Advanced coordinates</summary>
+              <div className="mt-2.5 grid gap-2.5 sm:grid-cols-2 sm:mt-3 sm:gap-3">
+                <Input
+                  value={latitude ?? ""}
+                  onChange={(event) => setLatitude(parseCoordinateInput(event.target.value))}
+                  onBlur={() => {
+                    if (hasFiniteCoordinates(latitude, longitude)) {
+                      handleCoordinateSelection({ latitude: latitude!, longitude: longitude! }, "coordinates");
+                    }
+                  }}
+                  type="number"
+                  step="0.000001"
+                  placeholder="Latitude"
+                  className="pinly-create-control"
+                />
+                <Input
+                  value={longitude ?? ""}
+                  onChange={(event) => setLongitude(parseCoordinateInput(event.target.value))}
+                  onBlur={() => {
+                    if (hasFiniteCoordinates(latitude, longitude)) {
+                      handleCoordinateSelection({ latitude: latitude!, longitude: longitude! }, "coordinates");
+                    }
+                  }}
+                  type="number"
+                  step="0.000001"
+                  placeholder="Longitude"
+                  className="pinly-create-control"
+                />
+              </div>
+              <p className="mt-2.5 text-xs text-[var(--foreground)]/55">
+                Leaving either coordinate field refreshes the selected place details from the newest pin.
+              </p>
+            </details>
+
+            <div className="pinly-form-card text-sm text-[var(--foreground)]/65">
+              <div className="flex items-center gap-2 font-medium text-[var(--foreground)]">
+                <MapPin className="h-4 w-4 text-[var(--map-accent)]" />
+                Intentional place-based posting only
+              </div>
+              <p className="mt-1 text-xs leading-5 sm:mt-1.5 sm:text-sm">Search for a place, tap the map, or fine-tune with advanced coordinates. No live location is used.</p>
             </div>
-            <p className="mt-2">Search for a place, tap the map, or fine-tune with advanced coordinates. No live location is used.</p>
-          </div>
-          <Button
-            type="button"
-            onClick={onSubmit}
-            className="w-full"
-            disabled={submitting || uploading || gettingLocation || resolvingLocation || !isOnline || !!pendingImageFile}
-          >
-            {submitting ? "Saving pin..." : "Publish memory"}
-          </Button>
           </div>
         </section>
       </div>

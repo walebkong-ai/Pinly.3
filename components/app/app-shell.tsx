@@ -147,10 +147,10 @@ export function AppShell({
   }, [refreshUnreadCounts]);
 
   return (
-    <div className="pinly-app-shell md:px-6 md:pt-[max(1rem,var(--safe-area-top))]" data-pinly-app-shell="true">
+    <div className="pinly-app-shell md:px-6 md:pt-[max(0.75rem,var(--safe-area-top))]" data-pinly-app-shell="true">
       <NativePushManager />
       <header
-        className="pinly-app-header glass-panel z-[940] flex flex-wrap items-center justify-between gap-2.5 rounded-[1.5rem] px-3 py-2.5 md:rounded-[2rem] md:gap-4 md:px-4 md:py-3"
+        className="pinly-app-header glass-panel z-[940] flex flex-wrap items-center justify-between gap-2 rounded-[1.35rem] px-3 py-2 sm:gap-2.5 sm:py-2.5 md:rounded-[2rem] md:gap-4 md:px-4 md:py-3"
         data-pinly-layout-region="header"
       >
         <div className="flex items-center gap-4">
@@ -261,12 +261,12 @@ export function AppShell({
         </div>
       </header>
 
-      <main className="pinly-app-main pt-2.5 md:pt-4" data-pinly-layout-region="content">
+      <main className="pinly-app-main pt-1.5 md:pt-3" data-pinly-layout-region="content">
         <ScreenTransition>{children}</ScreenTransition>
       </main>
 
       <nav
-        className="pinly-mobile-nav glass-panel fixed z-[950] flex items-center justify-between rounded-[1.5rem] px-1.5 py-1.5 md:hidden"
+        className="pinly-mobile-nav glass-panel fixed z-[950] flex items-center justify-between rounded-[1.35rem] md:hidden"
         data-pinly-layout-region="bottom-nav"
       >
         {[...primaryNavItems, ...secondaryNavItems.filter((item) => item.href !== "/cities" && item.href !== "/settings")].map(({ href, label, icon: Icon }) => {
@@ -277,7 +277,7 @@ export function AppShell({
               href={resolvedHref}
               aria-current={isNavActive(pathname, resolvedHref) ? "page" : undefined}
               className={cn(
-                "pinly-pressable flex min-h-11 min-w-[3.1rem] flex-col items-center justify-center gap-1 rounded-[1rem] px-1.5 py-1.5 text-[10px] font-medium transition sm:px-3 sm:text-[11px]",
+                "pinly-pressable flex min-h-11 min-w-[3.05rem] flex-col items-center justify-center gap-0.5 rounded-[1rem] px-1.25 py-1 text-[10px] font-medium transition sm:px-2.5 sm:text-[11px]",
                 isNavActive(pathname, resolvedHref)
                   ? "bg-[rgba(24,85,56,0.08)] text-[var(--foreground)]"
                   : "text-[var(--foreground)]/58 hover:bg-[var(--foreground)]/5"

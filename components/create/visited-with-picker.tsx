@@ -112,7 +112,7 @@ export function VisitedWithPicker({
     );
   }, [friends, query]);
   const drawerStyle = {
-    "--pinly-sheet-top-gap": "6rem"
+    "--pinly-sheet-top-gap": "5.25rem"
   } as CSSProperties;
 
   function toggleFriend(friendId: string) {
@@ -126,27 +126,27 @@ export function VisitedWithPicker({
   }
 
   return (
-    <div className="rounded-[var(--pinly-panel-radius-lg)] border bg-[var(--surface-soft)] p-4">
+    <div className="pinly-form-card">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 text-sm font-medium text-[var(--foreground)]">
             <Users className="h-4 w-4 text-[var(--social-accent)]" />
             Visited with
           </div>
-          <p className="mt-2 text-sm text-[var(--foreground)]/62">
+          <p className="mt-1 text-sm leading-5 text-[var(--foreground)]/62">
             Tag friends who were there with you. Optional, and only your accepted friends can be added.
           </p>
         </div>
         <Drawer.Root open={open} onOpenChange={setOpen}>
           <Drawer.Trigger asChild>
-            <Button type="button" variant="secondary" className="shrink-0 rounded-full px-4">
+            <Button type="button" variant="secondary" className="h-11 shrink-0 rounded-full px-3">
               {selectedFriendIds.length > 0 ? "Edit" : "Add friends"}
             </Button>
           </Drawer.Trigger>
           <Drawer.Portal>
             <Drawer.Overlay className="fixed inset-0 z-[980] bg-black/40 backdrop-blur-sm transition-opacity" />
             <Drawer.Content
-              className="pinly-mobile-drawer pinly-mobile-drawer--full fixed inset-x-0 z-[990] mt-24 flex flex-col rounded-t-[2.5rem] bg-[var(--surface-strong)] after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]"
+              className="pinly-mobile-drawer pinly-mobile-drawer--full fixed inset-x-0 z-[990] flex flex-col rounded-t-[2.5rem] bg-[var(--surface-strong)] after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]"
               style={drawerStyle}
             >
               <div className="mx-auto mt-4 h-1.5 w-12 shrink-0 rounded-full bg-[var(--foreground)]/15" />
@@ -158,17 +158,17 @@ export function VisitedWithPicker({
                   Choose which friends were with you for this memory.
                 </Drawer.Description>
 
-                <div className="relative mt-4">
+                <div className="relative mt-3">
                   <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--foreground)]/40" />
                   <Input
                     placeholder="Search friends..."
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
-                    className="h-12 rounded-2xl border-none bg-[var(--surface-soft)] pl-10"
+                    className="pinly-create-control h-11 rounded-[1rem] border-none bg-[var(--surface-soft)] pl-10"
                   />
                 </div>
 
-                <div className="mt-4 flex-1 overflow-y-auto pb-4">
+                <div className="mt-3 flex-1 overflow-y-auto pb-3">
                   {loading ? (
                     <div className="flex justify-center py-10">
                       <LoaderCircle className="h-6 w-6 animate-spin text-[var(--accent)]" />
@@ -184,7 +184,7 @@ export function VisitedWithPicker({
                             type="button"
                             onClick={() => toggleFriend(friend.id)}
                             className={cn(
-                              "flex w-full items-center gap-3 rounded-[1.25rem] border p-3 text-left transition-colors",
+                              "flex w-full items-center gap-3 rounded-[1.125rem] border p-2.5 text-left transition-colors",
                               isSelected
                                 ? "border-[var(--social-accent)] bg-[var(--social-accent-soft)]"
                                 : "border-transparent bg-[var(--surface-soft)] hover:bg-[var(--surface-strong)]"
@@ -221,12 +221,12 @@ export function VisitedWithPicker({
         </Drawer.Root>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-2.5 flex flex-wrap gap-1.5">
         {selectedFriends.length > 0 ? (
           selectedFriends.map((friend) => (
             <span
               key={friend.id}
-              className="inline-flex items-center gap-2 rounded-full border border-[rgba(255,95,162,0.2)] bg-[var(--surface-strong)] px-3 py-1.5 text-sm text-[var(--foreground)]"
+              className="inline-flex items-center gap-2 rounded-full border border-[rgba(255,95,162,0.2)] bg-[var(--surface-strong)] px-3 py-1 text-sm text-[var(--foreground)]"
             >
               <Avatar name={friend.name} src={friend.avatarUrl} className="h-6 w-6" />
               <span>{friend.name}</span>

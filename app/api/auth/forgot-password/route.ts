@@ -65,7 +65,8 @@ export async function POST(req: Request) {
       },
     });
 
-    const resetLink = `${process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
+    const authBaseUrl = process.env.AUTH_URL || process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || new URL(req.url).origin;
+    const resetLink = `${authBaseUrl.replace(/\/$/, "")}/reset-password?token=${token}`;
 
     return NextResponse.json({
       message: "If an account exists, a reset link has been sent.",

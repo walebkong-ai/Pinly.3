@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import Map, { Marker, MapRef } from "react-map-gl/maplibre";
+import { cn } from "@/lib/utils";
 
 const initialViewState = {
   longitude: 10,
@@ -13,10 +14,12 @@ const initialViewState = {
 
 export function LocationPicker({
   position,
-  onSelect
+  onSelect,
+  className
 }: {
   position: { latitude: number; longitude: number } | null;
   onSelect: (coordinates: { latitude: number; longitude: number }) => void;
+  className?: string;
 }) {
   const mapRef = useRef<MapRef | null>(null);
 
@@ -39,7 +42,7 @@ export function LocationPicker({
   }
 
   return (
-    <div className="h-[320px] w-full overflow-hidden rounded-[1.75rem]">
+    <div className={cn("h-[320px] w-full overflow-hidden rounded-[1.75rem]", className)}>
       <Map
         ref={mapRef}
         initialViewState={initialViewState}

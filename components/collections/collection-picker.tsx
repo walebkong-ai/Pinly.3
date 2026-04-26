@@ -99,17 +99,17 @@ function CollectionSelectionPanel({
         Group related memories together so they are easy to revisit later.
       </p>
 
-      <div className="relative mt-4">
+      <div className="relative mt-3">
         <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--foreground)]/40" />
         <Input
           placeholder="Search collections..."
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
-          className="h-12 rounded-2xl border-none bg-[var(--surface-soft)] pl-10"
+          className="pinly-create-control h-11 rounded-[1rem] border-none bg-[var(--surface-soft)] pl-10"
         />
       </div>
 
-      <div className="mt-4 rounded-[1.5rem] border bg-[var(--surface-soft)] p-3">
+      <div className="mt-3 rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-soft)] p-2.5 sm:p-3">
         <label className="text-xs font-medium uppercase tracking-[0.16em] text-[var(--foreground)]/45">
           New collection
         </label>
@@ -118,19 +118,19 @@ function CollectionSelectionPanel({
             placeholder="Montreal trip"
             value={newCollectionName}
             onChange={(event) => onNewCollectionNameChange(event.target.value)}
-            className="h-11 rounded-2xl border-none bg-[var(--surface-strong)]"
+            className="pinly-create-control h-11 rounded-[1rem] border-none bg-[var(--surface-strong)]"
           />
           <Button
             type="button"
             variant="secondary"
-            className="h-11 shrink-0 rounded-2xl px-4"
+            className="h-11 shrink-0 rounded-[1rem] px-4"
             onClick={onCreateCollection}
             disabled={creating || newCollectionName.trim().length < 2}
           >
             {creating ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <FolderPlus className="h-4 w-4" />}
           </Button>
         </div>
-        <div className="mt-3">
+        <div className="mt-2.5">
           <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--foreground)]/40 px-1">
             Privacy
           </p>
@@ -142,7 +142,7 @@ function CollectionSelectionPanel({
         </div>
       </div>
 
-      <div className="mt-4 flex-1 overflow-y-auto pb-4">
+      <div className="mt-3 flex-1 overflow-y-auto pb-3">
         {loading ? (
           <div className="flex justify-center py-10">
             <LoaderCircle className="h-6 w-6 animate-spin text-[var(--accent)]" />
@@ -158,7 +158,7 @@ function CollectionSelectionPanel({
                   type="button"
                   onClick={() => onToggle(collection.id)}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition-colors",
+                    "flex w-full items-center gap-3 rounded-[1.125rem] border p-2.5 text-left transition-colors",
                     isSelected
                       ? "border-[var(--map-accent)] bg-[rgba(56,182,201,0.12)]"
                       : "border-transparent bg-[var(--surface-soft)] hover:bg-[var(--surface-strong)]"
@@ -213,7 +213,7 @@ export function CollectionPicker({
   const [newCollectionVisibility, setNewCollectionVisibility] = useState<CollectionVisibility>("private");
   const [creating, startCreateTransition] = useTransition();
   const drawerStyle = {
-    "--pinly-sheet-top-gap": "6rem"
+    "--pinly-sheet-top-gap": "5.25rem"
   } as CSSProperties;
 
   useEffect(() => {
@@ -283,27 +283,27 @@ export function CollectionPicker({
   }
 
   return (
-    <div className="rounded-[1.75rem] border bg-[var(--surface-soft)] p-4">
+    <div className="pinly-form-card">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 text-sm font-medium text-[var(--foreground)]">
             <Folders className="h-4 w-4 text-[var(--map-accent)]" />
             Trips & collections
           </div>
-          <p className="mt-2 text-sm text-[var(--foreground)]/62">
+          <p className="mt-1 text-sm leading-5 text-[var(--foreground)]/62">
             Add this memory to one or more folders like a trip, season, or weekend.
           </p>
         </div>
         <Drawer.Root open={open} onOpenChange={setOpen}>
           <Drawer.Trigger asChild>
-            <Button type="button" variant="secondary" className="shrink-0 rounded-full px-4">
+            <Button type="button" variant="secondary" className="h-11 shrink-0 rounded-full px-3">
               {selectedCollectionIds.length > 0 ? "Edit" : "Add folders"}
             </Button>
           </Drawer.Trigger>
           <Drawer.Portal>
             <Drawer.Overlay className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm transition-opacity" />
             <Drawer.Content
-              className="pinly-mobile-drawer pinly-mobile-drawer--full fixed inset-x-0 z-[200] mt-24 flex flex-col rounded-t-[2.5rem] bg-[var(--surface-strong)] after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]"
+              className="pinly-mobile-drawer pinly-mobile-drawer--full fixed inset-x-0 z-[200] flex flex-col rounded-t-[2.5rem] bg-[var(--surface-strong)] after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]"
               style={drawerStyle}
             >
               <div className="mx-auto mt-4 h-1.5 w-12 shrink-0 rounded-full bg-[var(--foreground)]/15" />
@@ -331,12 +331,12 @@ export function CollectionPicker({
         </Drawer.Root>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-2.5 flex flex-wrap gap-1.5">
         {selectedCollections.length > 0 ? (
           selectedCollections.map((collection) => (
             <span
               key={collection.id}
-              className="inline-flex items-center gap-2 rounded-full border border-[rgba(56,182,201,0.2)] bg-[var(--surface-strong)] px-3 py-1.5 text-sm text-[var(--foreground)]"
+              className="inline-flex items-center gap-2 rounded-full border border-[rgba(56,182,201,0.2)] bg-[var(--surface-strong)] px-3 py-1 text-sm text-[var(--foreground)]"
             >
               <Folders className="h-3.5 w-3.5 text-[var(--map-accent)]" />
               <span>{collection.name}</span>
@@ -379,7 +379,7 @@ export function ManagePostCollectionsCard({
   const drawerStyle = {
     "--pinly-sheet-height": "80vh",
     "--pinly-sheet-height-md": "70vh",
-    "--pinly-sheet-top-gap": "6rem"
+    "--pinly-sheet-top-gap": "5.25rem"
   } as CSSProperties;
 
   useEffect(() => {
@@ -509,7 +509,7 @@ export function ManagePostCollectionsCard({
           <Drawer.Portal>
             <Drawer.Overlay className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm transition-opacity" />
             <Drawer.Content
-              className="pinly-mobile-drawer pinly-mobile-drawer--full fixed inset-x-0 z-[200] mt-24 flex flex-col rounded-t-[2.5rem] bg-[var(--surface-strong)] after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]"
+              className="pinly-mobile-drawer pinly-mobile-drawer--full fixed inset-x-0 z-[200] flex flex-col rounded-t-[2.5rem] bg-[var(--surface-strong)] after:absolute after:inset-x-0 after:bottom-[-100px] after:h-[100px] after:bg-[var(--surface-strong)]"
               style={drawerStyle}
             >
               <div className="mx-auto mt-4 h-1.5 w-12 shrink-0 rounded-full bg-[var(--foreground)]/15" />

@@ -176,8 +176,8 @@ export function NotificationsList({
   }
 
   return (
-    <div className="space-y-4">
-      <section className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-strong)] px-4 py-3">
+    <div className="space-y-3.5 sm:space-y-4">
+      <section className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--pinly-panel-radius)] border bg-[var(--surface-strong)] px-3.5 py-2.5 sm:px-4 sm:py-3">
         <div>
           <p className="text-sm font-medium">{unreadCount} unread</p>
           <p className="text-xs text-[var(--foreground)]/54">Likes, comments, replies, shares, and friend activity.</p>
@@ -194,7 +194,7 @@ export function NotificationsList({
         </Button>
       </section>
 
-      <section className="space-y-3">
+      <section className="space-y-2.5 sm:space-y-3">
         {visibleNotifications.map((notification) => {
           const copy = getNotificationCopy(notification);
           const Icon = getNotificationIcon(notification);
@@ -208,7 +208,7 @@ export function NotificationsList({
               onClick={() => void handleOpen(notification)}
               onKeyDown={(event) => handleNotificationKeyDown(event, notification)}
               className={cn(
-                "w-full cursor-pointer rounded-[var(--pinly-panel-radius-lg)] border p-4 text-left transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--social-accent)]/35",
+                "w-full cursor-pointer rounded-[var(--pinly-panel-radius-lg)] border p-3.5 text-left transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--social-accent)]/35 sm:p-4",
                 isUnread
                   ? "border-[rgba(255,95,162,0.18)] bg-[rgba(255,95,162,0.07)]"
                   : "bg-[var(--surface-strong)] hover:bg-[var(--surface-soft)]"

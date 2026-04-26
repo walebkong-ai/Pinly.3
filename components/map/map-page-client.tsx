@@ -130,6 +130,7 @@ export function MapPageClient() {
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [locatingUser, setLocatingUser] = useState(false);
   const [deviceLocationMessage, setDeviceLocationMessage] = useState<string | null>(null);
+  const [welcomeCardState, setWelcomeCardState] = useState<"unknown" | "shown" | "hidden">("unknown");
   const [viewport, setViewport] = useState<MapViewport>(() =>
     focusedPostFromQuery
       ? createFocusedPostViewport(focusedPostFromQuery)
@@ -489,6 +490,8 @@ export function MapPageClient() {
   const showControls = mapData.stage !== "world";
   const showWelcomeCard = mapData.stage === "world" || !mapData.cityContext;
   const forceWelcomeOpen = searchParams.get("welcome") === "1";
+  const welcomeCardVisible = showWelcomeCard && welcomeCardState !== "hidden";
+  const suppressMapChrome = showWelcomeCard && welcomeCardState !== "hidden";
   const activeFilterCount = (time !== "all" ? 1 : 0) + selectedGroupIds.length + selectedCategories.length + (collectionsOverlayEnabled ? 1 : 0);
   const collectionsOverlayCount = collectionOverlays.length;
   const activeSearchQuery = deferredQuery.trim();
@@ -502,6 +505,15 @@ export function MapPageClient() {
         : "Search, filter, and switch layers while exploring your friends' memory map.",
     [mapData.stage]
   );
+
+  useEffect(() => {
+    if (!showWelcomeCard) {
+      setWelcomeCardState("hidden");
+      return;
+    }
+
+    setWelcomeCardState("unknown");
+  }, [showWelcomeCard]);
 
   function renderFilterControl(panelClassName?: string) {
     return (
@@ -736,13 +748,13 @@ export function MapPageClient() {
           </div>
         ) : null}
 
-        {!previewSurfaceOpen && !filterOpen && (
+        {!previewSurfaceOpen && !filterOpen && !suppressMapChrome && (
           <div className="pointer-events-auto absolute left-3 top-3 z-10 hidden md:block md:left-5 md:top-5">
             {renderFilterControl()}
           </div>
         )}
 
-        {!previewSurfaceOpen && !filterOpen && (
+        {!previewSurfaceOpen && !filterOpen && !suppressMapChrome && (
           <div className="pointer-events-auto absolute right-3 top-3 z-10 hidden md:block md:right-5 md:top-5">
             {renderLocationControl()}
           </div>
@@ -752,57 +764,61 @@ export function MapPageClient() {
           <>
             <div className="pointer-events-none relative z-10 flex h-full flex-col justify-between p-3 md:p-5">
               <div className="space-y-4">
-                <div className="pointer-events-auto hidden max-w-xl items-center gap-4 rounded-full border bg-[var(--surface-strong)] px-4 py-3 shadow-sm md:inline-flex">
-                  <Brand compact />
-                  <p className="text-sm text-[var(--foreground)]/62">{minimalCopy}</p>
-                </div>
+                {!suppressMapChrome ? (
+                  <>
+                    <div className="pointer-events-auto hidden max-w-xl items-center gap-4 rounded-full border bg-[var(--surface-strong)] px-4 py-3 shadow-sm md:inline-flex">
+                      <Brand compact />
+                      <p className="text-sm text-[var(--foreground)]/62">{minimalCopy}</p>
+                    </div>
 
-                <div className="pointer-events-auto flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between animate-in fade-in slide-in-from-top-4 duration-500 ease-out">
-                  <div className="flex w-full max-w-xl flex-col gap-3">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                      <div className="relative w-full sm:min-w-[280px] sm:max-w-xl">
-                        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--foreground)]/40" />
-                        <Input
-                          value={query}
-                          onChange={(event) => setQuery(event.target.value)}
-                          placeholder="Search places, cities, countries, people, captions"
-                          className="bg-[var(--surface-strong)] pl-11 pr-11 shadow-sm"
-                        />
-                        {activeSearchQuery ? (
-                          <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[var(--foreground)]/40">
-                            {loadingMap ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
-                          </span>
-                        ) : null}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        {showControls && !collectionsOverlayEnabled ? (
-                          <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
-                            <LayerToggle value={layer} onChange={setLayer} />
+                    <div className="pointer-events-auto flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between animate-in fade-in slide-in-from-top-4 duration-500 ease-out">
+                      <div className="flex w-full max-w-xl flex-col gap-3">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                          <div className="relative w-full sm:min-w-[280px] sm:max-w-xl">
+                            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--foreground)]/40" />
+                            <Input
+                              value={query}
+                              onChange={(event) => setQuery(event.target.value)}
+                              placeholder="Search places, cities, countries, people, captions"
+                              className="bg-[var(--surface-strong)] pl-11 pr-11 shadow-sm"
+                            />
+                            {activeSearchQuery ? (
+                              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[var(--foreground)]/40">
+                                {loadingMap ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
+                              </span>
+                            ) : null}
                           </div>
-                        ) : null}
+                          <div className="flex flex-wrap items-center gap-2">
+                            {showControls && !collectionsOverlayEnabled ? (
+                              <div className="glass-panel flex w-fit items-center rounded-full p-1 shadow-sm">
+                                <LayerToggle value={layer} onChange={setLayer} />
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 md:hidden">
+                          {renderFilterControl()}
+                          {renderLocationControl()}
+                        </div>
                       </div>
+                      {showControls ? (
+                        <Link href="/create" className="pointer-events-auto self-start">
+                          <Button className="h-11 gap-2">
+                            <Plus className="h-4 w-4" />
+                            Add memory
+                          </Button>
+                        </Link>
+                      ) : null}
                     </div>
-                    <div className="flex items-center justify-between gap-2 md:hidden">
-                      {renderFilterControl()}
-                      {renderLocationControl()}
-                    </div>
-                  </div>
-                  {showControls ? (
-                    <Link href="/create" className="pointer-events-auto self-start">
-                      <Button className="h-11 gap-2">
-                        <Plus className="h-4 w-4" />
-                        Add memory
-                      </Button>
-                    </Link>
-                  ) : null}
-                </div>
-                {showEmptySearchState ? (
+                  </>
+                ) : null}
+                {showEmptySearchState && !suppressMapChrome ? (
                   <div className="pointer-events-auto inline-flex max-w-lg items-center gap-2 rounded-2xl border bg-[var(--surface-strong)] px-4 py-2 text-sm text-[var(--foreground)]/68 shadow-sm">
                     <Search className="h-4 w-4 text-[var(--map-accent)]" />
                     <span>No places, people, countries, or captions matched that search.</span>
                   </div>
                 ) : null}
-                {deviceLocationMessage ? (
+                {deviceLocationMessage && !suppressMapChrome ? (
                   <div className="pointer-events-auto inline-flex max-w-lg items-center gap-2 rounded-2xl border bg-[var(--surface-strong)] px-4 py-2 text-sm text-[var(--foreground)]/68 shadow-sm">
                     {locatingUser ? <LoaderCircle className="h-4 w-4 animate-spin text-[var(--map-accent)]" /> : <Crosshair className="h-4 w-4 text-[var(--map-accent)]" />}
                     <span>{deviceLocationMessage}</span>
@@ -819,8 +835,17 @@ export function MapPageClient() {
               </div>
             </div>
 
-            {(showControls || showWelcomeCard || satelliteToggleVisible) && (
-              <div className="pointer-events-none absolute inset-x-3 bottom-[calc(5.25rem+var(--keyboard-safe-area-bottom))] grid gap-3 md:bottom-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-end xl:px-1 animate-in fade-in duration-500 ease-out">
+            {welcomeCardVisible ? (
+              <div className="pointer-events-none absolute inset-x-3 top-3 bottom-[var(--pinly-mobile-nav-reserve)] z-20 flex items-center justify-center md:inset-x-5 md:top-5 md:bottom-5">
+                <WelcomeCard
+                  forceOpen={forceWelcomeOpen}
+                  onVisibilityChange={(visible) => setWelcomeCardState(visible ? "shown" : "hidden")}
+                />
+              </div>
+            ) : null}
+
+            {((showControls && !suppressMapChrome) || (satelliteToggleVisible && !suppressMapChrome)) && (
+              <div className="pointer-events-none absolute inset-x-3 bottom-[var(--pinly-mobile-nav-reserve)] grid gap-3 md:bottom-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-end xl:px-1 animate-in fade-in duration-500 ease-out">
                 <div className="pointer-events-none flex flex-col-reverse gap-3 xl:flex-row xl:items-end xl:justify-between xl:gap-4">
                   {satelliteToggleVisible ? (
                     <div className="pointer-events-auto self-start xl:self-end">
@@ -832,11 +857,7 @@ export function MapPageClient() {
                     </div>
                   ) : null}
                   <div className="pointer-events-auto max-w-md">
-                    {mapData.cityContext ? (
-                      <CityContextPanel cityContext={mapData.cityContext} />
-                    ) : (
-                      <WelcomeCard forceOpen={forceWelcomeOpen} />
-                    )}
+                    {mapData.cityContext ? <CityContextPanel cityContext={mapData.cityContext} /> : null}
                   </div>
                 </div>
                 {showControls ? (

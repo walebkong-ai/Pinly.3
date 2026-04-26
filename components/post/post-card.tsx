@@ -351,8 +351,8 @@ export function PostCard({
           </div>
         ) : null}
       </div>
-      <div className="space-y-2.5 p-3.5">
-        <div className="flex items-center gap-3">
+      <div className="space-y-2 p-3 sm:p-3.5">
+        <div className="flex items-center gap-2.5 sm:gap-3">
           <ProfileLink
             username={post.user.username}
             className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl p-1 -m-1 transition hover:bg-[var(--surface-soft)]"
@@ -369,7 +369,7 @@ export function PostCard({
             isOwnPost={post.ownedByViewer ?? false}
           />
         </div>
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           <p
             className={
               compact
@@ -408,7 +408,7 @@ export function PostCard({
       {body}
 
       {/* Like + Comment + Share + Open */}
-      <div className="flex flex-wrap items-center gap-1.5 border-t px-3.5 pb-3.5 pt-2">
+      <div className="flex flex-wrap items-center gap-1.5 border-t px-3 pb-3 pt-2 sm:px-3.5 sm:pb-3.5">
         <LikeButton
           postId={post.id}
           initialLiked={post.likedByViewer}
