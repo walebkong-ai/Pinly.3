@@ -1545,16 +1545,45 @@ export async function getNotifications(
 
 export async function getRecentFeedPosts(viewerId: string, limit = 24) {
   const visibleUserIds = await getVisibleUserIds(viewerId);
-
-  const posts = await prisma.post.findMany({
+  const baseWhere = {
+    userId: { in: visibleUserIds },
+    isArchived: false
+  };
+  const newestFirst = { createdAt: "desc" } as const;
+  const unlikedPosts = await prisma.post.findMany({
     where: {
-      userId: { in: visibleUserIds },
-      isArchived: false
+      ...baseWhere,
+      likes: {
+        none: {
+          userId: viewerId
+        }
+      }
     },
     include: postSummaryInclude,
-    orderBy: { createdAt: "desc" },
+    orderBy: newestFirst,
     take: limit
   });
+
+  const remainingLimit = limit - unlikedPosts.length;
+
+  if (remainingLimit <= 0) {
+    return attachViewerPostState(viewerId, unlikedPosts);
+  }
+
+  const likedPosts = await prisma.post.findMany({
+    where: {
+      ...baseWhere,
+      likes: {
+        some: {
+          userId: viewerId
+        }
+      }
+    },
+    include: postSummaryInclude,
+    orderBy: newestFirst,
+    take: remainingLimit
+  });
+  const posts = [...unlikedPosts, ...likedPosts];
 
   return attachViewerPostState(viewerId, posts);
 }
