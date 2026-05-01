@@ -46,8 +46,11 @@ export function KeyboardViewportProvider({
     root.style.setProperty("--keyboard-offset", `${keyboardOffset}px`);
     root.style.setProperty("--visual-viewport-offset-top", `${viewportOffsetTop}px`);
 
+    if (layoutViewportHeight > 0) {
+      root.style.setProperty("--app-viewport-height", `${layoutViewportHeight}px`);
+    }
+
     if (resolvedViewportHeight > 0) {
-      root.style.setProperty("--app-viewport-height", `${resolvedViewportHeight}px`);
       root.style.setProperty("--visual-viewport-height", `${resolvedViewportHeight}px`);
     }
 

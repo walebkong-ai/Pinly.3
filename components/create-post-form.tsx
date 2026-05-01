@@ -50,6 +50,7 @@ export function CreatePostForm() {
   const [uploadState, setUploadState] = useState<UploadState>(null);
   const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
   const [editableImageFile, setEditableImageFile] = useState<File | null>(null);
+  const [localUploadPreviewUrl, setLocalUploadPreviewUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -87,6 +88,8 @@ export function CreatePostForm() {
     collectionIds.length === 0;
   const uploadPreviewUrl = getMediaProxyUrl(uploadState?.mediaUrl);
   const uploadPreviewThumbnailUrl = getMediaProxyUrl(uploadState?.thumbnailUrl);
+  const resolvedUploadPreviewUrl =
+    uploadState?.mediaType === "IMAGE" && localUploadPreviewUrl ? localUploadPreviewUrl : uploadPreviewUrl;
 
   useEffect(() => {
     return () => {
@@ -97,6 +100,20 @@ export function CreatePostForm() {
       reverseLookupAbortRef.current?.abort();
     };
   }, []);
+
+  useEffect(() => {
+    if (!editableImageFile) {
+      setLocalUploadPreviewUrl("");
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(editableImageFile);
+    setLocalUploadPreviewUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [editableImageFile]);
 
   function beginLocationRequest() {
     reverseLookupAbortRef.current?.abort();
@@ -681,7 +698,7 @@ export function CreatePostForm() {
             <div className="relative mt-3 overflow-hidden rounded-[1.75rem] sm:mt-3.5">
               {uploadState.mediaType === "VIDEO" ? (
                 <video
-                  src={uploadPreviewUrl}
+                  src={resolvedUploadPreviewUrl}
                   poster={uploadPreviewThumbnailUrl || undefined}
                   controls
                   playsInline
@@ -690,7 +707,7 @@ export function CreatePostForm() {
               ) : (
                 <div className="relative h-[min(15rem,35vh)] w-full rounded-[1.75rem] bg-[var(--surface-soft)] sm:h-[15.5rem]">
                   <RevealImage
-                    src={uploadPreviewUrl}
+                    src={resolvedUploadPreviewUrl}
                     alt="Upload preview"
                     fill
                     sizes="(max-width: 768px) 100vw, 50vw"

@@ -42,7 +42,7 @@ export function useKeyboardOffset() {
       const viewport = window.visualViewport;
       const viewportHeight = Math.max(0, Math.round(viewport?.height ?? layoutViewportHeight));
       const viewportOffsetTop = Math.max(0, Math.round(viewport?.offsetTop ?? 0));
-      const measurementBaseline = viewport ? layoutViewportHeight : baselineHeight || layoutViewportHeight;
+      const measurementBaseline = baselineHeight || Math.max(layoutViewportHeight, viewportHeight + viewportOffsetTop);
 
       if (!baselineHeight || Math.abs(layoutViewportWidth - lastWidth) > 48) {
         baselineHeight = Math.max(layoutViewportHeight, viewportHeight + viewportOffsetTop);

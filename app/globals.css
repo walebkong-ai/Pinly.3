@@ -201,6 +201,13 @@ textarea,
   scroll-margin-block-end: calc(var(--keyboard-offset) + var(--keyboard-safe-area-bottom) + 7rem);
 }
 
+:root[data-keyboard-open="true"] input:not([type="checkbox"]):not([type="file"]):not([type="hidden"]):not([type="radio"]):not([type="range"]),
+:root[data-keyboard-open="true"] textarea,
+:root[data-keyboard-open="true"] [contenteditable="true"] {
+  scroll-margin-block-end: calc(var(--keyboard-safe-area-bottom) + 1.5rem);
+  scroll-margin-block-start: 1rem;
+}
+
 .pinly-app-shell {
   display: flex;
   flex-direction: column;
@@ -570,6 +577,7 @@ textarea,
   border-radius: 1rem;
   padding-top: 0.6875rem;
   padding-bottom: 0.6875rem;
+  font-size: 1rem;
   line-height: 1.35;
 }
 

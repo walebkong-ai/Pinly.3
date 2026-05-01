@@ -25,6 +25,19 @@ describe("keyboard offset helpers", () => {
     expect(result.keyboardOffset).toBeGreaterThan(KEYBOARD_OFFSET_THRESHOLD_PX);
   });
 
+  test("detects the keyboard when the layout viewport shrinks with the visual viewport", () => {
+    const result = computeKeyboardViewportState({
+      baselineHeight: 844,
+      layoutViewportHeight: 532,
+      visualViewportHeight: 532,
+      visualViewportOffsetTop: 0,
+      hasEditableFocus: true
+    });
+
+    expect(result.isKeyboardOpen).toBe(true);
+    expect(result.keyboardOffset).toBe(312);
+  });
+
   test("ignores viewport changes when no editable control is focused", () => {
     const result = computeKeyboardViewportState({
       baselineHeight: 844,
