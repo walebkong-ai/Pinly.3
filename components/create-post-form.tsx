@@ -42,6 +42,26 @@ const DynamicLocationPicker = dynamic(
   }
 );
 
+function formatMissingItems(items: string[]) {
+  if (items.length === 0) {
+    return "";
+  }
+
+  if (items.length === 1) {
+    return items[0];
+  }
+
+  if (items.length === 2) {
+    return `${items[0]} and ${items[1]}`;
+  }
+
+  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
+}
+
+function capitalizeSentence(value: string) {
+  return value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : value;
+}
+
 export function CreatePostForm() {
   const router = useRouter();
   const { isOnline } = useNetworkStatus();
@@ -90,6 +110,26 @@ export function CreatePostForm() {
   const uploadPreviewThumbnailUrl = getMediaProxyUrl(uploadState?.thumbnailUrl);
   const resolvedUploadPreviewUrl =
     uploadState?.mediaType === "IMAGE" && localUploadPreviewUrl ? localUploadPreviewUrl : uploadPreviewUrl;
+  const publishMissingItems = [
+    !uploadState ? "photo" : null,
+    pendingImageFile ? "cropped photo" : null,
+    caption.trim().length < 3 ? "memory note" : null,
+    !placeName.trim() || !city.trim() || !country.trim() || !hasFiniteCoordinates(latitude, longitude) ? "place" : null,
+    !visitedAt ? "date" : null
+  ].filter((item): item is string => Boolean(item));
+  const publishRequirementText =
+    publishMissingItems.length > 0
+      ? `${capitalizeSentence(formatMissingItems(publishMissingItems))} ${
+          publishMissingItems.length === 1 ? "is" : "are"
+        } required before publishing.`
+      : "Ready to publish.";
+  const canPublish =
+    isOnline &&
+    !submitting &&
+    !uploading &&
+    !gettingLocation &&
+    !resolvingLocation &&
+    publishMissingItems.length === 0;
 
   useEffect(() => {
     return () => {
@@ -560,8 +600,8 @@ export function CreatePostForm() {
       return;
     }
 
-    if (!caption.trim() || !placeName.trim() || !city.trim() || !country.trim() || !visitedAt) {
-      toast.error("Fill in the memory details before publishing.");
+    if (publishMissingItems.length > 0) {
+      toast.error(`Add ${formatMissingItems(publishMissingItems)} before publishing.`);
       return;
     }
 
@@ -792,13 +832,13 @@ export function CreatePostForm() {
           <div className="mt-2.5 pinly-form-stack sm:mt-3">
             <div className="pinly-bottom-cta">
               <p className="mb-1.5 text-[11px] leading-4 text-[var(--foreground)]/58">
-                Photo, place, and date are required before publishing.
+                {publishRequirementText}
               </p>
               <Button
                 type="button"
                 onClick={onSubmit}
                 className="min-h-11 w-full"
-                disabled={submitting || uploading || gettingLocation || resolvingLocation || !isOnline || !!pendingImageFile}
+                disabled={!canPublish}
               >
                 {submitting ? "Saving pin..." : "Publish memory"}
               </Button>
