@@ -67,6 +67,12 @@ const mapPostSelect = Prisma.validator<Prisma.PostSelect>()({
   mediaType: true,
   mediaUrl: true,
   thumbnailUrl: true,
+  mediaAspectRatio: true,
+  mediaWidth: true,
+  mediaHeight: true,
+  cropZoom: true,
+  cropOffsetX: true,
+  cropOffsetY: true,
   caption: true,
   placeName: true,
   city: true,
@@ -128,6 +134,9 @@ const collectionSummaryInclude = Prisma.validator<Prisma.PostCollectionInclude>(
           mediaType: true,
           mediaUrl: true,
           thumbnailUrl: true,
+          mediaAspectRatio: true,
+          mediaWidth: true,
+          mediaHeight: true,
           placeName: true,
           city: true,
           country: true
@@ -990,7 +999,10 @@ export async function getProfileData(profileUsername: string, viewerId: string) 
             visitedAt: true,
             mediaType: true,
             mediaUrl: true,
-            thumbnailUrl: true
+            thumbnailUrl: true,
+            mediaAspectRatio: true,
+            mediaWidth: true,
+            mediaHeight: true
           }
         });
   const travelSummary = buildProfileTravelSummary(postsWithSavedState, viewerPosts);

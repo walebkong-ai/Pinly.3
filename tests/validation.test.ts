@@ -21,6 +21,12 @@ describe("schema validation", () => {
         mediaType: "IMAGE",
         mediaUrl: TEST_IMAGE_URL,
         thumbnailUrl: null,
+        mediaAspectRatio: "4:5",
+        mediaWidth: 1280,
+        mediaHeight: 1600,
+        cropZoom: 1.2,
+        cropOffsetX: 14,
+        cropOffsetY: -22,
         caption: "A full day in the city.",
         placeName: "Old Port",
         city: "Montreal",
@@ -32,6 +38,24 @@ describe("schema validation", () => {
         collectionIds: ["cjf6x6q7m0001z6m5b3h9l3k2"]
       }).success
     ).toBe(true);
+  });
+
+  test("posts reject unsupported media aspect ratios", () => {
+    expect(
+      postSchema.safeParse({
+        mediaType: "IMAGE",
+        mediaUrl: TEST_IMAGE_URL,
+        thumbnailUrl: null,
+        mediaAspectRatio: "16:9",
+        caption: "A full day in the city.",
+        placeName: "Old Port",
+        city: "Montreal",
+        country: "Canada",
+        latitude: 45.5,
+        longitude: -73.55,
+        visitedAt: new Date().toISOString()
+      }).success
+    ).toBe(false);
   });
 
   test("posts default visited-with tags and collections to empty arrays", () => {

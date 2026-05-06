@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Camera, Crop, Crosshair, Images, LoaderCircle, MapPin, Search, Upload, X } from "lucide-react";
 import { toast } from "sonner";
-import { PostPhotoEditor } from "@/components/create/post-photo-editor";
+import { PostPhotoEditor, type PostPhotoEditMetadata } from "@/components/create/post-photo-editor";
 import { NoConnectionCard } from "@/components/network/no-connection-card";
 import { useNetworkStatus } from "@/components/network/network-status-provider";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ import {
 import { optimizeImageForUpload } from "@/lib/client-image-upload";
 import { normalizeStoredMediaUrl } from "@/lib/media-url";
 import { isNativePlatform } from "@/lib/native-platform";
+import { getPostMediaAspectRatioStyle, type PostMediaAspectRatio } from "@/lib/post-display";
 import { getMediaProxyUrl } from "@/lib/utils";
 import type { PlaceSearchResult } from "@/types/app";
 
@@ -32,6 +33,12 @@ type UploadState = {
   mediaUrl: string;
   mediaType: "IMAGE" | "VIDEO";
   thumbnailUrl: string | null;
+  mediaAspectRatio: PostMediaAspectRatio | null;
+  mediaWidth: number | null;
+  mediaHeight: number | null;
+  cropZoom: number | null;
+  cropOffsetX: number | null;
+  cropOffsetY: number | null;
 } | null;
 
 const DynamicLocationPicker = dynamic(
@@ -110,6 +117,7 @@ export function CreatePostForm() {
   const uploadPreviewThumbnailUrl = getMediaProxyUrl(uploadState?.thumbnailUrl);
   const resolvedUploadPreviewUrl =
     uploadState?.mediaType === "IMAGE" && localUploadPreviewUrl ? localUploadPreviewUrl : uploadPreviewUrl;
+  const uploadPreviewAspectRatio = getPostMediaAspectRatioStyle(uploadState);
   const publishMissingItems = [
     !uploadState ? "photo" : null,
     pendingImageFile ? "cropped photo" : null,
@@ -405,7 +413,7 @@ export function CreatePostForm() {
     };
   }, [locationQuery, searchPlaces]);
 
-  async function uploadFile(file: File) {
+  async function uploadFile(file: File, metadata?: PostPhotoEditMetadata) {
     if (!isOnline) {
       setUploadError(null);
       toast.error("Reconnect to upload a photo.");
@@ -453,7 +461,13 @@ export function CreatePostForm() {
       const nextUploadState = {
         mediaUrl,
         mediaType: data.mediaType,
-        thumbnailUrl
+        thumbnailUrl,
+        mediaAspectRatio: metadata?.mediaAspectRatio ?? null,
+        mediaWidth: metadata?.mediaWidth ?? null,
+        mediaHeight: metadata?.mediaHeight ?? null,
+        cropZoom: metadata?.cropZoom ?? null,
+        cropOffsetX: metadata?.cropOffsetX ?? null,
+        cropOffsetY: metadata?.cropOffsetY ?? null
       } satisfies NonNullable<UploadState>;
       setUploadState(nextUploadState);
       setUploadError(null);
@@ -468,8 +482,8 @@ export function CreatePostForm() {
     }
   }
 
-  async function handleSaveEditedPhoto(file: File) {
-    const uploaded = await uploadFile(file);
+  async function handleSaveEditedPhoto(file: File, metadata: PostPhotoEditMetadata) {
+    const uploaded = await uploadFile(file, metadata);
 
     if (!uploaded) {
       return;
@@ -742,10 +756,14 @@ export function CreatePostForm() {
                   poster={uploadPreviewThumbnailUrl || undefined}
                   controls
                   playsInline
-                  className="max-h-[min(15rem,35vh)] w-full rounded-[1.75rem] object-cover sm:max-h-[15.5rem]"
+                  className="w-full rounded-[1.75rem] object-cover"
+                  style={{ aspectRatio: uploadPreviewAspectRatio }}
                 />
               ) : (
-                <div className="relative h-[min(15rem,35vh)] w-full rounded-[1.75rem] bg-[var(--surface-soft)] sm:h-[15.5rem]">
+                <div
+                  className="relative w-full rounded-[1.75rem] bg-[var(--surface-soft)]"
+                  style={{ aspectRatio: uploadPreviewAspectRatio }}
+                >
                   <RevealImage
                     src={resolvedUploadPreviewUrl}
                     alt="Upload preview"

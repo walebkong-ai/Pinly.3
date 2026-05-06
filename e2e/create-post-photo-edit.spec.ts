@@ -2,8 +2,8 @@ import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { resetDemoAppState } from "./helpers/test-state";
 
-const mockUploadBaseUrl =
-  "https://vlsjxnserriszfrfxitv.supabase.co/storage/v1/object/public/media/e2e";
+const mockUploadStorageRoot =
+  "https://vlsjxnserriszfrfxitv.supabase.co/storage/v1/object/public/media";
 
 type UploadedAsset = {
   body: Buffer;
@@ -122,6 +122,8 @@ test("mobile create flow crops the selected image before upload and keeps replac
   const photoEditorFrame = createPostForm.getByTestId("post-photo-editor-frame").first();
   const photoEditorZoom = createPostForm.getByTestId("post-photo-editor-zoom").first();
   const photoEditorSaveButton = createPostForm.getByTestId("post-photo-editor-save").first();
+  const squareAspectButton = createPostForm.getByTestId("post-photo-editor-aspect-1:1").first();
+  const landscapeAspectButton = createPostForm.getByTestId("post-photo-editor-aspect-1.91:1").first();
   const adjustButton = createPostForm.getByRole("button", { name: /Adjust/i }).first();
   const removeButton = createPostForm.getByRole("button", { name: /Remove media/i }).first();
   const replaceButton = createPostForm.getByRole("button", { name: /Replace/i }).first();
@@ -136,6 +138,12 @@ test("mobile create flow crops the selected image before upload and keeps replac
   const selectedLocationCard = createPostForm.getByTestId("create-selected-location").first();
 
   const uploadedAssets = new Map<string, UploadedAsset>();
+  let mockUploadBaseUrl = "";
+  const expectedUploadDimensions = [
+    { width: 1280, height: 1600 },
+    { width: 1280, height: 1280 },
+    { width: 1280, height: 670 }
+  ];
   let uploadCount = 0;
 
   await page.route("**/api/uploads", async (route) => {
@@ -147,7 +155,7 @@ test("mobile create flow crops the selected image before upload and keeps replac
 
     expect(uploadedAsset.fileName).toMatch(/-post\.jpg$/);
     expect(uploadedAsset.contentType).toBe("image/jpeg");
-    expect(getJpegDimensions(uploadedAsset.body)).toEqual({ width: 1280, height: 1600 });
+    expect(getJpegDimensions(uploadedAsset.body)).toEqual(expectedUploadDimensions[uploadCount - 1]);
 
     const mediaUrl = `${mockUploadBaseUrl}/crop-${runId}-${uploadCount}.jpg`;
     uploadedAssets.set(mediaUrl, uploadedAsset);
@@ -163,7 +171,7 @@ test("mobile create flow crops the selected image before upload and keeps replac
     });
   });
 
-  await page.route(`${mockUploadBaseUrl}/**`, async (route) => {
+  await page.route(`${mockUploadStorageRoot}/**`, async (route) => {
     const uploadedAsset = uploadedAssets.get(route.request().url());
 
     if (!uploadedAsset) {
@@ -179,6 +187,17 @@ test("mobile create flow crops the selected image before upload and keeps replac
   });
 
   await signInAsDemo(page);
+  const profilePayload = await page.evaluate(async () => {
+    const response = await fetch("/api/profile/avery");
+
+    if (!response.ok) {
+      throw new Error(`Profile lookup failed with ${response.status}`);
+    }
+
+    return response.json();
+  });
+  mockUploadBaseUrl = `${mockUploadStorageRoot}/${profilePayload.user.id}`;
+
   await page.goto("/create", { waitUntil: "domcontentloaded" });
   await expect(createPostForm).toBeVisible({ timeout: 15_000 });
 
@@ -215,7 +234,16 @@ test("mobile create flow crops the selected image before upload and keeps replac
 
   await adjustButton.click();
   await expect(photoEditor).toBeVisible({ timeout: 15_000 });
-  await photoEditor.getByRole("button", { name: /^Cancel$/i }).click();
+  await squareAspectButton.click();
+  const [squareUploadResponse] = await Promise.all([
+    page.waitForResponse(
+      (response) => new URL(response.url()).pathname === "/api/uploads" && response.request().method() === "POST",
+      { timeout: 15_000 }
+    ),
+    photoEditorSaveButton.click()
+  ]);
+
+  expect(squareUploadResponse.status()).toBe(200);
   await expect(uploadPreview).toBeVisible({ timeout: 15_000 });
 
   await replaceButton.click();
@@ -225,10 +253,11 @@ test("mobile create flow crops the selected image before upload and keeps replac
   await expect(uploadPreview).toBeVisible({ timeout: 15_000 });
 
   await removeButton.click();
-  await expect(createPostForm.getByText("Choose image or video").first()).toBeVisible({ timeout: 15_000 });
+  await expect(createPostForm.getByText("Choose a photo").first()).toBeVisible({ timeout: 15_000 });
 
   await libraryUploadInput.setInputFiles(secondUploadPath);
   await expect(photoEditor).toBeVisible({ timeout: 15_000 });
+  await landscapeAspectButton.click();
   await photoEditorZoom.fill("1.2");
 
   const [secondUploadResponse] = await Promise.all([
@@ -243,8 +272,7 @@ test("mobile create flow crops the selected image before upload and keeps replac
   await expect(uploadPreview).toBeVisible({ timeout: 15_000 });
   await expect(adjustButton).toBeVisible();
 
-  const finalMediaUrl = `${mockUploadBaseUrl}/crop-${runId}-2.jpg`;
-  await expect(uploadPreview).toHaveAttribute("src", finalMediaUrl);
+  const finalMediaUrl = `${mockUploadBaseUrl}/crop-${runId}-3.jpg`;
 
   await captionField.fill(`Cropped memory ${runId}`);
   await placeNameField.fill(`Crop Point ${runId}`);
@@ -266,10 +294,44 @@ test("mobile create flow crops the selected image before upload and keeps replac
   expect(publishResponse.status()).toBe(201);
   const publishPayload = await publishResponse.json();
   expect(publishPayload.post.mediaUrl).toBe(finalMediaUrl);
+  expect(publishPayload.post.mediaAspectRatio).toBe("1.91:1");
+  expect(publishPayload.post.mediaWidth).toBe(1280);
+  expect(publishPayload.post.mediaHeight).toBe(670);
 
   await expect(page).toHaveURL(/\/map(?:\?|$)/, { timeout: 30_000 });
 
   await page.goto(`/posts/${publishPayload.post.id}`, { waitUntil: "domcontentloaded" });
-  await expect(page.locator(`img[src="${finalMediaUrl}"]`).first()).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator(`img[src*="${encodeURIComponent(finalMediaUrl)}"]`).first()).toBeVisible({ timeout: 15_000 });
   await expect(page.getByText(`Cropped memory ${runId}`).first()).toBeVisible({ timeout: 15_000 });
+});
+
+test("mobile create flow shows a clear retryable upload error", async ({ page }) => {
+  const uploadPath = path.resolve(process.cwd(), "public/demo-media/posts/circular-quay.jpg");
+  const createPostForm = page.getByRole("main").getByTestId("create-post-form").first();
+  const libraryUploadInput = createPostForm.getByTestId("library-upload-input").first();
+  const photoEditor = createPostForm.getByTestId("post-photo-editor").first();
+  const photoEditorSaveButton = createPostForm.getByTestId("post-photo-editor-save").first();
+
+  await page.route("**/api/uploads", async (route) => {
+    await route.fulfill({
+      status: 500,
+      contentType: "application/json",
+      body: JSON.stringify({
+        error: "Upload failed while saving the file.",
+        code: "UPLOAD_SAVE_FAILED"
+      })
+    });
+  });
+
+  await signInAsDemo(page);
+  await page.goto("/create", { waitUntil: "domcontentloaded" });
+  await expect(createPostForm).toBeVisible({ timeout: 15_000 });
+
+  await libraryUploadInput.setInputFiles(uploadPath);
+  await expect(photoEditor).toBeVisible({ timeout: 15_000 });
+  await photoEditorSaveButton.click();
+
+  await expect(createPostForm.getByText("Upload failed while saving the file.").first()).toBeVisible({ timeout: 15_000 });
+  await expect(photoEditor).toBeVisible();
+  await expect(photoEditorSaveButton).toBeEnabled();
 });

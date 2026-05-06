@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { POST_MEDIA_ASPECT_RATIOS } from "@/lib/post-display";
 import type { MapCategory } from "@/types/app";
 
 export const usernameRegex = /^[a-z0-9_-]{3,20}$/;
@@ -45,6 +46,7 @@ export const requiredLegalAcceptanceSchema = z.boolean().refine((value) => value
   message: "You must accept the Terms of Service and Privacy Policy."
 });
 const mapCategoryValues = ["photo", "video", "food", "nature", "landmark", "neighborhood"] as const satisfies readonly MapCategory[];
+const postMediaAspectRatioSchema = z.enum(POST_MEDIA_ASPECT_RATIOS);
 
 const csvArray = <T extends z.ZodTypeAny>(itemSchema: T) =>
   z.preprocess(
@@ -107,6 +109,12 @@ export const postSchema = z.object({
   mediaType: z.enum(["IMAGE"]),
   mediaUrl: z.string().min(1),
   thumbnailUrl: z.string().optional().nullable(),
+  mediaAspectRatio: postMediaAspectRatioSchema.optional().nullable(),
+  mediaWidth: z.coerce.number().int().min(1).max(4096).optional().nullable(),
+  mediaHeight: z.coerce.number().int().min(1).max(4096).optional().nullable(),
+  cropZoom: z.coerce.number().min(1).max(5).optional().nullable(),
+  cropOffsetX: z.coerce.number().min(-4096).max(4096).optional().nullable(),
+  cropOffsetY: z.coerce.number().min(-4096).max(4096).optional().nullable(),
   caption: createTextField({ min: 3, max: 600, allowNewlines: true }),
   placeName: createTextField({ min: 2, max: 120 }),
   city: createTextField({ min: 2, max: 80 }),

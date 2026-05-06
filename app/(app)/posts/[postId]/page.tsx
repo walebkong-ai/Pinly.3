@@ -23,6 +23,7 @@ import { ProfileLink } from "@/components/profile/profile-link";
 import { LocationCountryText } from "@/components/ui/country-flag";
 import { PostMiniMap } from "@/components/post/post-mini-map";
 import { PostSafetyActions } from "@/components/post/post-safety-actions";
+import { getPostMediaAspectRatioStyle } from "@/lib/post-display";
 
 type Props = {
   params: Promise<{ postId: string }>;
@@ -74,7 +75,7 @@ export default async function PostDetailPage({ params }: Props) {
         <BackButton />
         <article className="overflow-hidden rounded-[1.75rem] border bg-[var(--surface-strong)] shadow-sm">
           {/* Media */}
-          <div className="aspect-[4/3] md:aspect-[16/10]">
+          <div style={{ aspectRatio: getPostMediaAspectRatioStyle(post) }}>
             <MediaView
               mediaType={post.mediaType}
               mediaUrl={post.mediaUrl}

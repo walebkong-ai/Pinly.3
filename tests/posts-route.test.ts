@@ -76,6 +76,12 @@ describe("posts route", () => {
           mediaType: "IMAGE",
           mediaUrl: ownedImageUrl,
           thumbnailUrl: null,
+          mediaAspectRatio: "1:1",
+          mediaWidth: 1280,
+          mediaHeight: 1280,
+          cropZoom: 1.25,
+          cropOffsetX: 12,
+          cropOffsetY: -8,
           caption: "A full day in the city.",
           placeName: "Old Port",
           city: "Montreal",
@@ -93,6 +99,12 @@ describe("posts route", () => {
       expect.objectContaining({
         data: expect.objectContaining({
           userId: viewerId,
+          mediaAspectRatio: "1:1",
+          mediaWidth: 1280,
+          mediaHeight: 1280,
+          cropZoom: 1.25,
+          cropOffsetX: 12,
+          cropOffsetY: -8,
           visitedWith: {
             create: [{ userId: friendId }]
           }

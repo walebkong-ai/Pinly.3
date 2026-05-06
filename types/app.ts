@@ -22,6 +22,9 @@ export type CollectionSummary = {
     mediaType: "IMAGE" | "VIDEO";
     mediaUrl: string;
     thumbnailUrl: string | null;
+    mediaAspectRatio?: string | null;
+    mediaWidth?: number | null;
+    mediaHeight?: number | null;
     placeName: string;
     city: string;
     country: string;
@@ -108,6 +111,9 @@ export type ProfileTravelSummary = {
     mediaType: "IMAGE" | "VIDEO";
     mediaUrl: string;
     thumbnailUrl: string | null;
+    mediaAspectRatio?: string | null;
+    mediaWidth?: number | null;
+    mediaHeight?: number | null;
   }>;
   sharedPlaces: Array<{
     city: string;
@@ -123,6 +129,12 @@ export type PostSummary = {
   mediaType: "IMAGE" | "VIDEO";
   mediaUrl: string;
   thumbnailUrl: string | null;
+  mediaAspectRatio?: string | null;
+  mediaWidth?: number | null;
+  mediaHeight?: number | null;
+  cropZoom?: number | null;
+  cropOffsetX?: number | null;
+  cropOffsetY?: number | null;
   caption: string;
   placeName: string;
   city: string;
@@ -170,6 +182,9 @@ export type MarkerPreviewPost = {
   mediaType: "IMAGE" | "VIDEO";
   mediaUrl: string;
   thumbnailUrl: string | null;
+  mediaAspectRatio?: string | null;
+  mediaWidth?: number | null;
+  mediaHeight?: number | null;
   placeName: string;
   city: string;
   country: string;

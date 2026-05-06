@@ -4,15 +4,28 @@ import { useEffect, useRef, useState } from "react";
 import { Crop, LoaderCircle, Move, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { clampCoverImageOffsets, getCoverImageBaseScale, getCoverImageSourceRect } from "@/lib/cover-image-crop";
+import {
+  DEFAULT_POST_MEDIA_ASPECT_RATIO,
+  POST_MEDIA_FRAME_DEFINITIONS,
+  getPostMediaFrameDefinition,
+  type PostMediaAspectRatio
+} from "@/lib/post-display";
 
-const FRAME_WIDTH = 264;
-const FRAME_HEIGHT = 330;
-const OUTPUT_WIDTH = 1280;
-const OUTPUT_HEIGHT = 1600;
+const MAX_FRAME_WIDTH = 288;
+const MAX_FRAME_HEIGHT = 360;
 
 type ImageMeta = {
   width: number;
   height: number;
+};
+
+export type PostPhotoEditMetadata = {
+  mediaAspectRatio: PostMediaAspectRatio;
+  mediaWidth: number;
+  mediaHeight: number;
+  cropZoom: number;
+  cropOffsetX: number;
+  cropOffsetY: number;
 };
 
 type DragState = {
@@ -26,7 +39,7 @@ type DragState = {
 type PostPhotoEditorProps = {
   file: File;
   onCancel: () => void;
-  onSave: (file: File) => Promise<void>;
+  onSave: (file: File, metadata: PostPhotoEditMetadata) => Promise<void>;
 };
 
 function readJpegOrientation(buffer: ArrayBuffer) {
@@ -160,6 +173,22 @@ function loadImage(url: string) {
   });
 }
 
+function getPreviewFrameSize(aspectRatio: number) {
+  if (aspectRatio >= 1) {
+    return {
+      width: MAX_FRAME_WIDTH,
+      height: Math.round(MAX_FRAME_WIDTH / aspectRatio)
+    };
+  }
+
+  const height = Math.min(MAX_FRAME_HEIGHT, Math.round(MAX_FRAME_WIDTH / aspectRatio));
+
+  return {
+    width: Math.round(height * aspectRatio),
+    height
+  };
+}
+
 async function createCropSourceObjectUrl(file: File) {
   if (file.type.toLowerCase() !== "image/jpeg") {
     return URL.createObjectURL(file);
@@ -206,6 +235,7 @@ export function PostPhotoEditor({ file, onCancel, onSave }: PostPhotoEditorProps
   const dragRef = useRef<DragState | null>(null);
   const [imageUrl, setImageUrl] = useState("");
   const [imageMeta, setImageMeta] = useState<ImageMeta | null>(null);
+  const [selectedAspectRatio, setSelectedAspectRatio] = useState<PostMediaAspectRatio>(DEFAULT_POST_MEDIA_ASPECT_RATIO);
   const [zoom, setZoom] = useState(1);
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
@@ -230,6 +260,7 @@ export function PostPhotoEditor({ file, onCancel, onSave }: PostPhotoEditorProps
 
     setImageUrl("");
     setImageMeta(null);
+    setSelectedAspectRatio(DEFAULT_POST_MEDIA_ASPECT_RATIO);
     setZoom(1);
     setOffsetX(0);
     setOffsetY(0);
@@ -244,25 +275,47 @@ export function PostPhotoEditor({ file, onCancel, onSave }: PostPhotoEditorProps
     };
   }, [file]);
 
+  const selectedFrame = getPostMediaFrameDefinition(selectedAspectRatio) ?? POST_MEDIA_FRAME_DEFINITIONS[1];
+  const previewFrame = getPreviewFrameSize(selectedFrame.ratio);
+  const frameWidth = previewFrame.width;
+  const frameHeight = previewFrame.height;
   const imageWidth = imageMeta?.width ?? 0;
   const imageHeight = imageMeta?.height ?? 0;
   const clampedOffsets = clampCoverImageOffsets({
     imageWidth,
     imageHeight,
-    frameWidth: FRAME_WIDTH,
-    frameHeight: FRAME_HEIGHT,
+    frameWidth,
+    frameHeight,
     zoom,
     offsetX,
     offsetY
   });
-  const effectiveScale = getCoverImageBaseScale(imageWidth, imageHeight, FRAME_WIDTH, FRAME_HEIGHT) * zoom;
+  const effectiveScale = getCoverImageBaseScale(imageWidth, imageHeight, frameWidth, frameHeight) * zoom;
+
+  function handleAspectRatioChange(nextAspectRatio: PostMediaAspectRatio) {
+    const nextFrame = getPostMediaFrameDefinition(nextAspectRatio) ?? selectedFrame;
+    const nextPreviewFrame = getPreviewFrameSize(nextFrame.ratio);
+    const nextOffsets = clampCoverImageOffsets({
+      imageWidth,
+      imageHeight,
+      frameWidth: nextPreviewFrame.width,
+      frameHeight: nextPreviewFrame.height,
+      zoom,
+      offsetX,
+      offsetY
+    });
+
+    setSelectedAspectRatio(nextAspectRatio);
+    setOffsetX(nextOffsets.offsetX);
+    setOffsetY(nextOffsets.offsetY);
+  }
 
   function handleZoomChange(nextZoom: number) {
     const nextOffsets = clampCoverImageOffsets({
       imageWidth,
       imageHeight,
-      frameWidth: FRAME_WIDTH,
-      frameHeight: FRAME_HEIGHT,
+      frameWidth,
+      frameHeight,
       zoom: nextZoom,
       offsetX,
       offsetY
@@ -296,8 +349,8 @@ export function PostPhotoEditor({ file, onCancel, onSave }: PostPhotoEditorProps
     const nextOffsets = clampCoverImageOffsets({
       imageWidth,
       imageHeight,
-      frameWidth: FRAME_WIDTH,
-      frameHeight: FRAME_HEIGHT,
+      frameWidth,
+      frameHeight,
       zoom,
       offsetX: dragRef.current.startOffsetX + (event.clientX - dragRef.current.startX),
       offsetY: dragRef.current.startOffsetY + (event.clientY - dragRef.current.startY)
@@ -326,15 +379,15 @@ export function PostPhotoEditor({ file, onCancel, onSave }: PostPhotoEditorProps
       const crop = getCoverImageSourceRect({
         imageWidth,
         imageHeight,
-        frameWidth: FRAME_WIDTH,
-        frameHeight: FRAME_HEIGHT,
+        frameWidth,
+        frameHeight,
         zoom,
         offsetX: clampedOffsets.offsetX,
         offsetY: clampedOffsets.offsetY
       });
       const canvas = document.createElement("canvas");
-      canvas.width = OUTPUT_WIDTH;
-      canvas.height = OUTPUT_HEIGHT;
+      canvas.width = selectedFrame.outputWidth;
+      canvas.height = selectedFrame.outputHeight;
       const context = canvas.getContext("2d");
 
       if (!context) {
@@ -351,8 +404,8 @@ export function PostPhotoEditor({ file, onCancel, onSave }: PostPhotoEditorProps
         crop.sourceHeight,
         0,
         0,
-        OUTPUT_WIDTH,
-        OUTPUT_HEIGHT
+        selectedFrame.outputWidth,
+        selectedFrame.outputHeight
       );
 
       const blob = await new Promise<Blob | null>((resolve) => {
@@ -368,7 +421,15 @@ export function PostPhotoEditor({ file, onCancel, onSave }: PostPhotoEditorProps
         new File([blob], `${nextFileName}-post.jpg`, {
           type: "image/jpeg",
           lastModified: file.lastModified
-        })
+        }),
+        {
+          mediaAspectRatio: selectedFrame.value,
+          mediaWidth: selectedFrame.outputWidth,
+          mediaHeight: selectedFrame.outputHeight,
+          cropZoom: zoom,
+          cropOffsetX: clampedOffsets.offsetX,
+          cropOffsetY: clampedOffsets.offsetY
+        }
       );
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Could not prepare the cropped photo.");
@@ -388,14 +449,43 @@ export function PostPhotoEditor({ file, onCancel, onSave }: PostPhotoEditorProps
         </div>
         <div className="inline-flex items-center gap-2 rounded-full bg-[var(--surface-soft)] px-3 py-1.5 text-xs text-[var(--foreground)]/58">
           <Crop className="h-3.5 w-3.5" />
-          4:5 post crop
+          {selectedFrame.label} crop
         </div>
       </div>
 
       <div className="mt-5 flex flex-col items-center gap-4">
         <div
+          className="grid w-full grid-cols-3 rounded-full bg-[var(--surface-soft)] p-1 text-xs font-medium"
+          role="radiogroup"
+          aria-label="Post crop aspect ratio"
+          data-testid="post-photo-editor-aspect-ratios"
+        >
+          {POST_MEDIA_FRAME_DEFINITIONS.map((frame) => {
+            const selected = frame.value === selectedFrame.value;
+
+            return (
+              <button
+                key={frame.value}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                data-testid={`post-photo-editor-aspect-${frame.value}`}
+                onClick={() => handleAspectRatioChange(frame.value)}
+                className={
+                  selected
+                    ? "min-h-10 rounded-full bg-[var(--surface-strong)] px-2 text-[var(--foreground)] shadow-sm"
+                    : "min-h-10 rounded-full px-2 text-[var(--foreground)]/58 transition hover:text-[var(--foreground)]"
+                }
+              >
+                <span className="block leading-4">{frame.label}</span>
+                <span className="block text-[10px] leading-3 text-[var(--foreground)]/50">{frame.shortLabel}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div
           data-testid="post-photo-editor-frame"
-          className="relative flex h-[354px] w-[288px] items-center justify-center rounded-[2rem] border border-[var(--foreground)]/10 bg-[var(--surface-soft)] p-3"
+          className="relative flex w-full max-w-[20rem] items-center justify-center rounded-[2rem] border border-[var(--foreground)]/10 bg-[var(--surface-soft)] p-3"
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={endDrag}
@@ -403,7 +493,10 @@ export function PostPhotoEditor({ file, onCancel, onSave }: PostPhotoEditorProps
           style={{ touchAction: "none" }}
         >
           <div className="absolute inset-3 rounded-[1.5rem] border border-white/80 shadow-[0_0_0_999px_rgba(24,85,56,0.08)]" />
-          <div className="relative h-[330px] w-[264px] overflow-hidden rounded-[1.4rem] bg-[var(--surface-strong)] shadow-inner">
+          <div
+            className="relative overflow-hidden rounded-[1.4rem] bg-[var(--surface-strong)] shadow-inner transition-[width,height] duration-150 ease-out"
+            style={{ width: `${frameWidth}px`, height: `${frameHeight}px` }}
+          >
             {imageUrl ? (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}

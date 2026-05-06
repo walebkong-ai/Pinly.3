@@ -7,6 +7,7 @@ import { Heart, MapPin } from "lucide-react";
 import type { PostSummary } from "@/types/app";
 import { Avatar } from "@/components/ui/avatar";
 import { MediaView } from "@/components/post/media-view";
+import { getPostMediaAspectRatioStyle } from "@/lib/post-display";
 import { formatVisitDate } from "@/lib/utils";
 import { LikeButton } from "@/components/post/like-button";
 import { CommentSection } from "@/components/post/comment-section";
@@ -335,7 +336,7 @@ export function PostCard({
       tabIndex={openOnBodyTap ? 0 : undefined}
       aria-label={openOnBodyTap ? `Open ${primaryCaption}` : undefined}
     >
-      <div className={compact ? "relative aspect-[4/3]" : "relative aspect-[4/3]"}>
+      <div className="relative" style={{ aspectRatio: getPostMediaAspectRatioStyle(post) }}>
         <MediaView
           mediaType={post.mediaType}
           mediaUrl={post.mediaUrl}

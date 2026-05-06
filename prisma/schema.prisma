@@ -117,6 +117,12 @@ model Post {
   mediaType         MediaType
   mediaUrl          String
   thumbnailUrl      String?
+  mediaAspectRatio  String?
+  mediaWidth        Int?
+  mediaHeight       Int?
+  cropZoom          Float?
+  cropOffsetX       Float?
+  cropOffsetY       Float?
   caption           String               @db.Text
   placeName         String
   city              String
