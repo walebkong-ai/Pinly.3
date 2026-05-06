@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { resetDemoAppState } from "./helpers/test-state";
@@ -110,6 +111,28 @@ function getJpegDimensions(buffer: Buffer) {
   }
 
   throw new Error("Could not determine uploaded JPEG dimensions.");
+}
+
+function withExifOrientation(buffer: Buffer, orientation: number) {
+  if (buffer.length < 2 || buffer[0] !== 0xff || buffer[1] !== 0xd8) {
+    throw new Error("EXIF orientation can only be injected into JPEG fixtures.");
+  }
+
+  const payload = Buffer.from([
+    0x45, 0x78, 0x69, 0x66, 0x00, 0x00,
+    0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00,
+    0x01, 0x00,
+    0x12, 0x01, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00,
+    orientation, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00
+  ]);
+  const segment = Buffer.alloc(payload.length + 4);
+  segment[0] = 0xff;
+  segment[1] = 0xe1;
+  segment.writeUInt16BE(payload.length + 2, 2);
+  payload.copy(segment, 4);
+
+  return Buffer.concat([buffer.subarray(0, 2), segment, buffer.subarray(2)]);
 }
 
 test("mobile create flow crops the selected image before upload and keeps replace/remove stable", async ({ page }) => {
@@ -392,6 +415,49 @@ test("mobile create flow keeps portrait uploads in a portrait frame by default",
     name: "portrait.svg",
     mimeType: "image/svg+xml",
     buffer: portraitSvg
+  });
+  await expect(photoEditor).toBeVisible({ timeout: 15_000 });
+  await photoEditorSaveButton.click();
+  await expect(createPostForm.getByAltText("Upload preview").first()).toBeVisible({ timeout: 15_000 });
+
+  expect(uploadedDimensions).toEqual({ width: 1080, height: 1440 });
+});
+
+test("mobile create flow honors camera JPEG orientation metadata", async ({ page }) => {
+  const sourcePath = path.resolve(process.cwd(), "public/demo-media/posts/circular-quay.jpg");
+  const orientedJpeg = withExifOrientation(fs.readFileSync(sourcePath), 6);
+  const createPostForm = page.getByRole("main").getByTestId("create-post-form").first();
+  const libraryUploadInput = createPostForm.getByTestId("library-upload-input").first();
+  const photoEditor = createPostForm.getByTestId("post-photo-editor").first();
+  const photoEditorSaveButton = createPostForm.getByTestId("post-photo-editor-save").first();
+  let uploadedDimensions: { width: number; height: number } | null = null;
+
+  await page.route("**/api/uploads", async (route) => {
+    const uploadedAsset = parseMultipartUpload(
+      route.request().postDataBuffer(),
+      await route.request().headerValue("content-type")
+    );
+    uploadedDimensions = getJpegDimensions(uploadedAsset.body);
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        mediaUrl: `${mockUploadStorageRoot}/e2e/oriented-camera.jpg`,
+        mediaType: "IMAGE",
+        thumbnailUrl: null
+      })
+    });
+  });
+
+  await signInAsDemo(page);
+  await page.goto("/create", { waitUntil: "domcontentloaded" });
+  await expect(createPostForm).toBeVisible({ timeout: 15_000 });
+
+  await libraryUploadInput.setInputFiles({
+    name: "camera-orientation.jpg",
+    mimeType: "image/jpeg",
+    buffer: orientedJpeg
   });
   await expect(photoEditor).toBeVisible({ timeout: 15_000 });
   await photoEditorSaveButton.click();

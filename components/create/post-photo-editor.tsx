@@ -43,6 +43,137 @@ type PostPhotoEditorProps = {
   onSave: (file: File, metadata: PostPhotoEditMetadata) => Promise<void>;
 };
 
+function readJpegOrientation(buffer: ArrayBuffer) {
+  const view = new DataView(buffer);
+
+  if (view.byteLength < 4 || view.getUint16(0) !== 0xffd8) {
+    return 1;
+  }
+
+  let offset = 2;
+
+  while (offset + 4 <= view.byteLength) {
+    const marker = view.getUint16(offset);
+    offset += 2;
+
+    if ((marker & 0xff00) !== 0xff00) {
+      break;
+    }
+
+    if (marker === 0xffda || marker === 0xffd9) {
+      break;
+    }
+
+    const segmentLength = view.getUint16(offset);
+
+    if (segmentLength < 2 || offset + segmentLength > view.byteLength) {
+      break;
+    }
+
+    if (marker === 0xffe1 && segmentLength >= 10) {
+      const segmentEnd = offset + segmentLength;
+      const exifHeaderOffset = offset + 2;
+      const isExif =
+        view.getUint32(exifHeaderOffset) === 0x45786966 &&
+        view.getUint16(exifHeaderOffset + 4) === 0x0000;
+
+      if (!isExif) {
+        offset += segmentLength;
+        continue;
+      }
+
+      const tiffOffset = exifHeaderOffset + 6;
+
+      if (tiffOffset + 8 > segmentEnd) {
+        return 1;
+      }
+
+      const littleEndian = view.getUint16(tiffOffset) === 0x4949;
+
+      if (!littleEndian && view.getUint16(tiffOffset) !== 0x4d4d) {
+        return 1;
+      }
+
+      if (view.getUint16(tiffOffset + 2, littleEndian) !== 42) {
+        return 1;
+      }
+
+      const ifdOffset = tiffOffset + view.getUint32(tiffOffset + 4, littleEndian);
+
+      if (ifdOffset + 2 > segmentEnd) {
+        return 1;
+      }
+
+      const entryCount = view.getUint16(ifdOffset, littleEndian);
+
+      for (let index = 0; index < entryCount; index += 1) {
+        const entryOffset = ifdOffset + 2 + index * 12;
+
+        if (entryOffset + 12 > segmentEnd) {
+          break;
+        }
+
+        if (view.getUint16(entryOffset, littleEndian) === 0x0112) {
+          const orientation = view.getUint16(entryOffset + 8, littleEndian);
+          return orientation >= 1 && orientation <= 8 ? orientation : 1;
+        }
+      }
+    }
+
+    offset += segmentLength;
+  }
+
+  return 1;
+}
+
+function applyImageOrientationTransform(
+  context: CanvasRenderingContext2D,
+  orientation: number,
+  width: number,
+  height: number
+) {
+  switch (orientation) {
+    case 2:
+      context.translate(width, 0);
+      context.scale(-1, 1);
+      break;
+    case 3:
+      context.translate(width, height);
+      context.rotate(Math.PI);
+      break;
+    case 4:
+      context.translate(0, height);
+      context.scale(1, -1);
+      break;
+    case 5:
+      context.rotate(0.5 * Math.PI);
+      context.scale(1, -1);
+      break;
+    case 6:
+      context.rotate(0.5 * Math.PI);
+      context.translate(0, -height);
+      break;
+    case 7:
+      context.rotate(0.5 * Math.PI);
+      context.translate(width, -height);
+      context.scale(-1, 1);
+      break;
+    case 8:
+      context.rotate(-0.5 * Math.PI);
+      context.translate(-width, 0);
+      break;
+  }
+}
+
+function loadImage(url: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Could not prepare this photo for editing."));
+    image.src = url;
+  });
+}
+
 function getPreviewFrameSize(aspectRatio: number) {
   if (aspectRatio >= 1) {
     return {
@@ -59,8 +190,128 @@ function getPreviewFrameSize(aspectRatio: number) {
   };
 }
 
+async function createCanvasObjectUrl(canvas: HTMLCanvasElement) {
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(resolve, "image/jpeg", 0.95);
+  });
+
+  return blob ? URL.createObjectURL(blob) : null;
+}
+
+async function createManuallyOrientedObjectUrl(file: File, orientation: number) {
+  const rawUrl = URL.createObjectURL(file);
+  let returnRawUrl = false;
+
+  try {
+    const image = await loadImage(rawUrl);
+    const swapsDimensions = orientation >= 5 && orientation <= 8;
+
+    if (swapsDimensions && image.naturalWidth < image.naturalHeight) {
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        returnRawUrl = true;
+        return rawUrl;
+      }
+
+      context.drawImage(image, 0, 0);
+      const normalizedUrl = await createCanvasObjectUrl(canvas);
+
+      if (!normalizedUrl) {
+        returnRawUrl = true;
+        return rawUrl;
+      }
+
+      return normalizedUrl;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = swapsDimensions ? image.naturalHeight : image.naturalWidth;
+    canvas.height = swapsDimensions ? image.naturalWidth : image.naturalHeight;
+
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      returnRawUrl = true;
+      return rawUrl;
+    }
+
+    applyImageOrientationTransform(context, orientation, image.naturalWidth, image.naturalHeight);
+    context.drawImage(image, 0, 0);
+
+    const normalizedUrl = await createCanvasObjectUrl(canvas);
+
+    if (!normalizedUrl) {
+      returnRawUrl = true;
+      return rawUrl;
+    }
+
+    return normalizedUrl;
+  } finally {
+    if (!returnRawUrl) {
+      URL.revokeObjectURL(rawUrl);
+    }
+  }
+}
+
 async function createCropSourceObjectUrl(file: File) {
-  return URL.createObjectURL(file);
+  if (file.type.toLowerCase() !== "image/jpeg") {
+    return URL.createObjectURL(file);
+  }
+
+  const orientation = readJpegOrientation(await file.arrayBuffer());
+
+  if (orientation === 1) {
+    return URL.createObjectURL(file);
+  }
+
+  if (typeof createImageBitmap !== "function") {
+    return createManuallyOrientedObjectUrl(file, orientation);
+  }
+
+  try {
+    let bitmap: ImageBitmap | null = null;
+
+    try {
+      bitmap = await createImageBitmap(file, { imageOrientation: "none" });
+      const canvas = document.createElement("canvas");
+      const swapsDimensions = orientation >= 5 && orientation <= 8;
+
+      if (swapsDimensions && bitmap.width < bitmap.height) {
+        canvas.width = bitmap.width;
+        canvas.height = bitmap.height;
+        const context = canvas.getContext("2d");
+
+        if (!context) {
+          return URL.createObjectURL(file);
+        }
+
+        context.drawImage(bitmap, 0, 0);
+        return (await createCanvasObjectUrl(canvas)) ?? URL.createObjectURL(file);
+      }
+
+      canvas.width = swapsDimensions ? bitmap.height : bitmap.width;
+      canvas.height = swapsDimensions ? bitmap.width : bitmap.height;
+
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        return URL.createObjectURL(file);
+      }
+
+      applyImageOrientationTransform(context, orientation, bitmap.width, bitmap.height);
+      context.drawImage(bitmap, 0, 0);
+
+      return (await createCanvasObjectUrl(canvas)) ?? URL.createObjectURL(file);
+    } finally {
+      bitmap?.close();
+    }
+  } catch {
+    return createManuallyOrientedObjectUrl(file, orientation);
+  }
 }
 
 export function PostPhotoEditor({ file, onCancel, onSave }: PostPhotoEditorProps) {
