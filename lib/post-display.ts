@@ -80,3 +80,21 @@ export function getPostMediaAspectRatioValue(metadata: PostMediaDisplayMetadata 
 export function getPostMediaAspectRatioStyle(metadata: PostMediaDisplayMetadata | null | undefined) {
   return `${getPostMediaAspectRatioValue(metadata)} / 1`;
 }
+
+export function getInitialPostMediaAspectRatioForImage(width: number, height: number): PostMediaAspectRatio {
+  if (!width || !height) {
+    return DEFAULT_POST_MEDIA_ASPECT_RATIO;
+  }
+
+  const ratio = width / height;
+
+  if (Math.abs(ratio - 1) <= 0.04) {
+    return "1:1";
+  }
+
+  if (ratio > 1) {
+    return "1.91:1";
+  }
+
+  return ratio <= 0.775 ? "3:4" : "4:5";
+}

@@ -141,7 +141,7 @@ test("mobile create flow crops the selected image before upload and keeps replac
   const uploadedAssets = new Map<string, UploadedAsset>();
   let mockUploadBaseUrl = "";
   const expectedUploadDimensions = [
-    { width: 1080, height: 1350 },
+    { width: 1080, height: 566 },
     { width: 1080, height: 1080 },
     { width: 1080, height: 1440 },
     { width: 1080, height: 566 }
@@ -350,4 +350,52 @@ test("mobile create flow shows a clear retryable upload error", async ({ page })
   await expect(createPostForm.getByText("Upload failed while saving the file.").first()).toBeVisible({ timeout: 15_000 });
   await expect(photoEditor).toBeVisible();
   await expect(photoEditorSaveButton).toBeEnabled();
+});
+
+test("mobile create flow keeps portrait uploads in a portrait frame by default", async ({ page }) => {
+  const portraitSvg = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200" viewBox="0 0 900 1200">
+      <rect width="900" height="1200" fill="#185538"/>
+      <circle cx="450" cy="390" r="210" fill="#ff9f1c"/>
+      <rect x="180" y="720" width="540" height="220" rx="60" fill="#fff7e8"/>
+    </svg>`
+  );
+  const createPostForm = page.getByRole("main").getByTestId("create-post-form").first();
+  const libraryUploadInput = createPostForm.getByTestId("library-upload-input").first();
+  const photoEditor = createPostForm.getByTestId("post-photo-editor").first();
+  const photoEditorSaveButton = createPostForm.getByTestId("post-photo-editor-save").first();
+  let uploadedDimensions: { width: number; height: number } | null = null;
+
+  await page.route("**/api/uploads", async (route) => {
+    const uploadedAsset = parseMultipartUpload(
+      route.request().postDataBuffer(),
+      await route.request().headerValue("content-type")
+    );
+    uploadedDimensions = getJpegDimensions(uploadedAsset.body);
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        mediaUrl: `${mockUploadStorageRoot}/e2e/portrait-default.jpg`,
+        mediaType: "IMAGE",
+        thumbnailUrl: null
+      })
+    });
+  });
+
+  await signInAsDemo(page);
+  await page.goto("/create", { waitUntil: "domcontentloaded" });
+  await expect(createPostForm).toBeVisible({ timeout: 15_000 });
+
+  await libraryUploadInput.setInputFiles({
+    name: "portrait.svg",
+    mimeType: "image/svg+xml",
+    buffer: portraitSvg
+  });
+  await expect(photoEditor).toBeVisible({ timeout: 15_000 });
+  await photoEditorSaveButton.click();
+  await expect(createPostForm.getByAltText("Upload preview").first()).toBeVisible({ timeout: 15_000 });
+
+  expect(uploadedDimensions).toEqual({ width: 1080, height: 1440 });
 });

@@ -1,5 +1,9 @@
 import { describe, expect, test } from "vitest";
-import { getPostMediaAspectRatioStyle, getPostMediaAspectRatioValue } from "@/lib/post-display";
+import {
+  getInitialPostMediaAspectRatioForImage,
+  getPostMediaAspectRatioStyle,
+  getPostMediaAspectRatioValue
+} from "@/lib/post-display";
 
 describe("post media display helpers", () => {
   test("uses selected Instagram-style aspect metadata", () => {
@@ -13,5 +17,12 @@ describe("post media display helpers", () => {
     expect(getPostMediaAspectRatioValue({ mediaWidth: 1080, mediaHeight: 1350 })).toBe(0.8);
     expect(getPostMediaAspectRatioValue({})).toBe(4 / 3);
     expect(getPostMediaAspectRatioValue(null)).toBe(4 / 3);
+  });
+
+  test("chooses an initial crop frame from the selected image orientation", () => {
+    expect(getInitialPostMediaAspectRatioForImage(1200, 1200)).toBe("1:1");
+    expect(getInitialPostMediaAspectRatioForImage(3024, 4032)).toBe("3:4");
+    expect(getInitialPostMediaAspectRatioForImage(1080, 1350)).toBe("4:5");
+    expect(getInitialPostMediaAspectRatioForImage(4032, 3024)).toBe("1.91:1");
   });
 });

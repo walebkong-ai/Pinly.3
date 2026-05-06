@@ -7,6 +7,7 @@ import { clampCoverImageOffsets, getCoverImageBaseScale, getCoverImageSourceRect
 import {
   DEFAULT_POST_MEDIA_ASPECT_RATIO,
   POST_MEDIA_FRAME_DEFINITIONS,
+  getInitialPostMediaAspectRatioForImage,
   getPostMediaFrameDefinition,
   type PostMediaAspectRatio
 } from "@/lib/post-display";
@@ -507,10 +508,14 @@ export function PostPhotoEditor({ file, onCancel, onSave }: PostPhotoEditorProps
                   className="pointer-events-none absolute left-1/2 top-1/2 max-w-none select-none"
                   draggable={false}
                   onLoad={(event) => {
+                    const width = event.currentTarget.naturalWidth;
+                    const height = event.currentTarget.naturalHeight;
+
                     setImageMeta({
-                      width: event.currentTarget.naturalWidth,
-                      height: event.currentTarget.naturalHeight
+                      width,
+                      height
                     });
+                    setSelectedAspectRatio(getInitialPostMediaAspectRatioForImage(width, height));
                   }}
                   style={{
                     width: imageWidth || undefined,
