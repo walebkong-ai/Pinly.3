@@ -1,4 +1,4 @@
-export const POST_MEDIA_ASPECT_RATIOS = ["1:1", "4:5", "1.91:1"] as const;
+export const POST_MEDIA_ASPECT_RATIOS = ["1:1", "3:4", "4:5", "1.91:1"] as const;
 
 export type PostMediaAspectRatio = (typeof POST_MEDIA_ASPECT_RATIOS)[number];
 
@@ -23,24 +23,32 @@ export const POST_MEDIA_FRAME_DEFINITIONS: PostMediaFrameDefinition[] = [
     label: "Square",
     shortLabel: "1:1",
     ratio: 1,
-    outputWidth: 1280,
-    outputHeight: 1280
+    outputWidth: 1080,
+    outputHeight: 1080
+  },
+  {
+    value: "3:4",
+    label: "Portrait",
+    shortLabel: "3:4",
+    ratio: 3 / 4,
+    outputWidth: 1080,
+    outputHeight: 1440
   },
   {
     value: "4:5",
-    label: "Portrait",
+    label: "Standard",
     shortLabel: "4:5",
     ratio: 4 / 5,
-    outputWidth: 1280,
-    outputHeight: 1600
+    outputWidth: 1080,
+    outputHeight: 1350
   },
   {
     value: "1.91:1",
     label: "Landscape",
     shortLabel: "1.91:1",
     ratio: 1.91,
-    outputWidth: 1280,
-    outputHeight: 670
+    outputWidth: 1080,
+    outputHeight: 566
   }
 ];
 

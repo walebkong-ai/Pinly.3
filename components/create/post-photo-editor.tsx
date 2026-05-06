@@ -455,7 +455,7 @@ export function PostPhotoEditor({ file, onCancel, onSave }: PostPhotoEditorProps
 
       <div className="mt-5 flex flex-col items-center gap-4">
         <div
-          className="grid w-full grid-cols-3 rounded-full bg-[var(--surface-soft)] p-1 text-xs font-medium"
+          className="grid w-full grid-cols-4 rounded-full bg-[var(--surface-soft)] p-1 text-xs font-medium"
           role="radiogroup"
           aria-label="Post crop aspect ratio"
           data-testid="post-photo-editor-aspect-ratios"

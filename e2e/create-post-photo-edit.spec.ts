@@ -123,6 +123,7 @@ test("mobile create flow crops the selected image before upload and keeps replac
   const photoEditorZoom = createPostForm.getByTestId("post-photo-editor-zoom").first();
   const photoEditorSaveButton = createPostForm.getByTestId("post-photo-editor-save").first();
   const squareAspectButton = createPostForm.getByTestId("post-photo-editor-aspect-1:1").first();
+  const portraitAspectButton = createPostForm.getByTestId("post-photo-editor-aspect-3:4").first();
   const landscapeAspectButton = createPostForm.getByTestId("post-photo-editor-aspect-1.91:1").first();
   const adjustButton = createPostForm.getByRole("button", { name: /Adjust/i }).first();
   const removeButton = createPostForm.getByRole("button", { name: /Remove media/i }).first();
@@ -140,9 +141,10 @@ test("mobile create flow crops the selected image before upload and keeps replac
   const uploadedAssets = new Map<string, UploadedAsset>();
   let mockUploadBaseUrl = "";
   const expectedUploadDimensions = [
-    { width: 1280, height: 1600 },
-    { width: 1280, height: 1280 },
-    { width: 1280, height: 670 }
+    { width: 1080, height: 1350 },
+    { width: 1080, height: 1080 },
+    { width: 1080, height: 1440 },
+    { width: 1080, height: 566 }
   ];
   let uploadCount = 0;
 
@@ -246,6 +248,20 @@ test("mobile create flow crops the selected image before upload and keeps replac
   expect(squareUploadResponse.status()).toBe(200);
   await expect(uploadPreview).toBeVisible({ timeout: 15_000 });
 
+  await adjustButton.click();
+  await expect(photoEditor).toBeVisible({ timeout: 15_000 });
+  await portraitAspectButton.click();
+  const [portraitUploadResponse] = await Promise.all([
+    page.waitForResponse(
+      (response) => new URL(response.url()).pathname === "/api/uploads" && response.request().method() === "POST",
+      { timeout: 15_000 }
+    ),
+    photoEditorSaveButton.click()
+  ]);
+
+  expect(portraitUploadResponse.status()).toBe(200);
+  await expect(uploadPreview).toBeVisible({ timeout: 15_000 });
+
   await replaceButton.click();
   await libraryUploadInput.setInputFiles(secondUploadPath);
   await expect(photoEditor).toBeVisible({ timeout: 15_000 });
@@ -272,7 +288,7 @@ test("mobile create flow crops the selected image before upload and keeps replac
   await expect(uploadPreview).toBeVisible({ timeout: 15_000 });
   await expect(adjustButton).toBeVisible();
 
-  const finalMediaUrl = `${mockUploadBaseUrl}/crop-${runId}-3.jpg`;
+  const finalMediaUrl = `${mockUploadBaseUrl}/crop-${runId}-4.jpg`;
 
   await captionField.fill(`Cropped memory ${runId}`);
   await placeNameField.fill(`Crop Point ${runId}`);
@@ -295,8 +311,8 @@ test("mobile create flow crops the selected image before upload and keeps replac
   const publishPayload = await publishResponse.json();
   expect(publishPayload.post.mediaUrl).toBe(finalMediaUrl);
   expect(publishPayload.post.mediaAspectRatio).toBe("1.91:1");
-  expect(publishPayload.post.mediaWidth).toBe(1280);
-  expect(publishPayload.post.mediaHeight).toBe(670);
+  expect(publishPayload.post.mediaWidth).toBe(1080);
+  expect(publishPayload.post.mediaHeight).toBe(566);
 
   await expect(page).toHaveURL(/\/map(?:\?|$)/, { timeout: 30_000 });
 
