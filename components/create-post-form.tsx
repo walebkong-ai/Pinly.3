@@ -121,7 +121,7 @@ export function CreatePostForm() {
   const publishMissingItems = [
     !uploadState ? "photo" : null,
     pendingImageFile ? "cropped photo" : null,
-    caption.trim().length < 3 ? "memory note" : null,
+    !caption.trim() ? "memory note" : null,
     !placeName.trim() || !city.trim() || !country.trim() || !hasFiniteCoordinates(latitude, longitude) ? "place" : null,
     !visitedAt ? "date" : null
   ].filter((item): item is string => Boolean(item));

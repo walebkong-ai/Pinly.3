@@ -31,6 +31,10 @@ function createTextField(
     });
 }
 
+function createCaptionField() {
+  return createTextField({ min: 1, max: 600, allowNewlines: true });
+}
+
 const emailSchema = z.string().trim().toLowerCase().email().max(254);
 
 export function normalizeUsername(value: string) {
@@ -115,7 +119,7 @@ export const postSchema = z.object({
   cropZoom: z.coerce.number().min(1).max(5).optional().nullable(),
   cropOffsetX: z.coerce.number().min(-4096).max(4096).optional().nullable(),
   cropOffsetY: z.coerce.number().min(-4096).max(4096).optional().nullable(),
-  caption: createTextField({ min: 3, max: 600, allowNewlines: true }),
+  caption: createCaptionField(),
   placeName: createTextField({ min: 2, max: 120 }),
   city: createTextField({ min: 2, max: 80 }),
   country: createTextField({ min: 2, max: 80 }),
@@ -127,7 +131,7 @@ export const postSchema = z.object({
 });
 
 export const editPostSchema = z.object({
-  caption: createTextField({ min: 3, max: 600, allowNewlines: true }),
+  caption: createCaptionField(),
   placeName: createTextField({ min: 2, max: 120 }),
   city: createTextField({ min: 2, max: 80 }),
   country: createTextField({ min: 2, max: 80 }),

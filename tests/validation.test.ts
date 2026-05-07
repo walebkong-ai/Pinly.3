@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { mapQuerySchema, postSchema, signUpSchema, wantToGoPlaceSchema } from "@/lib/validation";
+import { editPostSchema, mapQuerySchema, postSchema, signUpSchema, wantToGoPlaceSchema } from "@/lib/validation";
 import { TEST_IMAGE_URL } from "@/tests/fixtures/media";
 
 describe("schema validation", () => {
@@ -78,6 +78,42 @@ describe("schema validation", () => {
       expect(result.data.taggedUserIds).toEqual([]);
       expect(result.data.collectionIds).toEqual([]);
     }
+  });
+
+  test("post captions can be emoji-only", () => {
+    const sharedPostFields = {
+      placeName: "Harbourfront",
+      city: "Toronto",
+      country: "Canada",
+      latitude: 43.64,
+      longitude: -79.38,
+      visitedAt: new Date().toISOString()
+    };
+
+    expect(
+      postSchema.safeParse({
+        mediaType: "IMAGE",
+        mediaUrl: TEST_IMAGE_URL,
+        thumbnailUrl: null,
+        caption: "🌺",
+        ...sharedPostFields
+      }).success
+    ).toBe(true);
+    expect(
+      editPostSchema.safeParse({
+        caption: "🌺",
+        ...sharedPostFields
+      }).success
+    ).toBe(true);
+    expect(
+      postSchema.safeParse({
+        mediaType: "IMAGE",
+        mediaUrl: TEST_IMAGE_URL,
+        thumbnailUrl: null,
+        caption: "   ",
+        ...sharedPostFields
+      }).success
+    ).toBe(false);
   });
 
   test("sign up password message uses password wording", () => {
