@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Crop, LoaderCircle, Move, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { prepareImageForEditing } from "@/lib/client-image-upload";
 import { clampCoverImageOffsets, getCoverImageBaseScale, getCoverImageSourceRect } from "@/lib/cover-image-crop";
 import {
   DEFAULT_POST_MEDIA_ASPECT_RATIO,
@@ -330,8 +331,8 @@ export function PostPhotoEditor({ file, onCancel, onSave }: PostPhotoEditorProps
     let active = true;
     let nextUrl = "";
 
-    void createCropSourceObjectUrl(file)
-      .catch(() => URL.createObjectURL(file))
+    void prepareImageForEditing(file)
+      .then(createCropSourceObjectUrl)
       .then((url) => {
         if (!active) {
           URL.revokeObjectURL(url);
@@ -340,6 +341,11 @@ export function PostPhotoEditor({ file, onCancel, onSave }: PostPhotoEditorProps
 
         nextUrl = url;
         setImageUrl(url);
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          setErrorMessage(error instanceof Error ? error.message : "Could not prepare this photo.");
+        }
       });
 
     setImageUrl("");
@@ -590,6 +596,7 @@ export function PostPhotoEditor({ file, onCancel, onSave }: PostPhotoEditorProps
                   alt="Post photo crop preview"
                   className="pointer-events-none absolute left-1/2 top-1/2 max-w-none select-none"
                   draggable={false}
+                  onError={() => setErrorMessage("Could not open this photo. Try another photo or export it as JPEG.")}
                   onLoad={(event) => {
                     const width = event.currentTarget.naturalWidth;
                     const height = event.currentTarget.naturalHeight;
@@ -608,6 +615,11 @@ export function PostPhotoEditor({ file, onCancel, onSave }: PostPhotoEditorProps
                   }}
                 />
               </>
+            ) : !errorMessage ? (
+              <div role="status" className="flex h-full items-center justify-center gap-2 text-sm text-[var(--foreground)]/60">
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+                Preparing photo…
+              </div>
             ) : null}
           </div>
           <div className="pointer-events-none absolute bottom-5 right-5 rounded-full bg-[var(--surface-strong)]/95 px-2.5 py-1 text-[11px] font-medium text-[var(--foreground)] shadow-sm">

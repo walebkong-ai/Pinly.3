@@ -12,6 +12,15 @@ function toProxyUrl(url: string) {
 }
 
 describe("resolveMediaViewUrls", () => {
+  test("uses the conversion endpoint for old iPhone photos instead of marking them unavailable", () => {
+    const heicUrl = "https://2artlyjzrtu4ozob.public.blob.vercel-storage.com/uploads/old-photo.heic";
+    expect(resolveMediaViewUrls({ mediaType: "IMAGE", mediaUrl: heicUrl })).toEqual({
+      primaryUrl: toProxyUrl(heicUrl),
+      primarySource: "media",
+      previewUrl: "",
+      posterUrl: ""
+    });
+  });
   test("uses the main image URL and keeps a distinct preview thumbnail", () => {
     expect(
       resolveMediaViewUrls({

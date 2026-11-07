@@ -1,5 +1,7 @@
 "use client";
 
+import { isHeicFile, MAX_HEIC_INPUT_BYTES } from "@/lib/heic";
+
 const IMAGE_UPLOAD_OPTIMIZATION_THRESHOLD_BYTES = 1_500_000;
 const IMAGE_UPLOAD_MAX_DIMENSION = 2048;
 const IMAGE_UPLOAD_OUTPUT_QUALITY = 0.82;
@@ -16,6 +18,37 @@ function buildOptimizedFileName(name: string, mimeType: string) {
   const extension = mimeType === "image/jpeg" ? "jpg" : mimeType === "image/webp" ? "webp" : "png";
   const basename = name.includes(".") ? name.slice(0, name.lastIndexOf(".")) : name;
   return `${basename}.${extension}`;
+}
+
+export async function prepareImageForEditing(file: File): Promise<File> {
+  if (!isHeicFile(file)) {
+    return file;
+  }
+
+  if (file.size > MAX_HEIC_INPUT_BYTES) {
+    throw new Error("This iPhone photo is too large. Choose a photo under 20 MB.");
+  }
+
+  // Some iPhone pickers transcode to JPEG but keep the original .HEIC name.
+  const header = new Uint8Array(await file.slice(0, 3).arrayBuffer());
+  if (header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff) {
+    return new File([file], buildOptimizedFileName(file.name, "image/jpeg"), {
+      type: "image/jpeg",
+      lastModified: file.lastModified
+    });
+  }
+
+  try {
+    // Load the decoder only for HEIC, and keep the production CSP unchanged.
+    const { heicTo } = await import("heic-to/csp");
+    const jpeg = await heicTo({ blob: file, type: "image/jpeg", quality: 0.9 });
+    return new File([jpeg], buildOptimizedFileName(file.name, "image/jpeg"), {
+      type: "image/jpeg",
+      lastModified: file.lastModified
+    });
+  } catch {
+    throw new Error("Could not convert this iPhone photo. Try another photo or export it as JPEG.");
+  }
 }
 
 async function decodeImage(file: File): Promise<DecodedImage | null> {
@@ -73,6 +106,7 @@ function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality?: num
 }
 
 export async function optimizeImageForUpload(file: File) {
+  file = await prepareImageForEditing(file);
   if (!OPTIMIZABLE_IMAGE_TYPES.has(file.type.toLowerCase())) {
     return file;
   }

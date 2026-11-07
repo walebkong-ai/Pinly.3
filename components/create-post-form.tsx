@@ -23,6 +23,7 @@ import {
   serializeVisitedDateInput
 } from "@/lib/create-post-location";
 import { optimizeImageForUpload } from "@/lib/client-image-upload";
+import { isHeicFile } from "@/lib/heic";
 import { normalizeStoredMediaUrl } from "@/lib/media-url";
 import { isNativePlatform } from "@/lib/native-platform";
 import { getPostMediaAspectRatioStyle, type PostMediaAspectRatio } from "@/lib/post-display";
@@ -503,7 +504,7 @@ export function CreatePostForm() {
       return;
     }
 
-    if (file.type.startsWith("image/")) {
+    if (file.type.startsWith("image/") || isHeicFile(file)) {
       setUploadError(null);
       setPendingImageFile(file);
       return;

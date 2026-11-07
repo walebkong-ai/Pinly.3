@@ -142,7 +142,7 @@ export function classifyLegacyMediaUrl(
         extension,
         host,
         originalUrl: normalizedUrl,
-        renderUrl: null,
+        renderUrl: `/api/media?src=${encodeURIComponent(normalizedUrl)}`,
         suggestedContentType: inferContentTypeFromExtension(extension),
         uploadSourceUrl: normalizedUrl
       };

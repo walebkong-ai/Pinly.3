@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { LoaderCircle, Move, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { prepareImageForEditing } from "@/lib/client-image-upload";
 import { clampAvatarOffsets, getAvatarBaseScale, getAvatarSourceRect } from "@/lib/avatar-crop";
 
 const FRAME_SIZE = 224;
@@ -42,17 +43,33 @@ export function AvatarPhotoEditor({
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const nextUrl = URL.createObjectURL(file);
-    setImageUrl(nextUrl);
+    let active = true;
+    let nextUrl = "";
+    setImageUrl("");
+    setErrorMessage(null);
+    void prepareImageForEditing(file)
+      .then((preparedFile) => {
+        if (active) {
+          nextUrl = URL.createObjectURL(preparedFile);
+          setImageUrl(nextUrl);
+        }
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          setErrorMessage(error instanceof Error ? error.message : "Could not prepare this photo.");
+        }
+      });
     setImageMeta(null);
     setZoom(1);
     setOffsetX(0);
     setOffsetY(0);
 
     return () => {
-      URL.revokeObjectURL(nextUrl);
+      active = false;
+      if (nextUrl) URL.revokeObjectURL(nextUrl);
     };
   }, [file]);
 
@@ -210,6 +227,7 @@ export function AvatarPhotoEditor({
                 alt={`${name} avatar preview`}
                 className="pointer-events-none absolute left-1/2 top-1/2 max-w-none select-none"
                 draggable={false}
+                onError={() => setErrorMessage("Could not open this photo. Try another photo or export it as JPEG.")}
                 onLoad={(event) => {
                   setImageMeta({
                     width: event.currentTarget.naturalWidth,
@@ -223,6 +241,11 @@ export function AvatarPhotoEditor({
                   transformOrigin: "center center"
                 }}
               />
+            ) : !errorMessage ? (
+              <div role="status" className="flex h-full items-center justify-center gap-2 text-sm text-[var(--foreground)]/60">
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+                Preparing photo…
+              </div>
             ) : null}
           </div>
           <div className="pointer-events-none absolute bottom-4 right-4 rounded-full bg-[var(--surface-strong)]/95 px-2.5 py-1 text-[11px] font-medium text-[var(--foreground)] shadow-sm">
@@ -269,6 +292,7 @@ export function AvatarPhotoEditor({
         </div>
       </div>
 
+      {errorMessage ? <p role="alert" className="mt-4 text-sm text-rose-700">{errorMessage}</p> : null}
       <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
         <Button type="button" variant="secondary" onClick={onCancel} disabled={saving}>
           Cancel

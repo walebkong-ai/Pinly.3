@@ -17,7 +17,7 @@ describe("legacy media classification", () => {
     });
   });
 
-  test("marks HEIC blob posts as migratable but not directly renderable", () => {
+  test("routes legacy HEIC photos through authorized JPEG conversion", () => {
     const source = classifyLegacyMediaUrl(
       "https://2artlyjzrtu4ozob.public.blob.vercel-storage.com/uploads/902a57a1-3166-4618-beba-5fed49096143.heic",
       "post"
@@ -26,7 +26,7 @@ describe("legacy media classification", () => {
     expect(source).toMatchObject({
       category: "vercel_blob_heic",
       extension: "heic",
-      renderUrl: null,
+      renderUrl: `/api/media?src=${encodeURIComponent("https://2artlyjzrtu4ozob.public.blob.vercel-storage.com/uploads/902a57a1-3166-4618-beba-5fed49096143.heic")}`,
       suggestedContentType: "image/heic"
     });
   });

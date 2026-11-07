@@ -1,10 +1,4 @@
 import "dotenv/config";
-import { execFile } from "node:child_process";
-import { randomUUID } from "node:crypto";
-import { promisify } from "node:util";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import path from "node:path";
-import os from "node:os";
 import { prisma } from "@/lib/prisma";
 import {
   buildSupabasePublicMediaUrl,
@@ -15,8 +9,8 @@ import {
 } from "@/lib/supabase-storage";
 import { classifyLegacyMediaUrl, type LegacyMediaSource } from "@/lib/legacy-media";
 import { normalizeProfileImageUrl, normalizeStoredMediaUrl } from "@/lib/media-url";
+import { convertHeicToJpeg } from "@/lib/server-heic";
 
-const execFileAsync = promisify(execFile);
 const REMOTE_MIGRATION_CONFIRMATION_TOKEN = "pinly-legacy-media";
 const REMOTE_MIGRATION_CONFIRM_ENV = "ALLOW_REMOTE_MEDIA_MIGRATION";
 
@@ -122,24 +116,14 @@ function inferExtensionFromContentType(contentType: string | null) {
 }
 
 async function convertHeicBufferToJpeg(buffer: Buffer) {
-  const tempDir = await mkdtemp(path.join(os.tmpdir(), "pinly-heic-"));
-  const inputPath = path.join(tempDir, `${randomUUID()}.heic`);
-  const outputPath = path.join(tempDir, `${randomUUID()}.jpg`);
-
   try {
-    await writeFile(inputPath, buffer);
-    await execFileAsync("sips", ["-s", "format", "jpeg", inputPath, "--out", outputPath]);
-    const converted = await readFile(outputPath);
-
     return {
-      buffer: converted,
+      buffer: Buffer.from(await convertHeicToJpeg(buffer)),
       contentType: "image/jpeg" as const,
       extension: "jpg" as const
     };
   } catch {
     return null;
-  } finally {
-    await rm(tempDir, { force: true, recursive: true }).catch(() => undefined);
   }
 }
 

@@ -2,11 +2,15 @@ import { auth } from "@/lib/auth";
 import { apiError } from "@/lib/api";
 import { getVisiblePostById, getVisibleUserIds } from "@/lib/data";
 import { normalizeProfileImageUrl, normalizeStoredMediaUrl } from "@/lib/media-url";
+import { classifyLegacyMediaUrl } from "@/lib/legacy-media";
+import { isHeicUrl } from "@/lib/heic";
+import { convertHeicToJpeg, readHeicResponse } from "@/lib/server-heic";
 import { prisma } from "@/lib/prisma";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { createSignedSupabaseObjectUrl } from "@/lib/supabase-storage";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const MAX_MEDIA_SOURCE_LENGTH = 2048;
 
@@ -36,7 +40,9 @@ function buildMediaResponseHeaders(response: Response) {
 }
 
 async function canViewProtectedMedia(viewerId: string, rawSource: string) {
-  const normalizedPostMediaUrl = normalizeStoredMediaUrl(rawSource);
+  const legacySource = classifyLegacyMediaUrl(rawSource, "post");
+  const normalizedPostMediaUrl = normalizeStoredMediaUrl(rawSource) ??
+    (legacySource?.category === "vercel_blob_heic" ? legacySource.originalUrl : null);
 
   if (normalizedPostMediaUrl) {
     const matchingPost = await prisma.post.findFirst({
@@ -124,10 +130,16 @@ export async function GET(request: Request) {
   }
 
   try {
-    const signedUrl = await createSignedSupabaseObjectUrl(source);
-    const upstreamResponse = await fetch(signedUrl, {
+    const legacySource = classifyLegacyMediaUrl(source, "post");
+    const isLegacyHeic = legacySource?.category === "vercel_blob_heic";
+    const convertHeic = isHeicUrl(source);
+    const upstreamUrl = isLegacyHeic ? legacySource.originalUrl : await createSignedSupabaseObjectUrl(source);
+    const upstreamResponse = await fetch(upstreamUrl, {
       cache: "no-store",
-      headers: request.headers.get("range")
+      // A legacy URL must never redirect the server to another host.
+      redirect: "error",
+      signal: AbortSignal.timeout(20_000),
+      headers: !convertHeic && request.headers.get("range")
         ? {
             Range: request.headers.get("range") as string
           }
@@ -137,6 +149,21 @@ export async function GET(request: Request) {
     if (!upstreamResponse.ok || !upstreamResponse.body) {
       return apiError("Media is temporarily unavailable.", 502, {
         code: "MEDIA_UPSTREAM_UNAVAILABLE"
+      });
+    }
+
+    if (convertHeic) {
+      const jpeg = await convertHeicToJpeg(await readHeicResponse(upstreamResponse));
+
+      // Upstream length, etag and range headers describe the HEIC, not this JPEG.
+      return new Response(jpeg, {
+        headers: {
+          "Content-Type": "image/jpeg",
+          "Content-Length": String(jpeg.byteLength),
+          "Cache-Control": "private, max-age=120, stale-while-revalidate=600",
+          "X-Content-Type-Options": "nosniff",
+          Vary: "Cookie"
+        }
       });
     }
 

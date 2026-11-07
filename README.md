@@ -148,6 +148,8 @@ python3 tools/check_env.py
 - City discovery reuses the same protected visibility rules as the map.
 - Uploads use Supabase Storage in every environment; non-Supabase media is treated as legacy data and should be repaired with `npm run media:repair`.
 - Recoverable legacy Vercel Blob, Dicebear, Picsum, and MDN media can be audited with `npm run media:audit:legacy` and re-hosted into the current Supabase bucket with `npm run media:migrate:legacy -- --apply`.
+- iPhone HEIC/HEIF photos (up to 20 MiB) are converted locally to JPEG before post/avatar cropping. The decoder loads only when needed and supports the production CSP.
+- Existing HEIC/HEIF posts in Supabase or legacy Vercel Blob storage are served as JPEG by `/api/media` after checking post visibility. Originals and post records are preserved; conversion needs no database migration. The legacy migration script also converts HEIC to JPEG without macOS tools.
 - Prisma migrations are checked into `prisma/migrations/` so `prisma migrate deploy` can safely bootstrap production PostgreSQL in deployment environments.
 - Rate limiting is database-backed by default so auth, upload, and write-heavy routes stay protected across serverless instances.
 - Lightweight groups are currently friend-backed filter options and are intentionally structured to support a future persistent group model without changing the map flow.

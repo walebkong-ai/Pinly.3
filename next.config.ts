@@ -24,6 +24,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["heic-convert"],
   eslint: {
     ignoreDuringBuilds: true
   },
